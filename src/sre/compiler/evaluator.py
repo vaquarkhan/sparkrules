@@ -124,9 +124,10 @@ def evaluate_rule(
         v = _eval(act.expr, env)
         if act.field_path.startswith("result."):
             _set_result_path(act.field_path, v, env)
-    res = env.get("result", {})
-    if not isinstance(res, dict):
-        res = {}
+    res = env["result"]
     return RuleMatch(
-        rule.name, True, {k: v for k, v in env.items() if k != "result"}, dict(res)
+        rule.name,
+        True,
+        {k: v for k, v in env.items() if k != "result"},
+        dict(res),
     )

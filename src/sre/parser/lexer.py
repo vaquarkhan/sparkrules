@@ -88,9 +88,6 @@ def tokenize(text: str) -> list[Token]:
     r_string_dq = re.compile(r'"(\\.|[^"\\])*"')
     r_string_sq = re.compile(r"'(\\.|[^'\\])*'")
 
-    def advance() -> str | None:
-        return text[i] if i < n else None
-
     while i < n:
         c = text[i]
         if c in " \t\r\n":

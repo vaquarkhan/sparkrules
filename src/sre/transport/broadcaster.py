@@ -35,8 +35,6 @@ class RuleBroadcaster:
                 start : start + self.size_threshold
             ]
             out.append(BroadcastChunk(i, b, i + 1))
-        if not out:
-            return [BroadcastChunk(0, package_bytes, 1)]
         return out
 
     def round_trip(
