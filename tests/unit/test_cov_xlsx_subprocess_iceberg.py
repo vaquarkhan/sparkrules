@@ -118,6 +118,62 @@ def test_importer_float_input_bad_cell() -> None:
         assert r.errors
 
 
+def test_importer_bad_priority_defaults_zero() -> None:
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "pri.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        assert ws is not None
+        ws["A1"] = "T"
+        ws["C1"] = "t"
+        ws["B2"] = "FIRST"
+        ws.cell(3, 1, "CONDITION")
+        ws.cell(4, 1, "a")
+        ws.cell(5, 1, "a")
+        ws.cell(6, 1, "INT")
+        ws.cell(3, 2, "ACTION")
+        ws.cell(4, 2, "o")
+        ws.cell(5, 2, "o")
+        ws.cell(6, 2, "STRING")
+        ws["A8"] = 1
+        ws["B8"] = "ok"
+        ws.cell(8, 3, "not_int")
+        wb.save(p)
+        r = DecisionTableImporter.import_file(p)
+        assert r.table is not None
+        assert r.table.rows[0].priority == 0
+
+
+def test_importer_output_cell_type_error_and_bad_priority() -> None:
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "out_err.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        assert ws is not None
+        ws["A1"] = "T"
+        ws["C1"] = "t"
+        ws["B2"] = "FIRST"
+        ws.cell(3, 1, "CONDITION")
+        ws.cell(4, 1, "a")
+        ws.cell(5, 1, "a")
+        ws.cell(6, 1, "INT")
+        ws.cell(3, 2, "ACTION")
+        ws.cell(4, 2, "o")
+        ws.cell(5, 2, "o")
+        ws.cell(6, 2, "INT")
+        ws["A8"] = 1
+        ws["B8"] = "badint"
+        ws.cell(8, 3, "not_an_int")
+        wb.save(p)
+        r = DecisionTableImporter.import_file(p)
+        assert r.table is None
+        assert r.errors
+
+
 def test_importer_bool_bad_cell() -> None:
     import tempfile
 

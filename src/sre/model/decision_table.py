@@ -119,12 +119,11 @@ def evaluate_decision_table(
     if table.hit_policy == HitPolicy.PRIORITY:
         r = max(matches, key=lambda r: r.priority)
         return _merge_outputs(table, r, n_in)
-    if table.hit_policy == HitPolicy.UNIQUE:
-        if len(matches) > 1:
-            raise OverlappingRowsError("more than one row matches for UNIQUE")
-        r = matches[0]
-        return _merge_outputs(table, r, n_in)
-    return None
+    # UNIQUE
+    if len(matches) > 1:
+        raise OverlappingRowsError("more than one row matches for UNIQUE")
+    r = matches[0]
+    return _merge_outputs(table, r, n_in)
 
 
 def _col_to_dict(

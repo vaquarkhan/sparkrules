@@ -55,8 +55,7 @@ source = ["src/sre"]
 branch = false
 
 [tool.coverage.report]
-# Full `sre` line coverage is ~94% without a live Spark session; raise when gaps shrink
-fail_under = 92
+fail_under = 100
 show_missing = true
 skip_empty = true
 exclude_lines = [
