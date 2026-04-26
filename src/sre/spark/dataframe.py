@@ -41,13 +41,25 @@ def iter_rule_rows(
         yield str(dct.get(fact_id_field, "")), m2.fired, json.dumps(out)
 
 
+def mpartition_rows(
+    part: Any,
+    drl_source: str,
+    *,
+    fact_id_field: str = "id",
+) -> Any:
+    """Map one partition; yields PySpark ``Row`` objects (import PySpark on use)."""
+    from pyspark.sql import Row
+
+    for t in iter_rule_rows(iter(part), drl_source, fact_id_field=fact_id_field):
+        yield Row(t[0], t[1], t[2])
+
+
 def apply_drl(
     df: Any,
     drl: str,
     *,
     fact_id_field: str = "id",
 ) -> Any:
-    from pyspark.sql import Row
     from pyspark.sql.types import (
         BooleanType,
         StringType,
@@ -66,10 +78,10 @@ def apply_drl(
             StructField("out_json", StringType(), True),
         ]
     )
+    bval = b.value
 
     def mpart(part: Any) -> Any:
-        for t in iter_rule_rows(iter(part), b.value, fact_id_field=fid):
-            yield Row(t[0], t[1], t[2])
+        yield from mpartition_rows(part, bval, fact_id_field=fid)
 
     r2 = df.rdd.mapPartitions(mpart)
     return spark.createDataFrame(r2, out_schema)
