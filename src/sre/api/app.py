@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from fastapi import FastAPI, HTTPException
+
+from sre.api.schemas import (
+    RuleCreateRequest,
+    RuleResponse,
+    SimulationRequest,
+    SimulationResponse,
+)
+from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
+from sre.parser import parse
+from sre.sim import RuleSimulator
+from sre.store import InMemoryRuleMetadataStore
+
+
+@dataclass
+class AppDeps:
+    store: InMemoryRuleMetadataStore = field(
+        default_factory=InMemoryRuleMetadataStore
+    )
+    sim: RuleSimulator = field(default_factory=RuleSimulator)
+
+
+def create_app(deps: AppDeps | None = None) -> Any:
+    d = deps or AppDeps()
+    app = FastAPI(title="sparkrules", version="0.1.0")
+
+    @app.get("/health", tags=["system"])
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/rules", tags=["rules"])
+    def list_rules() -> list[str]:
+        return sorted(
+            {r.rule_handle for r in d.store.list(None)}
+        )
+
+    @app.post(
+        "/rules", tags=["rules"], response_model=RuleResponse
+    )
+    def post_rule(
+        b: RuleCreateRequest,
+    ) -> RuleResponse:
+        try:
+            parse(b.drl)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        t0 = datetime.now(UTC) - timedelta(days=1)
+        r0 = Rule(
+            rule_id=new_rule_id(),
+            rule_handle=b.rule_handle,
+            version=0,
+            rule_group=b.group,
+            salience=0,
+            effective_from=t0,
+            effective_to=None,
+            is_active=True,
+            rule_definition=RuleDefinition(
+                b.drl, RuleFormat.DRL
+            ),
+            activation_group=None,
+        )
+        ins = d.store.insert(r0)
+        return RuleResponse(
+            rule_handle=ins.rule_handle, version=ins.version
+        )
+
+    @app.post(
+        "/simulations",
+        response_model=SimulationResponse,
+        tags=["simulation"],
+    )
+    def sim(s: SimulationRequest) -> SimulationResponse:
+        f = d.sim.run(s.drl, dict(s.fact))
+        return SimulationResponse(
+            fired=f.fired, action=f.action, bound=f.bound
+        )
+    return app

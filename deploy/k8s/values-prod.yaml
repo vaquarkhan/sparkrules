@@ -1,0 +1,4 @@
+env: prod
+replicas:
+  rule_api: 3
+  connect: 2

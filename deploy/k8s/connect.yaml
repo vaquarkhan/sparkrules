@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connect
+  namespace: sparkrules
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: connect
+  template:
+    metadata:
+      labels:
+        app: connect
+    spec:
+      containers:
+        - name: connect
+          image: sparkrules/connect:latest
+          ports:
+            - containerPort: 15002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: connect
+  namespace: sparkrules
+spec:
+  selector:
+    app: connect
+  ports:
+    - port: 15002
+      targetPort: 15002
