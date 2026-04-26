@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sparkrules-config
+  namespace: sparkrules
+data:
+  LOG_LEVEL: info
+  SRE_ENV: dev

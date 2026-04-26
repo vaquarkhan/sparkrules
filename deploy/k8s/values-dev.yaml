@@ -1,0 +1,4 @@
+env: dev
+replicas:
+  rule_api: 1
+  connect: 1

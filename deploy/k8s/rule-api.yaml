@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rule-api
+  namespace: sparkrules
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rule-api
+  template:
+    metadata:
+      labels:
+        app: rule-api
+    spec:
+      containers:
+        - name: api
+          image: sparkrules/rule-api:latest
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rule-api
+  namespace: sparkrules
+spec:
+  selector:
+    app: rule-api
+  ports:
+    - port: 80
+      targetPort: 8080
