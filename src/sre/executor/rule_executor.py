@@ -33,9 +33,10 @@ class RuleExecutor:
         handle: str = "r1",
         version: int = 1,
         pass_: str = "SINGLE",
+        allow_sql_join: bool = False,
     ) -> FactResult:
         r = parse(drl)
-        if len(r.when) > 1:
+        if len(r.when) > 1 and not allow_sql_join:
             return FactResult(
                 fact_id,
                 rule_id,
