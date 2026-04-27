@@ -8,6 +8,12 @@ This project includes **harnesses** to reason about very large runtimes, not liv
 - `sre.runtime.perf.scale_evidence` — produces a structured estimate (rows, rows/sec, target rows, estimated duration) for documentation and SLO planning.
 - `sre.obs.health` — classifies per-stage health from duration, shuffle volume, and task failures (for UI and ops dashboards).
 
+## Default API path: not distributed Spark
+
+For **default** HTTP simulations and the Workbench **Simulate** view, evaluation runs in **pure Python** in the API process: **`SparkSession.getActiveSession()` is typically `None`**, and there is **no** automatic `mapPartitions` / **broadcast** rule package on a **DataFrame**. That is **by design** for a simple integration surface; it is **not** evidence of billion-row Spark throughput.
+
+For the **claim vs reality** narrative, observed throughput bounds, and the **wiring** needed for real cluster execution (`mapPartitions`, `CompiledRulePackage` broadcast, `sre/spark/dataframe.py`), see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#spark-and-distributed-execution).
+
 ## What “production evidence” means
 
 A real **billions-of-rows** proof requires your Spark cluster, storage (Iceberg/Delta/Hudi/Parquet), and network. Capture:
@@ -25,7 +31,7 @@ Run the full test suite and coverage gate:
 
 ```bash
 python -m pip install -e ".[test]"
-python -m pytest --cov=sre
+python -m pytest tests/unit/ --cov=src/sre
 ```
 
 Opt-in performance tests (if present) use `pytest -m perf`.
