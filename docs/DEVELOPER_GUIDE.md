@@ -42,6 +42,8 @@ If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm t
 
 After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port) for rule assets, **Monaco** DRL editing, **Validate** (parse) plus **LSP** diagnostics, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
 
+**Spark vs Python:** the server does **not** “enable Spark” with one flag. Simulations are **pure Python** by default. To run rules on a **cluster DataFrame**, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
+
 **Workbench and API:** **Rule pack** in the left nav, **version diff**, filters, and Phase 4 **Governance**. If **`SPARKRULES_API_KEY`** is set, send the key on API calls; sensitive rule and governance **GET**s require it as well. See [README.md](../README.md#api-run).
 
 ## Docker

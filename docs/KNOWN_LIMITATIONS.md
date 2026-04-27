@@ -27,6 +27,8 @@ This document records **intentional honesty** about what is **not** production-c
 
 ## Spark and distributed execution
 
+**Choosing Spark vs Python:** this is a **product and deployment** choice, not a hidden server toggle. See **[SPARK_INTEGRATION.md](SPARK_INTEGRATION.md)** for when to use **PySpark** (`apply_drl`, cluster `DataFrame`) vs **default** pure-Python paths.
+
 **SQL_JOIN, batch, and streaming**  
 - Multi-pattern and “join-style” behavior can be exercised in **local / pure-Python** execution (including list-binding expansion in the **local** executor path).  
 - **PySpark** is often installed (e.g. as a test dependency), but a **`SparkSession` is not created** on the default **HTTP simulation / workbench** evaluation path—so **distributed** scale is **not** demonstrated there.  
