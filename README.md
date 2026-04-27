@@ -15,7 +15,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 ### Rule authoring and modeling
 
 - DRL-style `when` / `then` rule language
-- Rule metadata: handle, version, group, salience, activation group, reason codes
+- Rule metadata: handle, version, group, **namespace** (Phase 4), salience, activation group, reason codes
 - Rule template support with placeholder substitution and validation
 - Decision table model with hit policies: `UNIQUE`, `FIRST`, `PRIORITY`, `COLLECT`
 - Decision table JSON import/export helpers
@@ -75,15 +75,16 @@ Repository: https://github.com/vaquarkhan/sparkrules
 
 ### API and connectivity
 
-- FastAPI app factory
+- FastAPI app factory, OpenAPI at `/docs`
 - Health endpoint
-- Rule registration/listing endpoints
-- Simulation endpoint
+- **Rules:** create, list handles, **assets** (search, group, namespace filters), **rule pack** export/import, two-version **diff**, **`PATCH` per-version active/inactive**
+- **Governance (Phase 4):** dev/stage/prod **pins** (sync, promote) — [GOVERNANCE.md](docs/GOVERNANCE.md)
+- Simulation endpoint, engine **deployment** readout, **template / guided fields** for Workbench
 - Data-quality evaluation endpoint (`/dq/evaluate`)
-- Lightweight client SDK
-- In-process connect server dispatch module
+- Optional **`SPARKRULES_API_KEY`**: mutating methods + **sensitive rule/governance `GET`s** (see [API run](#api-run))
+- Lightweight client SDK, in-process connect server dispatch module
 
-### Data quality (Phase 2a in progress)
+### Data quality
 
 - DQ severity model (`WARN`, `ERROR`)
 - DQ checks:
@@ -176,11 +177,15 @@ The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, 
 
 ## Docker
 
+**Local (build from this repo):**
+
 ```bash
 docker compose up --build
 ```
 
-Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (Dockerfile uses internal 8000; host port is whatever you map, e.g. `-p 8042:8000` then use **8042** in the browser.)
+Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (compose maps **8042 → 8000**; the Dockerfile exposes **8000** internally.)
+
+**CI images:** pushes to `main` / `master` / `phase-2` and tags `v*` run **GitHub Actions** and publish to **GitHub Container Registry** (`ghcr.io/<user>/sparkrules`). See [docs/PUBLISHING.md](docs/PUBLISHING.md#docker-github-container-registry).
 
 ## Cloud deploy notes
 

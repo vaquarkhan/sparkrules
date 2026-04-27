@@ -118,8 +118,13 @@ def test_workbench_static_index() -> None:
     r = c.get("/workbench/index.html")
     assert r.status_code == 200
     assert b"SparkRules Workbench" in r.content
+    assert b'sparkrules-logo.png' in r.content
     assert b'id="api-key"' in r.content
     assert b"view-governance" in r.content
     assert b"btn-export-pack" in r.content
     assert b"view-overview" in r.content
     assert b"btn-theme" in r.content
+    logo = c.get("/workbench/sparkrules-logo.png")
+    assert logo.status_code == 200
+    assert "png" in logo.headers.get("content-type", "")
+    assert len(logo.content) > 1000

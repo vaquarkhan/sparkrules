@@ -1,0 +1,18 @@
+# Keep context small; do not list pyproject.toml, LICENSE, CITATION.cff, or src/ — the image needs them.
+.git
+.github
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+.tox
+.mypy_cache
+*.egg-info
+dist
+build
+tests
+docs/history
+.cursor
+.env
+.env.*
+docs/**/*.md
