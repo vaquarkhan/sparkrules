@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -25,6 +25,34 @@ class SimulationResponse(BaseModel):
     fired: bool
     action: dict[str, object] = {}
     bound: dict[str, object] = {}
+
+
+class DqCheckRequest(BaseModel):
+    kind: str
+    field: str
+    severity: str = "ERROR"
+    code: str | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    inclusive: bool = True
+    allowed_values: list[Any] | None = None
+
+
+class DqEvaluateRequest(BaseModel):
+    fact: dict[str, Any]
+    checks: list[DqCheckRequest]
+
+
+class DqViolationResponse(BaseModel):
+    code: str
+    field: str
+    message: str
+    severity: str
+
+
+class DqEvaluateResponse(BaseModel):
+    ok: bool
+    violations: list[DqViolationResponse]
 
 
 class RunSubmissionRequest(BaseModel):
