@@ -9,7 +9,7 @@ authors:
     given-names: "Vaquar"
 repository-code: "https://github.com/vaquarkhan/sparkrules"
 url: "https://github.com/vaquarkhan/sparkrules"
-license: "MIT"
+license: "LicenseRef-SparkRules-NC-1.0"
 version: "0.1.0"
 date-released: "2026-04-26"
 keywords:
@@ -23,9 +23,4 @@ identifiers:
   - type: "url"
     value: "https://github.com/vaquarkhan/sparkrules"
     description: "Source repository"
-references:
-  - type: "software"
-    title: "MCP-Bastion (documentation structure reference)"
-    url: "https://github.com/vaquarkhan/MCP-Bastion"
-    relationship: "related"
 
