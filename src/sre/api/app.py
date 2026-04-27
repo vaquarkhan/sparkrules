@@ -17,6 +17,11 @@ from sre.api.schemas import (
     DqEvaluateRequest,
     DqEvaluateResponse,
     DqViolationResponse,
+    DeprecationApproveRequest,
+    DeprecationEnforceRequest,
+    DeprecationEnforceResponse,
+    DeprecationProposeRequest,
+    DeprecationRecordResponse,
     GovernancePromoteRequest,
     GovernanceSyncRequest,
     GuidedFieldItem,
@@ -37,7 +42,13 @@ from sre.api.schemas import (
     ShadowSimulationResponse,
     CoverageSimulationRequest,
     CoverageSimulationResponse,
+    CounterfactualSimulationRequest,
+    CounterfactualSimulationResponse,
     RuleCoverageItemResponse,
+    TimeTravelCaptureRequest,
+    TimeTravelCaptureResponse,
+    TimeTravelReplayRequest,
+    TimeTravelReplayResponse,
     AiSuggestRulesRequest,
     AiSuggestionResponse,
     AiMineDqRequest,
@@ -60,7 +71,7 @@ from sre.api.security import (
     require_tenant_match,
 )
 from sre.dq import DataQualityEngine
-from sre.governance import PromotionRegistry, STANDARD_ENVS
+from sre.governance import DeprecationRegistry, PromotionRegistry, STANDARD_ENVS
 from sre.governance.promote_ops import (
     sync_dev_from_active,
     validate_version_namespace,
@@ -106,6 +117,7 @@ class AppDeps:
                 "severity": str,
                 "scope": str,
             },
+            append_only=True,
         )
     )
     dq_quarantine: IcebergLikeTable = field(
@@ -119,9 +131,11 @@ class AppDeps:
                 "fact_json": str,
                 "critical_codes": str,
             },
+            append_only=True,
         )
     )
     promotion: PromotionRegistry = field(default_factory=PromotionRegistry)
+    deprecation: DeprecationRegistry = field(default_factory=DeprecationRegistry)
     lineage: InMemoryLineageSink = field(default_factory=InMemoryLineageSink)
     audit_log: IcebergLikeTable = field(
         default_factory=lambda: IcebergLikeTable(
@@ -135,6 +149,7 @@ class AppDeps:
                 "response_status": int,
                 "tenant_id": str,
             },
+            append_only=True,
         )
     )
     ai: AiService = field(default_factory=lambda: AiService(StubAiProvider()))
@@ -151,9 +166,22 @@ class AppDeps:
                 "features_json": str,
                 "score": float,
             },
+            append_only=True,
         )
     )
     model_pin: dict[str, str] = field(default_factory=dict)
+    debug_runs: IcebergLikeTable = field(
+        default_factory=lambda: IcebergLikeTable(
+            "debug_runs",
+            {
+                "run_id": str,
+                "drl": str,
+                "fact_json": str,
+                "ts": str,
+            },
+            append_only=True,
+        )
+    )
 
 
 def create_app(deps: AppDeps | None = None) -> Any:
@@ -376,6 +404,108 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 )
                 for i in out.items
             ],
+        )
+
+    @app.post(
+        "/simulations/counterfactual",
+        response_model=CounterfactualSimulationResponse,
+        tags=["simulation"],
+    )
+    def sim_counterfactual(
+        req: Request,
+        s: CounterfactualSimulationRequest,
+    ) -> CounterfactualSimulationResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        try:
+            b = d.sim.run(s.drl, dict(s.baseline_fact))
+            c = d.sim.run(s.drl, dict(s.candidate_fact))
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        keys = set(b.action) | set(c.action)
+        drift_fields = sorted(k for k in keys if b.action.get(k) != c.action.get(k))
+        return CounterfactualSimulationResponse(
+            baseline_fired=b.fired,
+            baseline_action=b.action,
+            candidate_fired=c.fired,
+            candidate_action=c.action,
+            drifted=bool(drift_fields),
+            drift_fields=drift_fields,
+        )
+
+    @app.post(
+        "/debug/time-travel/capture",
+        response_model=TimeTravelCaptureResponse,
+        tags=["debug"],
+    )
+    def debug_time_travel_capture(
+        req: Request,
+        s: TimeTravelCaptureRequest,
+    ) -> TimeTravelCaptureResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_author", "rule_admin", "run_operator", "platform_admin"},
+        )
+        try:
+            r = d.sim.run(s.drl, dict(s.fact))
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        sid = d.debug_runs.append(
+            [
+                {
+                    "run_id": s.run_id,
+                    "drl": s.drl,
+                    "fact_json": json.dumps(s.fact, sort_keys=True, default=str),
+                    "ts": datetime.now(UTC).isoformat(),
+                }
+            ]
+        )
+        return TimeTravelCaptureResponse(
+            run_id=s.run_id,
+            snapshot_id=sid,
+            fired=r.fired,
+            action=r.action,
+            bound=r.bound,
+        )
+
+    @app.post(
+        "/debug/time-travel/replay",
+        response_model=TimeTravelReplayResponse,
+        tags=["debug"],
+    )
+    def debug_time_travel_replay(
+        req: Request,
+        s: TimeTravelReplayRequest,
+    ) -> TimeTravelReplayResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_author", "rule_admin", "run_operator", "platform_admin"},
+        )
+        rows = d.debug_runs.snapshot(s.snapshot_id)
+        row = next((x for x in rows if x.get("run_id") == s.run_id), None)
+        if row is None:
+            raise HTTPException(404, "run not found in snapshot")
+        fact = (
+            dict(s.fact_override)
+            if s.fact_override is not None
+            else json.loads(str(row["fact_json"]))
+        )
+        try:
+            r = d.sim.run(str(row["drl"]), fact)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        return TimeTravelReplayResponse(
+            run_id=s.run_id,
+            snapshot_id=s.snapshot_id,
+            fired=r.fired,
+            action=r.action,
+            bound=r.bound,
+            used_fact_override=s.fact_override is not None,
         )
 
     @app.post(
@@ -1149,6 +1279,155 @@ def create_app(deps: AppDeps | None = None) -> Any:
             "version": v1,
             "environment": b.to_env,
         }
+
+    @app.post(
+        "/governance/deprecations/propose",
+        response_model=DeprecationRecordResponse,
+        tags=["governance"],
+    )
+    def governance_deprecate_propose(
+        req: Request,
+        b: DeprecationProposeRequest,
+    ) -> DeprecationRecordResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_admin", "platform_admin"})
+        require_tenant_match(p, b.namespace)
+        r = d.deprecation.propose(
+            namespace=b.namespace,
+            rule_handle=b.rule_handle,
+            requested_by=p.principal,
+            reason=b.reason,
+        )
+        _audit(
+            req,
+            action="governance_deprecate_propose",
+            resource=f"/governance/deprecations/propose/{b.rule_handle}",
+            tenant_id=b.namespace,
+            status=200,
+            payload=b.model_dump(),
+        )
+        return DeprecationRecordResponse(
+            namespace=r.namespace,
+            rule_handle=r.rule_handle,
+            requested_by=r.requested_by,
+            reason=r.reason,
+            status=r.status,
+            requested_at=r.requested_at,
+            approved_by=r.approved_by,
+            approved_at=r.approved_at,
+        )
+
+    @app.post(
+        "/governance/deprecations/approve",
+        response_model=DeprecationRecordResponse,
+        tags=["governance"],
+    )
+    def governance_deprecate_approve(
+        req: Request,
+        b: DeprecationApproveRequest,
+    ) -> DeprecationRecordResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_admin", "platform_admin"})
+        require_tenant_match(p, b.namespace)
+        try:
+            r = d.deprecation.approve(
+                namespace=b.namespace,
+                rule_handle=b.rule_handle,
+                approved_by=p.principal,
+            )
+        except KeyError as e:
+            raise HTTPException(404, "deprecation proposal not found") from e
+        _audit(
+            req,
+            action="governance_deprecate_approve",
+            resource=f"/governance/deprecations/approve/{b.rule_handle}",
+            tenant_id=b.namespace,
+            status=200,
+            payload=b.model_dump(),
+        )
+        return DeprecationRecordResponse(
+            namespace=r.namespace,
+            rule_handle=r.rule_handle,
+            requested_by=r.requested_by,
+            reason=r.reason,
+            status=r.status,
+            requested_at=r.requested_at,
+            approved_by=r.approved_by,
+            approved_at=r.approved_at,
+        )
+
+    @app.get(
+        "/governance/deprecations",
+        response_model=list[DeprecationRecordResponse],
+        tags=["governance"],
+    )
+    def governance_deprecations(
+        req: Request,
+        namespace: str | None = Query(
+            None, description="Optional filter by namespace"
+        ),
+    ) -> list[DeprecationRecordResponse]:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_reader", "rule_author", "rule_admin", "platform_admin"})
+        if namespace:
+            require_tenant_match(p, namespace)
+        elif "platform_admin" not in p.roles:
+            namespace = p.tenant_id
+        rows = d.deprecation.list(namespace=namespace)
+        return [DeprecationRecordResponse(**x) for x in rows]
+
+    @app.post(
+        "/governance/deprecations/enforce",
+        response_model=DeprecationEnforceResponse,
+        tags=["governance"],
+    )
+    def governance_deprecations_enforce(
+        req: Request,
+        b: DeprecationEnforceRequest,
+    ) -> DeprecationEnforceResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_admin", "platform_admin"})
+        require_tenant_match(p, b.namespace)
+        rows = d.deprecation.list(namespace=b.namespace)
+        if b.rule_handle:
+            rows = [x for x in rows if x["rule_handle"] == b.rule_handle]
+        approved = [x for x in rows if x.get("status") == "APPROVED"]
+        enforced_rules = 0
+        deactivated_versions = 0
+        details: list[dict[str, object]] = []
+        for r in approved:
+            handle = str(r["rule_handle"])
+            active = d.store.list(
+                RuleFilter(namespace=b.namespace, rule_handle=handle, is_active=True)
+            )
+            if not active:
+                continue
+            enforced_rules += 1
+            hit = 0
+            for cur in active:
+                d.store.update(cur.rule_handle, cur.with_updates(is_active=False))
+                hit += 1
+                deactivated_versions += 1
+            details.append(
+                {
+                    "rule_handle": handle,
+                    "deactivated_versions": hit,
+                }
+            )
+        _audit(
+            req,
+            action="governance_deprecations_enforce",
+            resource="/governance/deprecations/enforce",
+            tenant_id=b.namespace,
+            status=200,
+            payload=b.model_dump(),
+        )
+        return DeprecationEnforceResponse(
+            namespace=b.namespace,
+            enforced_rules=enforced_rules,
+            deactivated_versions=deactivated_versions,
+            details=details,
+        )
 
     install_optional_api_key_middleware(app)
 

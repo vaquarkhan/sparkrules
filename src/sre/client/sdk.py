@@ -54,6 +54,61 @@ class SreClient:
         r.raise_for_status()
         return r.json()  # type: ignore[no-any-return]
 
+    def counterfactual(
+        self,
+        drl: str,
+        baseline_fact: dict[str, object],
+        candidate_fact: dict[str, object],
+    ) -> dict[str, object]:
+        r = self.post(
+            "/simulations/counterfactual",
+            {
+                "drl": drl,
+                "baseline_fact": baseline_fact,
+                "candidate_fact": candidate_fact,
+            },
+        )
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def capture_time_travel(
+        self,
+        run_id: str,
+        drl: str,
+        fact: dict[str, object],
+    ) -> dict[str, object]:
+        r = self.post(
+            "/debug/time-travel/capture",
+            {"run_id": run_id, "drl": drl, "fact": fact},
+        )
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def replay_time_travel(
+        self,
+        snapshot_id: int,
+        run_id: str,
+        fact_override: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {"snapshot_id": snapshot_id, "run_id": run_id}
+        if fact_override is not None:
+            payload["fact_override"] = fact_override
+        r = self.post("/debug/time-travel/replay", payload)
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def enforce_deprecations(
+        self,
+        namespace: str,
+        rule_handle: str | None = None,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {"namespace": namespace}
+        if rule_handle:
+            payload["rule_handle"] = rule_handle
+        r = self.post("/governance/deprecations/enforce", payload)
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
     @staticmethod
     def install_transient_failure(c: SreClient, n: int) -> None:
         c._fails = n  # type: ignore[attr-defined]
