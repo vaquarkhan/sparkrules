@@ -12,7 +12,7 @@ Single-page view of what **is done** vs **out of scope** for the `idea-brainstro
 | **Unit / ladder** | **Done** | `tests/unit/`, `test_requirement_ladder` |
 | **Docs** | **Done** | `docs/REQUIREMENTS.md`, `docs/README.md`, root `README.md`, `CITATION.cff` |
 | **Examples** | **Done** | `examples/` (DRL, JSON, scripts) |
-| **`.kiro/specs/...` on disk** | **N/A** | Not in repo; `docs/REQUIREMENTS.md` is the in-tree spec |
+| **Requirements spec source** | **Done** | `docs/REQUIREMENTS.md` is the in-repo canonical requirements/spec text |
 | **Real Spark cluster / JVM** | **Out of scope** for Phase 1 gate | PySpark optional; `tests/spark` may skip without Java |
 | **Real Iceberg / Delta in prod** | **Out of scope** | `IcebergLikeTable` and tests are in-process stand-ins |
 | **Scala port** | **Future** (Phase 4) | |
