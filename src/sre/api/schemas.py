@@ -280,3 +280,20 @@ class ModelScoreResponse(BaseModel):
     provider: str
     score: float
     explanation: dict[str, Any]
+
+
+class LspAnalyzeRequest(BaseModel):
+    drl: str
+    prefix: str = ""
+
+
+class LspDiagnosticResponse(BaseModel):
+    severity: str
+    message: str
+    line: int
+    col: int
+
+
+class LspAnalyzeResponse(BaseModel):
+    diagnostics: list[LspDiagnosticResponse] = []
+    completions: list[str] = []

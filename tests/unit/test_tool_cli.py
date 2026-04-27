@@ -64,6 +64,16 @@ def test_cli_chaos_check_ok_and_fail(capsys) -> None:
     assert bad["injected_failures"] == 1
 
 
+def test_cli_lsp_check(capsys) -> None:
+    assert cli.main(["lsp-check", "--drl", _DRL, "--prefix", "ru"]) == 0
+    out = json.loads(capsys.readouterr().out.strip())
+    assert out["diagnostics"] == []
+    assert "rule" in out["completions"]
+    assert cli.main(["lsp-check", "--drl", "bad drl"]) == 0
+    out_bad = json.loads(capsys.readouterr().out.strip())
+    assert out_bad["diagnostics"]
+
+
 def test_cli_unknown_command_fallback(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
     def _fake_parse_args(self, argv):  # noqa: ANN001
         return argparse.Namespace(command="unknown")

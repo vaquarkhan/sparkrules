@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 
+from sre.ide import analyze_drl_for_lsp
 from sre.parser import parse
 from sre.runtime import ChaosPolicy, run_chaos_scenario
 from sre.sim import RuleSimulator
@@ -40,6 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     chaos = sub.add_parser("chaos-check")
     chaos.add_argument("--fail-attempts", default="")
     chaos.add_argument("--max-retries", type=int, default=1)
+
+    lsp = sub.add_parser("lsp-check")
+    lg = lsp.add_mutually_exclusive_group(required=True)
+    lg.add_argument("--drl")
+    lg.add_argument("--file")
+    lsp.add_argument("--prefix", default="")
 
     args = parser.parse_args(argv)
     if not args.command:
@@ -94,6 +101,26 @@ def main(argv: list[str] | None = None) -> int:
             + "\n"
         )
         return 0 if out.ok else 2
+    if args.command == "lsp-check":
+        out = analyze_drl_for_lsp(_resolve_drl(args), prefix=str(args.prefix or ""))
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "diagnostics": [
+                        {
+                            "severity": d.severity,
+                            "message": d.message,
+                            "line": d.line,
+                            "col": d.col,
+                        }
+                        for d in out.diagnostics
+                    ],
+                    "completions": list(out.completions),
+                }
+            )
+            + "\n"
+        )
+        return 0
     parser.print_help()
     return 1
 
