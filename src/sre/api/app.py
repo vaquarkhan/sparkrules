@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -16,9 +16,10 @@ from sre.api.schemas import (
     SimulationResponse,
 )
 from sre.dq import DataQualityEngine
-from sre.dq.engine import checks_from_api, summarize_violations
+from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.parser import parse
+from sre.runtime.iceberg_store import IcebergLikeTable
 from sre.sim import RuleSimulator
 from sre.store import InMemoryRuleMetadataStore
 
@@ -30,6 +31,22 @@ class AppDeps:
     )
     sim: RuleSimulator = field(default_factory=RuleSimulator)
     dq: DataQualityEngine = field(default_factory=DataQualityEngine)
+    dq_violations: IcebergLikeTable = field(
+        default_factory=lambda: IcebergLikeTable(
+            "dq_violations",
+            {
+                "run_id": str,
+                "fact_id": str,
+                "rule_set_version": str,
+                "config_fingerprint": str,
+                "code": str,
+                "field": str,
+                "message": str,
+                "severity": str,
+                "scope": str,
+            },
+        )
+    )
 
 
 def create_app(deps: AppDeps | None = None) -> Any:
@@ -107,15 +124,31 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 field=x.field,
                 message=x.message,
                 severity=x.severity.value,
+                scope=x.scope.value,
             )
             for x in v
         ]
+        dq_snapshot_id: int | None = None
+        if req.persist and out:
+            recs = to_violation_records(
+                run_id=req.run_id,
+                fact_id=req.fact_id,
+                rule_set_version=req.rule_set_version,
+                config_fingerprint=req.config_fingerprint,
+                items=v,
+            )
+            dq_snapshot_id = d.dq_violations.append(
+                [asdict(x) for x in recs]
+            )
         return DqEvaluateResponse(
             ok=not out,
             violations=out,
             warn_count=s["warn_count"],
             error_count=s["error_count"],
             total=s["total"],
+            run_id=req.run_id,
+            dq_snapshot_id=dq_snapshot_id,
         )
 
     return app
+
