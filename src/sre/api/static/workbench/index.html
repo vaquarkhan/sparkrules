@@ -205,6 +205,14 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
     }
     textarea { min-height: 180px; resize: vertical; }
+    .monaco-wrap {
+      min-height: 280px;
+      height: min(50vh, 420px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--input-bg);
+    }
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
     button.btn {
       background: linear-gradient(180deg, #4a8ff5 0%, var(--accent) 100%);
@@ -365,6 +373,7 @@
       nav button.active { border-left: none; border-bottom: 2px solid var(--accent); }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 </head>
 <body>
   <header>
@@ -480,17 +489,20 @@
             <input type="text" id="in-group" placeholder="group (default)" value="default" style="max-width:160px" />
             <input type="text" id="in-namespace" placeholder="namespace" value="default" style="max-width:140px" title="Project / org scope for governance" />
           </div>
-          <textarea id="drl-new" placeholder="DRL text"></textarea>
-          <div class="row">
+          <p class="mono" style="color:var(--muted);font-size:0.8rem;margin:0.35rem 0 0.5rem">Monaco DRL editor · Validate runs parse + LSP diagnostics</p>
+          <div id="monaco-drl-new" class="monaco-wrap" role="region" aria-label="DRL editor"></div>
+          <div class="row" style="margin-top:0.5rem">
             <button class="btn" type="button" id="btn-validate">Validate</button>
+            <button class="btn" type="button" id="btn-lsp" title="Update keyword completions and diagnostics from server">LSP analyze</button>
             <button class="btn" type="button" id="btn-create">Save to repository</button>
           </div>
+          <p id="lsp-hint" class="mono" style="font-size:0.75rem;color:var(--muted);margin:0.35rem 0 0" aria-live="polite"></p>
         </div>
       </section>
       <section id="view-sim" class="view hidden">
         <div class="panel">
           <h2>Simulation (dry run)</h2>
-          <textarea id="drl-sim" placeholder="DRL"></textarea>
+          <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
           <div class="row">
@@ -559,6 +571,8 @@
   </div>
   <script>
     var assetsState = { all: [], page: 1, pageSize: 20 };
+    var drlNewEditor = null;
+    var drlSimEditor = null;
     var fireSampleRows = [
       { rule: "r_low_value (amount <= 500)", fired: 3373, pct: 67.5 },
       { rule: "dq_date_in_range", fired: 2549, pct: 51.0 },
@@ -603,6 +617,9 @@
       if (name === "assets" && typeof loadAssets === "function") {
         loadAssets().catch(function (e) { setMessage(e.message, "err"); });
       }
+      if ((name === "author" || name === "sim") && typeof window.layoutDrlMonaco === "function") {
+        requestAnimationFrame(function () { window.layoutDrlMonaco(); });
+      }
     }
     (function initTheme() {
       var t = localStorage.getItem("sparkrulesTheme");
@@ -615,6 +632,7 @@
       localStorage.setItem("sparkrulesTheme", n);
       var b = document.getElementById("btn-theme");
       if (b) b.textContent = n === "light" ? "Dark" : "Light";
+      if (typeof window.applyWorkbenchMonacoTheme === "function") window.applyWorkbenchMonacoTheme();
     }
     document.getElementById("btn-theme").addEventListener("click", function () { toggleTheme(); });
     (function setThemeButtonLabel() {
@@ -678,6 +696,126 @@
       if (!r.ok) throw new Error(t || r.status);
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
     }
+    function getAuthorDrl() {
+      return drlNewEditor ? drlNewEditor.getValue() : "";
+    }
+    function getSimDrl() {
+      return drlSimEditor ? drlSimEditor.getValue() : "";
+    }
+    function applyLspMarkers(editor, diagnostics) {
+      if (!editor || !window.monaco) return;
+      var m = editor.getModel();
+      if (!m) return;
+      var sev = window.monaco.MarkerSeverity;
+      var arr = (diagnostics || []).map(function (d) {
+        var s = String(d.severity || "").toUpperCase() === "ERROR" ? sev.Error : sev.Warning;
+        var line = Math.max(1, d.line | 0);
+        var col = Math.max(1, d.col | 0);
+        return {
+          severity: s,
+          startLineNumber: line,
+          startColumn: col,
+          endLineNumber: line,
+          endColumn: col + 1,
+          message: d.message || ""
+        };
+      });
+      monaco.editor.setModelMarkers(m, "sre-lsp", arr);
+    }
+    function layoutDrlMonaco() {
+      if (drlNewEditor) drlNewEditor.layout();
+      if (drlSimEditor) drlSimEditor.layout();
+    }
+    window.layoutDrlMonaco = layoutDrlMonaco;
+    function applyWorkbenchMonacoTheme() {
+      if (!window.monaco) return;
+      var th = document.documentElement.getAttribute("data-theme") === "light" ? "vs" : "vs-dark";
+      monaco.editor.setTheme(th);
+    }
+    window.applyWorkbenchMonacoTheme = applyWorkbenchMonacoTheme;
+    function lspPrefixAtPosition(model, position) {
+      var line = model.getLineContent(position.lineNumber);
+      var ch = Math.min(position.column - 1, line.length);
+      var slice = line.slice(0, ch);
+      var m = /[$\w.]*$/.exec(slice);
+      return m ? m[0] : "";
+    }
+    (function initMonacoWorkbench() {
+      if (typeof require === "undefined") {
+        if (document.getElementById("lsp-hint")) document.getElementById("lsp-hint").textContent = "Monaco not loaded (check network for CDN).";
+        return;
+      }
+      require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs" } });
+      require(["vs/editor/editor.main"], function () {
+        var mon = window.monaco;
+        var kws = [
+          "rule", "when", "then", "end", "and", "or", "not", "in", "true", "false", "null",
+          "salience", "agenda_group", "activation_group", "pass", "group_by", "reason_codes",
+          "stop_on_fire", "contains", "matches", "insert", "modify", "delete", "eval", "accumulate"
+        ];
+        mon.languages.register({ id: "drl" });
+        mon.languages.setMonarchTokensProvider("drl", {
+          defaultToken: "",
+          ignoreCase: true,
+          keywords: kws,
+          tokenizer: {
+            root: [
+              [/\$[a-zA-Z_][\w.]*/, "variable"],
+              [/"(?:[^"\\]|\\.)*"/, "string"],
+              [/'(?:[^'\\]|\\.)*'/, "string"],
+              [/\/\/.*$/, "comment"],
+              [/[a-zA-Z_$][\w$]*/, { cases: { "@keywords": "keyword", "@default": "identifier" } }],
+              [/[0-9]+(?:\.[0-9]+)?/, "number"],
+              [/==|!=|<=|>=|[=<>!]+/, "operator"],
+              [/[{}()\[\],;]/, "delimiter"]
+            ]
+          }
+        });
+        mon.languages.registerCompletionItemProvider("drl", {
+          triggerCharacters: ["$", "."],
+          provideCompletionItems: function (model, position) {
+            var pfx = lspPrefixAtPosition(model, position);
+            return postJson("/ide/lsp/analyze", { drl: model.getValue(), prefix: pfx })
+              .then(function (j) {
+                var list = (j.completions || []).map(function (c, i) {
+                  return {
+                    label: c,
+                    kind: mon.languages.CompletionItemKind.Keyword,
+                    insertText: c,
+                    sortText: String(1e3 + i)
+                  };
+                });
+                return { suggestions: list };
+              })
+              .catch(function () { return { suggestions: [] }; });
+          }
+        });
+        var defAuthor = "rule r1\nwhen\n$t : T ( true )\nthen\nend\n";
+        var defSim = "rule r1\nwhen\n$t : T ( true )\nthen\nend\n";
+        drlNewEditor = mon.editor.create(document.getElementById("monaco-drl-new"), {
+          value: defAuthor,
+          language: "drl",
+          automaticLayout: true,
+          minimap: { enabled: true },
+          fontSize: 13,
+          wordWrap: "on",
+          scrollBeyondLastLine: false
+        });
+        drlSimEditor = mon.editor.create(document.getElementById("monaco-drl-sim"), {
+          value: defSim,
+          language: "drl",
+          automaticLayout: true,
+          minimap: { enabled: false },
+          fontSize: 13,
+          wordWrap: "on",
+          scrollBeyondLastLine: false
+        });
+        applyWorkbenchMonacoTheme();
+        var h = document.getElementById("lsp-hint");
+        if (h) h.textContent = "Ctrl+Space: completions (LSP) · Validate: parse + diagnostics.";
+        window.addEventListener("resize", function () { layoutDrlMonaco(); });
+      });
+    })();
     function renderBarChart(containerId, mapObj) {
       const el = document.getElementById(containerId);
       if (!el) return;
@@ -897,8 +1035,24 @@
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
     document.getElementById("btn-validate").addEventListener("click", function () {
-      var drl = document.getElementById("drl-new").value;
-      postJson("/rules/validate", { drl: drl }).then(function () { setMessage("Parse OK.", "ok"); }).catch(function (e) { setMessage(e.message, "err"); });
+      var drl = getAuthorDrl();
+      postJson("/rules/validate", { drl: drl })
+        .then(function () { return postJson("/ide/lsp/analyze", { drl: drl, prefix: "" }); })
+        .then(function (j) {
+          applyLspMarkers(drlNewEditor, j.diagnostics);
+          var n = (j.diagnostics || []).length;
+          setMessage("Parse OK." + (n ? " " + n + " LSP diagnostic(s)." : ""), n ? "warn" : "ok");
+        })
+        .catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-lsp").addEventListener("click", function () {
+      var drl = getAuthorDrl();
+      postJson("/ide/lsp/analyze", { drl: drl, prefix: "" })
+        .then(function (j) {
+          applyLspMarkers(drlNewEditor, j.diagnostics);
+          setMessage("LSP: " + (j.diagnostics || []).length + " diagnostic(s), " + (j.completions || []).length + " completion seed(s).", "ok");
+        })
+        .catch(function (e) { setMessage(e.message, "err"); });
     });
     function loadGovernancePins() {
       var ns = (document.getElementById("gov-ns") && document.getElementById("gov-ns").value) || "default";
@@ -949,7 +1103,7 @@
       var g = document.getElementById("in-group").value.trim() || "default";
       var ns0 = document.getElementById("in-namespace");
       var ns = ns0 ? (ns0.value.trim() || "default") : "default";
-      var drl = document.getElementById("drl-new").value;
+      var drl = getAuthorDrl();
       if (!h) { setMessage("rule_handle required.", "err"); return; }
       postJson("/rules", { rule_handle: h, group: g, namespace: ns, drl: drl }).then(function (j) {
         setMessage("Saved " + j.rule_handle + " v" + j.version, "ok");
@@ -958,7 +1112,7 @@
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
     document.getElementById("btn-sim").addEventListener("click", function () {
-      var drl = document.getElementById("drl-sim").value;
+      var drl = getSimDrl();
       var fact;
       try { fact = JSON.parse(document.getElementById("fact-json").value || "{}"); } catch (e) { setMessage("Invalid JSON: " + e, "err"); return; }
       postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {

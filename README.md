@@ -87,6 +87,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - Health endpoint
 - **Rules:** create, list handles, **assets** (search, group, namespace filters), **rule pack** export/import, two-version **diff**, **`PATCH` per-version active/inactive**
 - **Governance (Phase 4):** dev/stage/prod **pins** (sync, promote) — [GOVERNANCE.md](docs/GOVERNANCE.md)
+- **Workbench** (`/workbench`): static UI with a **Monaco** DRL editor; **Validate** calls `/rules/validate` then `/ide/lsp/analyze` (diagnostics in the editor), **LSP analyze** and Ctrl+Space completions use the same LSP API
 - Simulation endpoint, engine **deployment** readout, **template / guided fields** for Workbench
 - Data-quality evaluation endpoint (`/dq/evaluate`)
 - Optional **`SPARKRULES_API_KEY`**: mutating methods + **sensitive rule/governance `GET`s** (see [API run](#api-run))

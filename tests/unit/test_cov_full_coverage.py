@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -30,10 +30,17 @@ from sre.parser.ast import (
 )
 from sre.parser.lexer import Token
 from sre.parser.parser import DrlParser, _bind_root, _collect_idents, _unquote
+from sre.runtime.batch import RunRecord
 from sre.runtime.cache import DerivedColumnCache
+from sre.runtime.catalyst import CatalystConfigurer
 from sre.runtime.iceberg_store import IcebergLikeTable
-from sre.runtime.streaming import default_executor_factory
+from sre.runtime.streaming import (
+    StreamingEvaluator,
+    StreamingRuleRefresher,
+    default_executor_factory,
+)
 from sre.sim.ab import ABTestConfig, ABTestRunner, Variant
+from sre.sim.replay import MissingRuleSetVersionError, ReplayService
 from sre.store import InMemoryRuleMetadataStore, RuleFilter
 from sre.transport.broadcaster import RuleBroadcaster
 
@@ -99,6 +106,18 @@ def test_executor_join_sql_and_error_and_not_fired() -> None:
         "rule f when $t : T ( $t.x > 0 ) then end",
     )
     assert nf.fired is False
+    fj = ex.run(
+        {"a": [{"x": 0}, {"x": 1}], "b": [{"y": 2}]},
+        "rule j2 when $a : A ( $a.x > 0 ) and $b : B ( true ) then result.ok = true; end",
+        allow_sql_join=True,
+    )
+    assert fj.fired is True
+    nj = ex.run(
+        {"a": [{"x": 0}], "b": [{"y": 2}]},
+        "rule j3 when $a : A ( $a.x > 9 ) and $b : B ( true ) then result.ok = true; end",
+        allow_sql_join=True,
+    )
+    assert nj.fired is False
 
 
 def test_coerce_string_empty_bool_strings_fallback() -> None:
@@ -274,6 +293,10 @@ def test_runtime_and_sim() -> None:
         ab.assign("u", ABTestConfig("k", (Variant("A", 0), Variant("Z", 0))))
         == "Z"
     )
+    assert ab.assign("k2", ABTestConfig("f", (Variant("A", 1), Variant("B", 1)))) in (
+        "A",
+        "B",
+    )
 
 
 def test_list_active_filter_skips_inactive() -> None:
@@ -334,3 +357,87 @@ def test_chunk_empty_multi_and_metadata_inactive_list() -> None:
     )
     lst = s.list(RuleFilter(rule_handle="hid", is_active=False))
     assert len(lst) == 1 and lst[0].is_active is False
+
+
+def test_catalyst_configurer() -> None:
+    c = CatalystConfigurer()
+    assert c.rules.get("fusion_enabled") is True
+
+
+def test_streaming_refresher_same_version_and_recompile_ok() -> None:
+    r = StreamingRuleRefresher("v0")
+    assert r.maybe_refresh("v0", recompile=None) is None
+
+    def rec() -> object:
+        return object()
+
+    assert r.maybe_refresh("v1", recompile=rec) == "v1"
+    assert r.current == "v1"
+
+
+def test_streaming_recompile_fails() -> None:
+    r = StreamingRuleRefresher("v0")
+
+    def bad() -> object:
+        raise RuntimeError("no")
+
+    assert r.maybe_refresh("v1", recompile=bad) is None
+    assert r.current == "v0"
+
+
+def test_streaming_evaluator_ttl() -> None:
+    e = StreamingEvaluator(timedelta(seconds=1))
+    t0 = datetime(2021, 1, 1, 12, 0, 0, tzinfo=UTC)
+    assert e.check_ttl(t0, None) is True
+    assert e.check_ttl(t0, t0) is False
+    assert e.check_ttl(t0 + timedelta(seconds=2), t0) is True
+
+
+def test_replay_mismatch() -> None:
+    t0 = datetime(2019, 1, 1, tzinfo=UTC)
+    rr = RunRecord(
+        run_id="r1",
+        mode="b",
+        input_table_name="T",
+        input_snapshot_id=0,
+        rule_set_version="a",
+        config_fingerprint="c",
+        start_ts=t0,
+        end_ts=t0,
+        facts_processed=0,
+        rules_fired=0,
+        rules_errored=0,
+        status="x",
+        error_class=None,
+        error_message=None,
+    )
+    with pytest.raises(MissingRuleSetVersionError):
+        ReplayService().replay(rr, "other")
+
+
+def test_replay_match() -> None:
+    t0 = datetime(2019, 1, 1, tzinfo=UTC)
+    rr = RunRecord(
+        run_id="run-x",
+        mode="b",
+        input_table_name="T",
+        input_snapshot_id=0,
+        rule_set_version="v9",
+        config_fingerprint="c",
+        start_ts=t0,
+        end_ts=t0,
+        facts_processed=0,
+        rules_fired=0,
+        rules_errored=0,
+        status="x",
+        error_class=None,
+        error_message=None,
+    )
+    assert ReplayService().replay(rr, "v9") == "run-x"
+
+
+def test_parse_rule_reason_codes_list_with_comma() -> None:
+    s = DrlParser().parse(
+        'rule r reason_codes [ "a", "b" ] when $t : T ( true ) then end'
+    )
+    assert s.reason_codes == ("a", "b")

@@ -13,7 +13,14 @@ from openpyxl import Workbook
 from sre.compiler import CompiledRulePackage
 from sre.ioxls import DecisionTableImporter
 from sre.ioxls.exporter import DecisionTableExporter
-from sre.model import DecisionTable, HitPolicy
+from sre.model import (
+    ColumnType,
+    DecisionTable,
+    HitPolicy,
+    InputColumn,
+    OutputColumn,
+    Row,
+)
 from sre.model.rule import active_set_hash, Rule, RuleDefinition, RuleFormat, new_rule_id
 from sre.runtime.iceberg_store import IcebergLikeTable, UnknownSnapshotError
 from sre.store import InMemoryRuleMetadataStore, UnknownRuleError
@@ -219,6 +226,29 @@ def test_exporter_workbook_no_active(mock_wb) -> None:
     dt = DecisionTable("x", HitPolicy.FIRST, (), (), ())
     with pytest.raises(RuntimeError, match="no active"):
         DecisionTableExporter.export(dt, "out.xlsx")
+
+
+def test_exporter_writes_real_workbook(tmp_path) -> None:
+    dt = DecisionTable(
+        "ex",
+        HitPolicy.FIRST,
+        (InputColumn("c1", "f1", ColumnType.INT, "=="),),
+        (OutputColumn("o1", "out", ColumnType.STRING),),
+        (Row((1, "a"), 0), Row((2, "b"), 0)),
+    )
+    p = tmp_path / "d.xlsx"
+    DecisionTableExporter.export(dt, str(p))
+    assert p.is_file() and p.stat().st_size > 0
+    p2 = tmp_path / "d2.xlsx"
+    dtp = DecisionTable(
+        "ex2",
+        HitPolicy.PRIORITY,
+        (InputColumn("c1", "f1", ColumnType.INT, "=="),),
+        (OutputColumn("o1", "out", ColumnType.STRING),),
+        (Row((1, "a"), 2), Row((1, "b"), 1)),
+    )
+    DecisionTableExporter.export(dtp, str(p2))
+    assert p2.is_file()
 
 
 def test_subprocess_module_main() -> None:
