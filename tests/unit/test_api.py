@@ -180,3 +180,25 @@ def test_simulation_coverage_bad_drl_400() -> None:
         headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
     )
     assert r.status_code == 400
+
+
+def test_lsp_analyze_endpoint() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    h = {"X-Roles": "rule_reader", "X-Tenant-Id": "default"}
+    ok = c.post(
+        "/ide/lsp/analyze",
+        json={"drl": "rule r when $t : T ( true ) then result.ok = true; end", "prefix": "ru"},
+        headers=h,
+    )
+    assert ok.status_code == 200
+    j = ok.json()
+    assert j["diagnostics"] == []
+    assert "rule" in j["completions"]
+    bad = c.post(
+        "/ide/lsp/analyze",
+        json={"drl": "bad drl", "prefix": ""},
+        headers=h,
+    )
+    assert bad.status_code == 200
+    assert bad.json()["diagnostics"]

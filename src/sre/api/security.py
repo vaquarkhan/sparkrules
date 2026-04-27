@@ -12,6 +12,10 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 
+def _auth_mode() -> str:
+    return (os.environ.get("SPARKRULES_AUTH_MODE", "local") or "local").strip().lower()
+
+
 def _env_api_key() -> str | None:
     v = os.environ.get("SPARKRULES_API_KEY", "").strip()
     return v or None
@@ -63,12 +67,32 @@ def principal_from_request(request: Request) -> Principal:
     - X-Tenant-Id
     - X-Roles: comma-separated
     """
+    mode = _auth_mode()
     claims = {}
     tok = _bearer_token(request)
     if tok:
         claims = _decode_jwt_claims_unverified(tok)
+    if mode == "oidc":
+        if not tok:
+            raise HTTPException(status_code=401, detail="unauthorized: missing bearer token")
+        iss = str(claims.get("iss") or "")
+        aud = str(claims.get("aud") or "")
+        req_iss = (os.environ.get("SPARKRULES_OIDC_ISSUER", "") or "").strip()
+        req_aud = (os.environ.get("SPARKRULES_OIDC_AUDIENCE", "") or "").strip()
+        if req_iss and iss != req_iss:
+            raise HTTPException(status_code=401, detail="unauthorized: issuer mismatch")
+        if req_aud and aud != req_aud:
+            raise HTTPException(status_code=401, detail="unauthorized: audience mismatch")
+    if mode == "mtls":
+        if not (request.headers.get("x-client-cert-subject", "") or "").strip():
+            raise HTTPException(status_code=401, detail="unauthorized: mTLS subject required")
+    if mode == "iam":
+        request_iam = (request.headers.get("x-iam-principal", "") or "").strip()
+        if not request_iam:
+            raise HTTPException(status_code=401, detail="unauthorized: iam principal required")
     principal = (
-        request.headers.get("x-principal")
+        request.headers.get("x-iam-principal")
+        or request.headers.get("x-principal")
         or str(claims.get("sub") or claims.get("email") or "anonymous")
     )
     tenant_id = (
@@ -76,6 +100,8 @@ def principal_from_request(request: Request) -> Principal:
         or str(claims.get("tenant_id") or claims.get("tid") or "default")
     )
     r_hdr = request.headers.get("x-roles", "")
+    if mode == "iam":
+        r_hdr = r_hdr or request.headers.get("x-iam-roles", "")
     if r_hdr.strip():
         roles = tuple(x.strip() for x in r_hdr.split(",") if x.strip())
     else:

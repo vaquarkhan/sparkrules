@@ -46,6 +46,9 @@ from sre.api.schemas import (
     AiExplainRuleResponse,
     GraphEnrichRequest,
     GraphEnrichResponse,
+    LspAnalyzeRequest,
+    LspAnalyzeResponse,
+    LspDiagnosticResponse,
     ModelScoreRequest,
     ModelScoreResponse,
 )
@@ -65,6 +68,7 @@ from sre.governance.promote_ops import (
 from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.model.rule_template import RuleTemplate
+from sre.ide import analyze_drl_for_lsp
 from sre.parser import parse
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.lineage import InMemoryLineageSink, make_lineage_event
@@ -846,6 +850,31 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except Exception as e:  # noqa: BLE001
             raise HTTPException(400, str(e)) from e
         return {"ok": True, "message": "parse ok"}
+
+    @app.post(
+        "/ide/lsp/analyze",
+        response_model=LspAnalyzeResponse,
+        tags=["workbench", "ide"],
+    )
+    def lsp_analyze(req: Request, b: LspAnalyzeRequest) -> LspAnalyzeResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        out = analyze_drl_for_lsp(b.drl, prefix=b.prefix)
+        return LspAnalyzeResponse(
+            diagnostics=[
+                LspDiagnosticResponse(
+                    severity=d.severity,
+                    message=d.message,
+                    line=d.line,
+                    col=d.col,
+                )
+                for d in out.diagnostics
+            ],
+            completions=list(out.completions),
+        )
 
     @app.get("/audit/logs", tags=["governance"])
     def audit_logs(

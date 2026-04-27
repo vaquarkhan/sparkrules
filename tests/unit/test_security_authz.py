@@ -74,3 +74,55 @@ def test_require_any_role_and_tenant_checks() -> None:
     with pytest.raises(HTTPException):
         require_tenant_match(p, "")
 
+
+def test_principal_auth_mode_oidc(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_AUTH_MODE", "oidc")
+    monkeypatch.setenv("SPARKRULES_OIDC_ISSUER", "https://issuer")
+    tok = _jwt({"sub": "u", "tenant_id": "t", "roles": ["rule_reader"], "iss": "https://issuer"})
+    p = principal_from_request(_req({"Authorization": f"Bearer {tok}"}))
+    assert p.principal == "u"
+    with pytest.raises(HTTPException):
+        principal_from_request(_req())
+    bad_iss = _jwt({"sub": "u", "tenant_id": "t", "roles": ["rule_reader"], "iss": "https://bad"})
+    with pytest.raises(HTTPException, match="issuer mismatch"):
+        principal_from_request(_req({"Authorization": f"Bearer {bad_iss}"}))
+    monkeypatch.setenv("SPARKRULES_OIDC_AUDIENCE", "sparkrules-api")
+    bad_aud = _jwt(
+        {
+            "sub": "u",
+            "tenant_id": "t",
+            "roles": ["rule_reader"],
+            "iss": "https://issuer",
+            "aud": "other",
+        }
+    )
+    with pytest.raises(HTTPException, match="audience mismatch"):
+        principal_from_request(_req({"Authorization": f"Bearer {bad_aud}"}))
+
+
+def test_principal_auth_mode_mtls(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_AUTH_MODE", "mtls")
+    with pytest.raises(HTTPException):
+        principal_from_request(_req({"X-Roles": "rule_reader"}))
+    p = principal_from_request(
+        _req({"X-Client-Cert-Subject": "CN=test", "X-Roles": "rule_reader"})
+    )
+    assert "rule_reader" in p.roles
+
+
+def test_principal_auth_mode_iam(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_AUTH_MODE", "iam")
+    with pytest.raises(HTTPException):
+        principal_from_request(_req({"X-IAM-Roles": "rule_admin"}))
+    p = principal_from_request(
+        _req(
+            {
+                "X-IAM-Principal": "arn:aws:iam::123:user/demo",
+                "X-IAM-Roles": "rule_admin,rule_reader",
+                "X-Tenant-Id": "t1",
+            }
+        )
+    )
+    assert p.principal.startswith("arn:")
+    assert "rule_admin" in p.roles
+
