@@ -31,6 +31,7 @@ class DqCheckRequest(BaseModel):
     kind: str
     field: str
     severity: str = "ERROR"
+    scope: str = "FIELD"
     code: str | None = None
     min_value: float | None = None
     max_value: float | None = None
@@ -41,6 +42,11 @@ class DqCheckRequest(BaseModel):
 class DqEvaluateRequest(BaseModel):
     fact: dict[str, Any]
     checks: list[DqCheckRequest]
+    run_id: str = "run-local"
+    fact_id: str = "fact-0"
+    rule_set_version: str = "phase2a"
+    config_fingerprint: str = "default"
+    persist: bool = False
 
 
 class DqViolationResponse(BaseModel):
@@ -48,6 +54,7 @@ class DqViolationResponse(BaseModel):
     field: str
     message: str
     severity: str
+    scope: str
 
 
 class DqEvaluateResponse(BaseModel):
@@ -56,6 +63,8 @@ class DqEvaluateResponse(BaseModel):
     warn_count: int = 0
     error_count: int = 0
     total: int = 0
+    run_id: str = ""
+    dq_snapshot_id: int | None = None
 
 
 class RunSubmissionRequest(BaseModel):

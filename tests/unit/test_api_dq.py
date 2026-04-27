@@ -29,21 +29,29 @@ def test_dq_evaluate_ok() -> None:
     assert j["warn_count"] == 0
     assert j["error_count"] == 0
     assert j["total"] == 0
+    assert j["run_id"] == "run-local"
+    assert j["dq_snapshot_id"] is None
 
 
-def test_dq_evaluate_with_warn_and_error() -> None:
+def test_dq_evaluate_with_warn_error_and_persist() -> None:
     c = TestClient(create_app(AppDeps()))
     r = c.post(
         "/dq/evaluate",
         json={
             "fact": {"id": None, "country": "DE"},
+            "run_id": "run-1",
+            "fact_id": "fact-9",
+            "rule_set_version": "set-1",
+            "config_fingerprint": "cfg-1",
+            "persist": True,
             "checks": [
-                {"kind": "not_null", "field": "id", "severity": "warn"},
+                {"kind": "not_null", "field": "id", "severity": "warn", "scope": "field"},
                 {
                     "kind": "in_set",
                     "field": "country",
                     "allowed_values": ["US", "CA"],
                     "severity": "error",
+                    "scope": "row",
                 },
             ],
         },
@@ -54,6 +62,9 @@ def test_dq_evaluate_with_warn_and_error() -> None:
     assert j["warn_count"] == 1
     assert j["error_count"] == 1
     assert j["total"] == 2
+    assert j["run_id"] == "run-1"
+    assert isinstance(j["dq_snapshot_id"], int)
+    assert j["dq_snapshot_id"] >= 1
 
 
 def test_dq_evaluate_bad_kind() -> None:

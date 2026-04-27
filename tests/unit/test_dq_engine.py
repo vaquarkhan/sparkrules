@@ -4,12 +4,13 @@ import pytest
 
 from sre.dq import (
     DataQualityEngine,
+    DqScope,
     DqSeverity,
     ExpectBetween,
     ExpectInSet,
     ExpectNotNull,
 )
-from sre.dq.engine import checks_from_api, summarize_violations
+from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
 
 
 def test_dq_engine_happy() -> None:
@@ -37,23 +38,27 @@ def test_dq_engine_violations() -> None:
     assert v[2].code == "in_set"
 
 
-def test_summarize_violations() -> None:
+def test_summarize_and_records() -> None:
     e = DataQualityEngine()
     checks = [
-        ExpectNotNull("id", severity=DqSeverity.WARN),
-        ExpectInSet("country", ("US",), severity=DqSeverity.ERROR),
+        ExpectNotNull("id", severity=DqSeverity.WARN, scope=DqScope.FIELD),
+        ExpectInSet("country", ("US",), severity=DqSeverity.ERROR, scope=DqScope.ROW),
     ]
     v = e.evaluate({"id": None, "country": "CA"}, checks)
     s = summarize_violations(v)
     assert s["warn_count"] == 1
     assert s["error_count"] == 1
     assert s["total"] == 2
+    r = to_violation_records("r1", "f1", "v1", "cfg", v)
+    assert len(r) == 2
+    assert r[0].run_id == "r1"
+    assert r[0].scope in ("FIELD", "ROW")
 
 
 def test_checks_from_api_and_errors() -> None:
     c = checks_from_api(
         [
-            {"kind": "not_null", "field": "id"},
+            {"kind": "not_null", "field": "id", "scope": "field"},
             {
                 "kind": "between",
                 "field": "amount",
@@ -66,6 +71,7 @@ def test_checks_from_api_and_errors() -> None:
                 "kind": "in_set",
                 "field": "country",
                 "allowed_values": ["US", "CA"],
+                "scope": "row",
             },
         ]
     )
