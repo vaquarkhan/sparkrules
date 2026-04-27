@@ -1,41 +1,111 @@
 ﻿# sparkrules
 
-SparkRules is a Drools-style business rule engine for Spark-oriented data workflows.
-It supports rule authoring, rule execution, decision tables, simulation, and service integration for high-volume decisioning scenarios.
+SparkRules is a Drools-style business rule engine for Spark-oriented data workflows. It supports DRL authoring, decision-table authoring, explainable execution, deterministic replay patterns, and API integration for high-volume decisioning services.
 
 Repository: https://github.com/vaquarkhan/sparkrules
 
-## Features
+## Feature catalog
 
-- DRL-style rule language with `when` / `then`
-- Salience, agenda groups, activation groups, reason codes, and pass grouping
-- Decision table support with JSON model and XLSX import/export
-- Rule compiler with batching, strategy classification, and discrimination network support
-- Stateful metadata store behavior (versioning, activation/deactivation, overlap checks)
-- Replay-oriented runtime model with run metadata and snapshot semantics
-- Simulation and A/B primitives
-- FastAPI endpoints for health, rule operations, and simulations
-- Spark dataframe helpers for partition evaluation and output shaping
-- Logging and metrics helpers for observability
+### Rule authoring and modeling
+
+- DRL-style `when` / `then` rule language
+- Rule metadata: handle, version, group, salience, activation group, reason codes
+- Rule template support with placeholder substitution and validation
+- Decision table model with hit policies: `UNIQUE`, `FIRST`, `PRIORITY`, `COLLECT`
+- Decision table JSON import/export helpers
+- XLSX decision-table import
+- XLSX decision-table export
+
+### Parsing and execution semantics
+
+- Parser and AST model for rule source
+- Pretty-printer for normalized DRL output
+- Expression support: comparisons, boolean logic, list membership, function calls, field paths
+- Execution controls: salience ordering, agenda controls, activation-group behavior
+- Explainable execution outputs (bound fields and action outputs)
+
+### Compiler and runtime primitives
+
+- Rule strategy classification
+- Rule batching support
+- Discrimination network structures
+- Batch and two-pass runtime helper modules
+- Streaming helper primitives (refresh and TTL checks)
+- Derived-column cache utility
+- Iceberg-like snapshot store for deterministic replay/testing workflows
+
+### Metadata store and lifecycle
+
+- In-memory versioned metadata store
+- Active-window overlap detection
+- Rule activation/deactivation
+- Soft delete behavior
+- Version listing and time-based resolution
+- Active-set hashing
+
+### Simulation and experimentation
+
+- Rule simulator for pre-deployment checks
+- Replay helper module
+- A/B assignment primitives
+
+### Spark and data-plane integration
+
+- Spark partition iterators for rule-row evaluation
+- DataFrame helper for DRL application flow
+- Session row helper utilities
+
+### API and connectivity
+
+- FastAPI app factory
+- Health endpoint
+- Rule registration/listing endpoints
+- Simulation endpoint
+- Data-quality evaluation endpoint (`/dq/evaluate`)
+- Lightweight client SDK
+- In-process connect server dispatch module
+
+### Data quality (Phase 2a in progress)
+
+- DQ severity model (`WARN`, `ERROR`)
+- DQ checks:
+  - not-null
+  - numeric range (between)
+  - in-set
+- API check parsing and validation
+- Violation generation with code, field, message, and severity
+
+### Observability
+
+- Logging helper functions
+- Metrics endpoint helpers
+
+### Quality and reliability
+
+- Unit tests
+- Property tests
+- Integration tests
+- Optional perf tests
+- 100% line coverage gate on `src/sre`
 
 ## How it works
 
-1. Rules are authored in DRL-style syntax or decision-table form.
-2. Rules are parsed and compiled into executable structures.
-3. Facts are evaluated in rule-execution flows (single, batch, or Spark-assisted patterns).
-4. Results include fired state, bound fields, and action outputs.
-5. Runtime metadata enables deterministic replay and audit workflows.
+1. Author rules in DRL or decision-table form.
+2. Parse and validate rule source.
+3. Compile/evaluate rules against fact payloads.
+4. Return explainable outputs and runtime metadata.
+5. Use replay and store versioning semantics for deterministic re-runs.
 
-Read full architecture flow in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
+Read architecture details: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)
 
 ## Use cases
 
-- POS end-of-day rule evaluation with two-pass style flows
-- Streaming authorization decisions
-- Settlement replay and correction workflows
-- Underwriting decisions with explainability data
+- POS end-of-day decisioning
+- Streaming authorization logic
+- Settlement replay and correction
+- Underwriting decision support
 
-Use-case details: [docs/USE_CASES.md](docs/USE_CASES.md).
+Details: [docs/USE_CASES.md](docs/USE_CASES.md)
 
 ## Quick start
 

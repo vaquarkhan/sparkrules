@@ -115,6 +115,16 @@ class DataQualityEngine:
         return out
 
 
+def summarize_violations(items: Sequence[DqViolation]) -> dict[str, int]:
+    warn_count = sum(1 for x in items if x.severity == DqSeverity.WARN)
+    error_count = sum(1 for x in items if x.severity == DqSeverity.ERROR)
+    return {
+        "warn_count": warn_count,
+        "error_count": error_count,
+        "total": warn_count + error_count,
+    }
+
+
 def checks_from_api(items: Iterable[dict[str, Any]]) -> list[DqCheck]:
     out: list[DqCheck] = []
     for i in items:

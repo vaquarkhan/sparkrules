@@ -16,7 +16,7 @@ from sre.api.schemas import (
     SimulationResponse,
 )
 from sre.dq import DataQualityEngine
-from sre.dq.engine import checks_from_api
+from sre.dq.engine import checks_from_api, summarize_violations
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.parser import parse
 from sre.sim import RuleSimulator
@@ -100,6 +100,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except Exception as e:  # noqa: BLE001
             raise HTTPException(400, str(e)) from e
         v = d.dq.evaluate(dict(req.fact), checks)
+        s = summarize_violations(v)
         out = [
             DqViolationResponse(
                 code=x.code,
@@ -109,6 +110,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
             )
             for x in v
         ]
-        return DqEvaluateResponse(ok=not out, violations=out)
+        return DqEvaluateResponse(
+            ok=not out,
+            violations=out,
+            warn_count=s["warn_count"],
+            error_count=s["error_count"],
+            total=s["total"],
+        )
 
     return app
