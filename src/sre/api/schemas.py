@@ -70,3 +70,38 @@ class DqEvaluateResponse(BaseModel):
 class RunSubmissionRequest(BaseModel):
     table_name: str
     drl: str = ""
+
+
+class RuleAssetResponse(BaseModel):
+    rule_handle: str
+    version: int
+    rule_group: str
+    salience: int
+    is_active: bool
+    drl: str
+
+
+class DeploymentStatusResponse(BaseModel):
+    status: str
+    service: str = "sparkrules-api"
+    engine_config: dict[str, str]
+    platforms_supported: list[str] = Field(
+        default_factory=lambda: [
+            "local",
+            "glue",
+            "databricks",
+            "gcp-dataproc",
+            "azure-synapse",
+        ]
+    )
+
+
+class GuidedFieldItem(BaseModel):
+    name: str
+    label: str
+    required: bool
+    kind: str
+
+
+class RuleValidateRequest(BaseModel):
+    drl: str = Field(..., min_length=1)

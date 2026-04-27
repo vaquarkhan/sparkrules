@@ -149,6 +149,26 @@ uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
 
 Open http://127.0.0.1:8000/docs
 
+## Rules Workbench (browser UI)
+
+Drools Workbench–style **authoring and operations shell** (rule asset list, DRL validate, simulation, engine/deployment readout, template helper):
+
+- http://127.0.0.1:8000/workbench/
+
+The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs
+
+## Cloud deploy notes
+
+High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON: [deploy/README.md](deploy/README.md).
+
 ## Documentation
 
 | Topic | Link |
@@ -157,6 +177,7 @@ Open http://127.0.0.1:8000/docs
 | How the system works | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) |
 | Developer guide | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 | Use cases | [docs/USE_CASES.md](docs/USE_CASES.md) |
+| Scale and benchmarks (methodology) | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Examples | [examples/README.md](examples/README.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Citation metadata | [CITATION.cff](CITATION.cff) |
