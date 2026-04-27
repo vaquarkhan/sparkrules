@@ -6,12 +6,13 @@ SparkRules—this system combines the sophisticated logic of a rule engine (simi
 
 | Role | Where to start |
 |------|----------------|
-| **Developer / contributor** | [`BUILD_STATUS.md`](BUILD_STATUS.md) for current test gates. Install: `pip install -e ".[test]"`. Run: `pytest tests/ -q` (expect **234 passed, 1 deselected**). Code: `src/sre/`. |
+| **Developer / contributor** | [`BUILD_STATUS.md`](BUILD_STATUS.md) for current test gates. Install: `python -m pip install -e ".[test]"` (use the **same** `python` you run code with; on Windows, `py -3.11 -m pip …` is reliable). Run: `pytest tests/ -q` — see `BUILD_STATUS.md` for the exact pass/skip count. Code: `src/sre/`. |
 | **QA / automation** | Default suite excludes perf; run `pytest tests/perf -m perf -q` for the benchmark. Property tests: `tests/property/` (P1–P38). Integration: `tests/integration/`. |
 | **Product, BA, compliance** | **## Glossary** and **## Requirements** below for domain language and acceptance criteria. Diagrams: **## Architecture Overview**. |
 | **Platform / SRE** | `deploy/k8s/` for sample manifests. This repository is a **Python reference** implementation; the full distributed stack is specified here, not all of it is wired to a live cluster in-tree. |
+| **Cursor / IDE / “where is MCP?”** | Short guide: [`docs/CURSOR_DOCS_MCP.md`](docs/CURSOR_DOCS_MCP.md) — where docs live, reliable `import sre` after install, and how **MCP** fits Cursor (it is not a file in this repo). |
 
-**Phase 1 complete (per `idea-brainstrom.txt` §8–9, §34.2):** test counts in `BUILD_STATUS.md`; properties P1–P38 in `tests/property/`; extended example coverage in `tests/unit/test_requirement_ladder.py`. Build gates and later phases: root **`idea-brainstrom.txt`**.
+**Phase 1 complete (per `idea-brainstrom.txt` §8–9, §34.2):** test counts in `BUILD_STATUS.md`; properties P1–P38 in `tests/property/`; extended example coverage in `tests/unit/test_requirement_ladder.py`. Build gates and later phases: root **`idea-brainstrom.txt`**. Older text in that file may still say “234 tests”; the **authoritative** current counts are in **`BUILD_STATUS.md`**.
 
 **Note on `.kiro/` specs:** The blueprint may reference `.kiro/specs/.../requirements.md`. That path is not present in this repository; **this README** (from **## Glossary** onward) is the authoritative requirements text for the Phase 1 reference build, reviewed against the implementation and tests for the “all done” gate.
 

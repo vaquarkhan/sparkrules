@@ -2472,3 +2472,10 @@ The code agent may declare the build complete when:
   property-based test with at least 100 Hypothesis examples.
 - `BUILD_STATUS.md` is updated with final counts.
 - `README.md` points newcomers to the correct documentation for their role.
+
+### 34.3 Current test counts and docs (this tree)
+
+The checklist above originally referenced **234 passed, 1 deselected**. The reference
+build has since gained additional tests. **Authoritative** numbers, coverage gate,
+and doc links: root **`BUILD_STATUS.md`**, and **`docs/CURSOR_DOCS_MCP.md`**
+(IDE and MCP context, plus reliable editable install for `import sre`).
