@@ -1,5 +1,7 @@
 # Examples
 
+Full requirements and glossary: [**docs/REQUIREMENTS.md**](../docs/REQUIREMENTS.md) · Docs index: [**docs/README.md**](../docs/README.md).
+
 All examples assume a working install of the package from the repo root:
 
 ```bash
