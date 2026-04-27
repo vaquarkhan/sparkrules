@@ -72,3 +72,33 @@ def test_lineage_fail_event_on_bad_single_simulation() -> None:
     assert r.status_code == 500
     ev = c.get("/lineage/events", headers={"X-Roles": "platform_admin"}).json()
     assert any(x["event_type"] == "FAIL" and str(x["run_id"]).startswith("sim-") for x in ev)
+
+
+def test_lineage_shadow_success_and_fail() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    ok = c.post(
+        "/simulations/shadow",
+        json={
+            "primary_drl": "rule a when $t : T ( true ) then result.d = \"a\"; end",
+            "shadow_drl": "rule b when $t : T ( true ) then result.d = \"b\"; end",
+            "fact": {"t": {}},
+            "run_id": "shadow-ok",
+        },
+        headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
+    )
+    assert ok.status_code == 200
+    bad = c.post(
+        "/simulations/shadow",
+        json={
+            "primary_drl": "bad drl",
+            "shadow_drl": "rule b when $t : T ( true ) then result.d = \"b\"; end",
+            "fact": {"t": {}},
+            "run_id": "shadow-bad",
+        },
+        headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
+    )
+    assert bad.status_code == 400
+    ev = c.get("/lineage/events", headers={"X-Roles": "platform_admin"}).json()
+    assert any(x["event_type"] == "COMPLETE" and x["run_id"] == "shadow-ok" for x in ev)
+    assert any(x["event_type"] == "FAIL" and x["run_id"] == "shadow-bad" for x in ev)

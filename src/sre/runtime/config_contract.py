@@ -18,6 +18,11 @@ class EngineConfig:
     executor_memory_gb: int = 16
     glue_dpu: int = 10
     stop_on_decline: bool = False
+    graph_provider: str | None = None
+    graph_mode: str = "precomputed"
+    dbt_project_dir: str | None = None
+    dbt_manifest_sha: str | None = None
+    dbt_target: str | None = None
 
 
 def validate_zero_code_change(cfg: EngineConfig) -> None:
@@ -37,6 +42,8 @@ def validate_zero_code_change(cfg: EngineConfig) -> None:
         raise ValueError("executor resources must be positive")
     if cfg.platform == "glue" and cfg.glue_dpu < 2:
         raise ValueError("glue_dpu must be >= 2")
+    if cfg.graph_mode not in {"precomputed", "live"}:
+        raise ValueError("graph_mode must be precomputed or live")
 
 
 def normalize_spark_version(v: str) -> str:
@@ -63,7 +70,16 @@ def runtime_conf(cfg: EngineConfig) -> dict[str, str]:
         "sre.result.sink": cfg.result_sink_format,
         "sre.platform": cfg.platform,
         "sre.execution.stop_on_decline": "true" if cfg.stop_on_decline else "false",
+        "sre.graph.mode": cfg.graph_mode,
     }
+    if cfg.graph_provider:
+        conf["sre.graph.provider"] = cfg.graph_provider
+    if cfg.dbt_project_dir:
+        conf["sre.dbt.project_dir"] = cfg.dbt_project_dir
+    if cfg.dbt_manifest_sha:
+        conf["sre.dbt.manifest_sha"] = cfg.dbt_manifest_sha
+    if cfg.dbt_target:
+        conf["sre.dbt.target"] = cfg.dbt_target
     if cfg.platform == "glue":
         conf["spark.glue.dpu"] = str(cfg.glue_dpu)
     elif cfg.platform == "databricks":

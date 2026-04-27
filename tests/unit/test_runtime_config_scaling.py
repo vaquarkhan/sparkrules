@@ -35,6 +35,19 @@ def test_runtime_conf_platform_switching() -> None:
 
     ff = runtime_conf(EngineConfig(stop_on_decline=True))
     assert ff["sre.execution.stop_on_decline"] == "true"
+    g = runtime_conf(EngineConfig(graph_provider="in_memory", graph_mode="live"))
+    assert g["sre.graph.provider"] == "in_memory"
+    assert g["sre.graph.mode"] == "live"
+    dbt = runtime_conf(
+        EngineConfig(
+            dbt_project_dir="/opt/dbt",
+            dbt_manifest_sha="abc123",
+            dbt_target="prod",
+        )
+    )
+    assert dbt["sre.dbt.project_dir"] == "/opt/dbt"
+    assert dbt["sre.dbt.manifest_sha"] == "abc123"
+    assert dbt["sre.dbt.target"] == "prod"
 
 
 def test_config_validation_errors() -> None:
@@ -48,3 +61,5 @@ def test_config_validation_errors() -> None:
         validate_zero_code_change(EngineConfig(executor_cores=0))
     with pytest.raises(ValueError):
         validate_zero_code_change(EngineConfig(platform="glue", glue_dpu=1))
+    with pytest.raises(ValueError):
+        validate_zero_code_change(EngineConfig(graph_mode="invalid"))

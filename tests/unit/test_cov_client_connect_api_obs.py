@@ -71,6 +71,56 @@ def test_sre_client_health() -> None:
     assert j["status"] == "ok"
 
 
+def test_sre_client_post_validate_and_simulate() -> None:
+    c = SreClient("http://example.com")
+    reqs: list[tuple[str, object]] = []
+    m = MagicMock()
+    inner = MagicMock()
+
+    def ppost(url: str, *, json, timeout: float):  # noqa: ANN001
+        reqs.append((url, json))
+        if url.endswith("/rules/validate"):
+            return httpx.Response(
+                200,
+                json={"ok": True},
+                request=httpx.Request("POST", url),
+            )
+        return httpx.Response(
+            200,
+            json={"fired": True, "action": {"ok": True}},
+            request=httpx.Request("POST", url),
+        )
+
+    inner.post = ppost
+    m.__enter__ = MagicMock(return_value=inner)
+    m.__exit__ = MagicMock(return_value=False)
+    with patch("sre.client.sdk.httpx.Client", return_value=m):
+        v = c.validate_rule("rule r when $t : T ( true ) then end")
+        s = c.simulate("rule r when $t : T ( true ) then end", {"t": {}})
+    assert v["ok"] is True
+    assert s["fired"] is True
+    assert len(reqs) == 2
+
+
+def test_sre_client_post_direct_and_bad_method_path() -> None:
+    c = SreClient("http://example.com")
+    m = MagicMock()
+    inner = MagicMock()
+    inner.post = MagicMock(
+        return_value=httpx.Response(
+            200,
+            json={"ok": True},
+            request=httpx.Request("POST", "http://example.com/x"),
+        )
+    )
+    m.__enter__ = MagicMock(return_value=inner)
+    m.__exit__ = MagicMock(return_value=False)
+    with patch("sre.client.sdk.httpx.Client", return_value=m):
+        assert c.post("/x", {"a": 1}).status_code == 200
+    with pytest.raises(SreClientError, match="unsupported method"):
+        c._request("PUT", "/x")
+
+
 def test_connect_list_and_parse_and_keyerror() -> None:
     s = InMemoryRuleMetadataStore()
     t0 = datetime(2020, 1, 1, tzinfo=UTC)

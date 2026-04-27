@@ -23,6 +23,30 @@ class ChainSimulationResult:
 
 
 @dataclass
+class ShadowSimulationResult:
+    primary: SimulationResult
+    shadow: SimulationResult
+    drifted: bool
+    drift_fields: tuple[str, ...]
+
+
+@dataclass
+class RuleCoverageItem:
+    rule_name: str
+    fired_count: int
+    total: int
+    fire_rate: float
+
+
+@dataclass
+class CoverageSimulationResult:
+    total_facts: int
+    total_rules: int
+    covered_rules: int
+    items: list[RuleCoverageItem]
+
+
+@dataclass
 class RuleSimulator:
     _persist: list[Any] = field(default_factory=list, repr=False, init=False)
 
@@ -55,4 +79,52 @@ class RuleSimulator:
         return ChainSimulationResult(
             cr,
             any_fired=bool(cr.last_fired),
+        )
+
+    def run_shadow(
+        self,
+        primary_drl: str,
+        shadow_drl: str,
+        fact: MutableMapping[str, Any],
+    ) -> ShadowSimulationResult:
+        p = self.run(primary_drl, dict(fact))
+        s = self.run(shadow_drl, dict(fact))
+        fields: set[str] = set(p.action) | set(s.action)
+        drift = tuple(sorted(k for k in fields if p.action.get(k) != s.action.get(k)))
+        return ShadowSimulationResult(
+            primary=p,
+            shadow=s,
+            drifted=bool(drift),
+            drift_fields=drift,
+        )
+
+    def analyze_coverage(
+        self,
+        drl: str,
+        facts: list[Mapping[str, Any]],
+    ) -> CoverageSimulationResult:
+        rules = parse_rules(drl)
+        totals = len(facts)
+        items: list[RuleCoverageItem] = []
+        for r in rules:
+            fired = 0
+            for f in facts:
+                m = evaluate_rule(r, dict(f))
+                if m.fired:
+                    fired += 1
+            rate = (fired / totals) if totals > 0 else 0.0
+            items.append(
+                RuleCoverageItem(
+                    rule_name=r.name,
+                    fired_count=fired,
+                    total=totals,
+                    fire_rate=rate,
+                )
+            )
+        covered = sum(1 for it in items if it.fired_count > 0)
+        return CoverageSimulationResult(
+            total_facts=totals,
+            total_rules=len(items),
+            covered_rules=covered,
+            items=items,
         )
