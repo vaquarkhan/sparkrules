@@ -143,19 +143,36 @@ Use the same interpreter for install and run commands.
 
 ## API run
 
+**Windows (easiest):** double‑click `scripts\\dev_server.cmd` or run it from a terminal. By default the server uses **port 8042** (avoids clashes with other tools on 8000). Set `SPARKRULES_PORT=9000` before running the script to use another port.
+
+**Any OS:**
+
 ```bash
-uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
+python -m pip install -e "."
+python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
-Open http://127.0.0.1:8000/docs
+Open http://127.0.0.1:8042/docs
+
+#### If the browser shows ERR_CONNECTION_REFUSED
+
+1. **Start the server** and leave the terminal open (`scripts\dev_server.cmd` on Windows, or `uvicorn` as above).
+2. **Match the port** in the URL to the port the process prints (default **8042** unless you set `SPARKRULES_PORT` or a different `--port`).
+3. Use **`http://`**, not `https://`, for local dev unless you use a reverse proxy.
+4. Run **`scripts\check_env.cmd`** from the repo: it runs `import sre` and prints `sys.executable` so you can confirm the same Python you use for **`python -m pip install -e .`**. If that import fails, install into that interpreter; if it passes but the server still fails, you are almost certainly using a **different** `python` to start Uvicorn than the one you installed into.
+5. **Docker:** use the **host** port you mapped (e.g. `8042` with `-p 8042:8000`), not the container’s internal 8000, in the browser.
+
+**API key (`SPARKRULES_API_KEY`):** when set, the same key must be sent as **`X-API-Key`** or **`Authorization: Bearer …`** for **`POST`/`PUT`/`PATCH`/`DELETE`**, and for **sensitive `GET`/`HEAD`** routes: `/rules` and under `/rules/…` (list, assets, diff, export, etc.), `/system/deployment`, and `/governance/…`. **Public without key:** `GET /health`, OpenAPI static routes (`/docs`, `/openapi.json`, …), `OPTIONS` (CORS preflight), and the Workbench static shell under `/workbench/…` (the UI still uses your key for API `fetch` calls). **OIDC** for browser SSO is not implemented; use a reverse proxy or network policy if you need that. The Workbench can store the API key in the browser (header bar) for both reads and writes.
 
 ## Rules Workbench (browser UI)
 
 Drools Workbench–style **authoring and operations shell** (rule asset list, DRL validate, simulation, engine/deployment readout, template helper):
 
-- http://127.0.0.1:8000/workbench/
+- http://127.0.0.1:8042/workbench/ (or the port you set in `SPARKRULES_PORT`)
 
 The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
+
+**Phase 3–4:** search/filter assets, **Overview** (stats + bar charts), light/dark **theme**, per-version **Activate / Deactivate** (`PATCH` API), rule pack, diff, optional API key, **namespace** and **dev→stage→prod** promotion pins (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Docker
 
@@ -163,7 +180,7 @@ The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, 
 docker compose up --build
 ```
 
-Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs
+Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (Dockerfile uses internal 8000; host port is whatever you map, e.g. `-p 8042:8000` then use **8042** in the browser.)
 
 ## Cloud deploy notes
 
@@ -181,6 +198,9 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 | Examples | [examples/README.md](examples/README.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Citation metadata | [CITATION.cff](CITATION.cff) |
+| Roadmap (Phase 3 / 4) | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| PyPI / release artifacts | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
+| Governance (Phase 4) | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 
 ## License
 

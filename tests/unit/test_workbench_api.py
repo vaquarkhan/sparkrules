@@ -17,7 +17,7 @@ def test_rules_validate_and_assets_roundtrip() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     drl = """
-rule t1
+    rule t1
 when
 $t : T ( true )
 then
@@ -37,6 +37,14 @@ end
     assert rows[0]["rule_handle"] == "h1"
     assert rows[0]["rule_group"] == "g1"
     assert "T ( true )" in rows[0]["drl"]
+    r = c.patch(
+        "/rules/h1/version/1",
+        json={"is_active": False},
+    )
+    assert r.status_code == 200
+    assert r.json()["is_active"] is False
+    a2 = c.get("/rules/assets")
+    assert a2.json()[0]["is_active"] is False
 
 
 def test_rules_validate_400() -> None:
@@ -67,9 +75,51 @@ def test_guided_fields_default() -> None:
     assert isinstance(j["fields"], list)
 
 
+def test_patch_rule_version_404() -> None:
+    c = TestClient(create_app(AppDeps()))
+    r = c.patch(
+        "/rules/none/version/1",
+        json={"is_active": False},
+    )
+    assert r.status_code == 404
+
+
+def test_patch_rule_version_active_409_overlap() -> None:
+    drl = """
+    rule t1
+when
+$t : T ( true )
+then
+end
+"""
+    c = TestClient(create_app(AppDeps()))
+    c.post(
+        "/rules",
+        json={"rule_handle": "ov", "group": "g", "drl": drl},
+    )
+    c.patch(
+        "/rules/ov/version/1",
+        json={"is_active": False},
+    )
+    c.post(
+        "/rules",
+        json={"rule_handle": "ov", "group": "g", "drl": drl.replace("true", "false")},
+    )
+    r = c.patch(
+        "/rules/ov/version/1",
+        json={"is_active": True},
+    )
+    assert r.status_code == 409
+
+
 def test_workbench_static_index() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.get("/workbench/index.html")
     assert r.status_code == 200
     assert b"SparkRules Workbench" in r.content
+    assert b'id="api-key"' in r.content
+    assert b"view-governance" in r.content
+    assert b"btn-export-pack" in r.content
+    assert b"view-overview" in r.content
+    assert b"btn-theme" in r.content
