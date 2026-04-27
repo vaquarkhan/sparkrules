@@ -17,6 +17,7 @@ class UnknownSnapshotError(KeyError):
 class IcebergLikeTable:
     name: str
     schema: dict[str, type] = field(default_factory=dict)
+    append_only: bool = False
     _snapshots: dict[int, list[Row]] = field(
         default_factory=dict, repr=False
     )
@@ -46,6 +47,8 @@ class IcebergLikeTable:
         return len(self.snapshot(sid))
 
     def delete_rows(self, predicate: Pred) -> int:
+        if self.append_only:
+            raise ValueError("append-only table does not allow delete_rows")
         self._current += 1
         prev = self._snapshots.get(self._current - 1, [])
         nxt = [r for r in prev if not predicate(r)]
@@ -53,8 +56,18 @@ class IcebergLikeTable:
         return self._current
 
     def __getstate__(self) -> object:
-        return (self.name, self.schema, self._snapshots, self._current)
+        return (self.name, self.schema, self.append_only, self._snapshots, self._current)
 
     def __setstate__(self, s: object) -> None:
-        a, b, c, d = s  # type: ignore[misc]
-        self.name, self.schema, self._snapshots, self._current = a, b, c, d
+        if isinstance(s, tuple) and len(s) == 4:
+            a, b, c, d = s  # type: ignore[misc]
+            self.name, self.schema, self.append_only, self._snapshots, self._current = (
+                a,
+                b,
+                False,
+                c,
+                d,
+            )
+            return
+        a, b, c, d, e = s  # type: ignore[misc]
+        self.name, self.schema, self.append_only, self._snapshots, self._current = a, b, c, d, e

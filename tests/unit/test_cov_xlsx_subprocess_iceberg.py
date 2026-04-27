@@ -282,3 +282,14 @@ def test_iceberg_delete_and_pickle() -> None:
     t2 = pickle.loads(b)
     assert t2.name == t.name
     assert t2.current_snapshot_id() == t2.current_snapshot_id()
+    t_append = IcebergLikeTable("A", {"x": int}, append_only=True)
+    t_append.append([{"x": 1}])
+    with pytest.raises(ValueError):
+        t_append.delete_rows(lambda _r: True)
+
+
+def test_iceberg_setstate_backward_compat() -> None:
+    t = IcebergLikeTable("B", {"x": int})
+    t.__setstate__(("B", {"x": int}, {0: [{"x": 1}]}, 0))
+    assert t.append_only is False
+    assert t.snapshot(0)[0]["x"] == 1

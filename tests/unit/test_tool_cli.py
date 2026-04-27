@@ -74,6 +74,57 @@ def test_cli_lsp_check(capsys) -> None:
     assert out_bad["diagnostics"]
 
 
+def test_cli_counterfactual_check(capsys) -> None:
+    drl = "rule r when $t : T ( $t.x > 10 ) then result.decision = \"decline\"; end"
+    assert (
+        cli.main(
+            [
+                "counterfactual-check",
+                "--drl",
+                drl,
+                "--baseline-fact-json",
+                '{"t": {"x": 1}}',
+                "--candidate-fact-json",
+                '{"t": {"x": 20}}',
+            ]
+        )
+        == 0
+    )
+    out = json.loads(capsys.readouterr().out.strip())
+    assert out["drifted"] is True
+    assert "decision" in out["drift_fields"]
+    assert (
+        cli.main(
+            [
+                "counterfactual-check",
+                "--drl",
+                drl,
+                "--baseline-fact-json",
+                "[]",
+                "--candidate-fact-json",
+                "{}",
+            ]
+        )
+        == 2
+    )
+    assert "invalid fact-json" in capsys.readouterr().err
+    assert (
+        cli.main(
+            [
+                "counterfactual-check",
+                "--drl",
+                "bad drl",
+                "--baseline-fact-json",
+                "{}",
+                "--candidate-fact-json",
+                "{}",
+            ]
+        )
+        == 2
+    )
+    assert "counterfactual failed" in capsys.readouterr().err
+
+
 def test_cli_unknown_command_fallback(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
     def _fake_parse_args(self, argv):  # noqa: ANN001
         return argparse.Namespace(command="unknown")

@@ -73,6 +73,50 @@ class CoverageSimulationResponse(BaseModel):
     items: list[RuleCoverageItemResponse] = []
 
 
+class TimeTravelCaptureRequest(BaseModel):
+    run_id: str
+    drl: str
+    fact: dict[str, Any]
+
+
+class TimeTravelCaptureResponse(BaseModel):
+    run_id: str
+    snapshot_id: int
+    fired: bool
+    action: dict[str, object] = {}
+    bound: dict[str, object] = {}
+
+
+class TimeTravelReplayRequest(BaseModel):
+    snapshot_id: int
+    run_id: str
+    fact_override: dict[str, Any] | None = None
+
+
+class TimeTravelReplayResponse(BaseModel):
+    run_id: str
+    snapshot_id: int
+    fired: bool
+    action: dict[str, object] = {}
+    bound: dict[str, object] = {}
+    used_fact_override: bool = False
+
+
+class CounterfactualSimulationRequest(BaseModel):
+    drl: str
+    baseline_fact: dict[str, Any]
+    candidate_fact: dict[str, Any]
+
+
+class CounterfactualSimulationResponse(BaseModel):
+    baseline_fired: bool
+    baseline_action: dict[str, object] = {}
+    candidate_fired: bool
+    candidate_action: dict[str, object] = {}
+    drifted: bool
+    drift_fields: list[str] = []
+
+
 class ChainStepResponse(BaseModel):
     rule_name: str
     fired: bool
@@ -214,6 +258,40 @@ class GovernancePromoteRequest(BaseModel):
     rule_handle: str = Field(..., min_length=1)
     from_env: str
     to_env: str
+
+
+class DeprecationProposeRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+    reason: str = Field(..., min_length=1)
+
+
+class DeprecationApproveRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+
+
+class DeprecationRecordResponse(BaseModel):
+    namespace: str
+    rule_handle: str
+    requested_by: str
+    reason: str
+    status: str
+    requested_at: str
+    approved_by: str | None = None
+    approved_at: str | None = None
+
+
+class DeprecationEnforceRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str | None = None
+
+
+class DeprecationEnforceResponse(BaseModel):
+    namespace: str
+    enforced_rules: int
+    deactivated_versions: int
+    details: list[dict[str, object]] = []
 
 
 class AiSuggestRulesRequest(BaseModel):

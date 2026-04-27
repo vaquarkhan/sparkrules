@@ -3,9 +3,12 @@ from sre.governance.registry import (
     PromotionRegistry,
     STANDARD_ENVS,
 )
+from sre.governance.deprecation import DeprecationRecord, DeprecationRegistry
 
 __all__ = [
     "ADJACENT_PROMOTIONS",
+    "DeprecationRecord",
+    "DeprecationRegistry",
     "PromotionRegistry",
     "STANDARD_ENVS",
 ]

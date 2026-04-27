@@ -48,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
     lg.add_argument("--file")
     lsp.add_argument("--prefix", default="")
 
+    cf = sub.add_parser("counterfactual-check")
+    cg = cf.add_mutually_exclusive_group(required=True)
+    cg.add_argument("--drl")
+    cg.add_argument("--file")
+    cf.add_argument("--baseline-fact-json", required=True)
+    cf.add_argument("--candidate-fact-json", required=True)
+
     args = parser.parse_args(argv)
     if not args.command:
         parser.print_help()
@@ -116,6 +123,38 @@ def main(argv: list[str] | None = None) -> int:
                         for d in out.diagnostics
                     ],
                     "completions": list(out.completions),
+                }
+            )
+            + "\n"
+        )
+        return 0
+    if args.command == "counterfactual-check":
+        try:
+            baseline = json.loads(args.baseline_fact_json)
+            candidate = json.loads(args.candidate_fact_json)
+            if not isinstance(baseline, dict) or not isinstance(candidate, dict):
+                raise ValueError("facts must decode to objects")
+        except Exception as e:  # noqa: BLE001
+            sys.stderr.write(f"invalid fact-json: {e}\n")
+            return 2
+        try:
+            sim = RuleSimulator()
+            b = sim.run(_resolve_drl(args), baseline)
+            c = sim.run(_resolve_drl(args), candidate)
+        except Exception as e:  # noqa: BLE001
+            sys.stderr.write(f"counterfactual failed: {e}\n")
+            return 2
+        keys = sorted(set(b.action) | set(c.action))
+        drift = [k for k in keys if b.action.get(k) != c.action.get(k)]
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "baseline_fired": b.fired,
+                    "baseline_action": b.action,
+                    "candidate_fired": c.fired,
+                    "candidate_action": c.action,
+                    "drifted": bool(drift),
+                    "drift_fields": drift,
                 }
             )
             + "\n"

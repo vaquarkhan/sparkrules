@@ -192,3 +192,119 @@ def test_governance_sync_namespace_mismatch_400() -> None:
         json={"namespace": "wrong", "rule_handle": "g2"},
     )
     assert r.status_code == 400
+
+
+def test_governance_deprecation_flow_and_scope() -> None:
+    c = TestClient(create_app(AppDeps()))
+    h1 = {"X-Roles": "rule_admin", "X-Tenant-Id": "n1", "X-Principal": "u1"}
+    p = c.post(
+        "/governance/deprecations/propose",
+        json={"namespace": "n1", "rule_handle": "h1", "reason": "sunset"},
+        headers=h1,
+    )
+    assert p.status_code == 200
+    assert p.json()["status"] == "PROPOSED"
+    a = c.post(
+        "/governance/deprecations/approve",
+        json={"namespace": "n1", "rule_handle": "h1"},
+        headers=h1,
+    )
+    assert a.status_code == 200
+    assert a.json()["status"] == "APPROVED"
+    rows = c.get(
+        "/governance/deprecations",
+        headers={"X-Roles": "rule_reader", "X-Tenant-Id": "n1"},
+    ).json()
+    assert rows and all(x["namespace"] == "n1" for x in rows)
+    c.post(
+        "/governance/deprecations/propose",
+        json={"namespace": "n2", "rule_handle": "h2", "reason": "cleanup"},
+        headers={"X-Roles": "rule_admin", "X-Tenant-Id": "n2", "X-Principal": "u2"},
+    )
+    filtered = c.get(
+        "/governance/deprecations",
+        params={"namespace": "n1"},
+        headers={"X-Roles": "platform_admin"},
+    )
+    assert filtered.status_code == 200
+    frows = filtered.json()
+    assert frows and all(x["namespace"] == "n1" for x in frows)
+
+
+def test_governance_deprecation_missing_proposal_404() -> None:
+    c = TestClient(create_app(AppDeps()))
+    r = c.post(
+        "/governance/deprecations/approve",
+        json={"namespace": "n1", "rule_handle": "missing"},
+        headers={"X-Roles": "rule_admin", "X-Tenant-Id": "n1"},
+    )
+    assert r.status_code == 404
+
+
+def test_governance_deprecation_enforce() -> None:
+    c = TestClient(create_app(AppDeps()))
+    h = {"X-Roles": "rule_admin", "X-Tenant-Id": "n1", "X-Principal": "u1"}
+    c.post(
+        "/rules",
+        json={"rule_handle": "h1", "group": "g", "namespace": "n1", "drl": _DRL},
+        headers=h,
+    )
+    c.post(
+        "/governance/deprecations/propose",
+        json={"namespace": "n1", "rule_handle": "h1", "reason": "obsolete"},
+        headers=h,
+    )
+    c.post(
+        "/governance/deprecations/approve",
+        json={"namespace": "n1", "rule_handle": "h1"},
+        headers=h,
+    )
+    e = c.post(
+        "/governance/deprecations/enforce",
+        json={"namespace": "n1"},
+        headers=h,
+    )
+    assert e.status_code == 200
+    ej = e.json()
+    assert ej["enforced_rules"] == 1
+    assert ej["deactivated_versions"] >= 1
+    e2 = c.post(
+        "/governance/deprecations/enforce",
+        json={"namespace": "n1"},
+        headers=h,
+    )
+    assert e2.status_code == 200
+    assert e2.json()["enforced_rules"] == 0
+    rows = c.get("/rules/assets", params={"namespace": "n1"}, headers=h).json()
+    assert rows and all(x["is_active"] is False for x in rows)
+
+
+def test_governance_deprecation_enforce_rule_filter() -> None:
+    c = TestClient(create_app(AppDeps()))
+    h = {"X-Roles": "rule_admin", "X-Tenant-Id": "n1", "X-Principal": "u1"}
+    for rh in ("a", "b"):
+        c.post(
+            "/rules",
+            json={"rule_handle": rh, "group": "g", "namespace": "n1", "drl": _DRL},
+            headers=h,
+        )
+        c.post(
+            "/governance/deprecations/propose",
+            json={"namespace": "n1", "rule_handle": rh, "reason": "cleanup"},
+            headers=h,
+        )
+        c.post(
+            "/governance/deprecations/approve",
+            json={"namespace": "n1", "rule_handle": rh},
+            headers=h,
+        )
+    e = c.post(
+        "/governance/deprecations/enforce",
+        json={"namespace": "n1", "rule_handle": "a"},
+        headers=h,
+    )
+    assert e.status_code == 200
+    assets = c.get("/rules/assets", params={"namespace": "n1"}, headers=h).json()
+    by_handle = {x["rule_handle"]: x["is_active"] for x in assets}
+    assert by_handle["a"] is False
+    assert by_handle["b"] is True
