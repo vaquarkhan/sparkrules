@@ -18,6 +18,8 @@ from sre.api.schemas import (
     GovernancePromoteRequest,
     GovernanceSyncRequest,
     GuidedFieldItem,
+    RuleVersionActivePatchRequest,
+    RuleVersionActiveResponse,
     RuleAssetResponse,
     RuleCreateRequest,
     RuleImportRequest,
@@ -41,7 +43,12 @@ from sre.parser import parse
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.iceberg_store import IcebergLikeTable
 from sre.sim import RuleSimulator
-from sre.store import InMemoryRuleMetadataStore, RuleFilter, UnknownRuleError
+from sre.store import (
+    ConflictError,
+    InMemoryRuleMetadataStore,
+    RuleFilter,
+    UnknownRuleError,
+)
 
 
 @dataclass
@@ -175,6 +182,32 @@ def create_app(deps: AppDeps | None = None) -> Any:
         if group is not None and group != "":
             out = [x for x in out if x.rule_group == group]
         return sorted(out, key=lambda x: (x.rule_handle, x.version))
+
+    @app.patch(
+        "/rules/{rule_handle}/version/{version}",
+        response_model=RuleVersionActiveResponse,
+        tags=["workbench", "rules"],
+    )
+    def patch_rule_version_active(
+        rule_handle: str,
+        version: int,
+        b: RuleVersionActivePatchRequest,
+    ) -> RuleVersionActiveResponse:
+        try:
+            r = d.store.get(rule_handle, version)
+        except UnknownRuleError as e:  # noqa: BLE001
+            raise HTTPException(404, str(e)) from e
+        try:
+            new = d.store.update(
+                rule_handle, r.with_updates(is_active=b.is_active)
+            )
+        except ConflictError as e:  # noqa: BLE001
+            raise HTTPException(409, str(e)) from e
+        return RuleVersionActiveResponse(
+            rule_handle=new.rule_handle,
+            version=new.version,
+            is_active=new.is_active,
+        )
 
     @app.get(
         "/rules/diff",
