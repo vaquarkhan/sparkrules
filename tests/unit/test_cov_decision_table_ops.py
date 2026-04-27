@@ -81,6 +81,15 @@ def test_unique_one_row() -> None:
     assert evaluate_decision_table(t, {"f": 1})["o"] == "a"
 
 
+def test_collect_all_matching_rows() -> None:
+    t = _dt(
+        HitPolicy.COLLECT,
+        (Row((1, "a"), 0), Row((1, "b"), 0)),
+    )
+    out = evaluate_decision_table(t, {"f": 1})
+    assert out == [{"o": "a"}, {"o": "b"}]
+
+
 def test_json_enum_string_col() -> None:
     t = DecisionTable(
         "z",

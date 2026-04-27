@@ -18,6 +18,19 @@ end
     assert c.classify(src) == Strategy.SQL_JOIN
 
 
+def test_classifier_dataframe_single_pattern_simple_constraint() -> None:
+    c = StrategyClassifier()
+    src = """
+rule r
+when
+$t : T ( true )
+then
+result.ok = 1;
+end
+"""
+    assert c.classify(src) == Strategy.DATAFRAME
+
+
 def test_deserialize_rejects_non_package() -> None:
     import pickle
 

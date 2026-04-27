@@ -46,6 +46,7 @@ def test_printer_literals_and_field_access_fallback() -> None:
         pass_name=None,
         group_by=(),
         reason_codes=(),
+        stop_on_fire=True,
         when=(
             FactPattern(
                 "t",
@@ -61,4 +62,5 @@ def test_printer_literals_and_field_access_fallback() -> None:
     )
     t = print_ast(r)
     assert "true" in t
+    assert "stop_on_fire true" in t
     assert "s p a c e" in t or '"' in t

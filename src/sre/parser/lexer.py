@@ -17,6 +17,7 @@ class TokenKind(Enum):
     PASS = auto()
     GROUP_BY = auto()
     REASON_CODES = auto()
+    STOP_ON_FIRE = auto()
     AND = auto()
     OR = auto()
     NOT = auto()
@@ -66,6 +67,7 @@ _KEYWORDS: dict[str, TokenKind] = {
     "pass": TokenKind.PASS,
     "group_by": TokenKind.GROUP_BY,
     "reason_codes": TokenKind.REASON_CODES,
+    "stop_on_fire": TokenKind.STOP_ON_FIRE,
     "and": TokenKind.AND,
     "or": TokenKind.OR,
     "not": TokenKind.NOT,
