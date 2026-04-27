@@ -37,3 +37,24 @@ If `apply_drl_local.py` fails on Spark startup, run `iter_rule_rows_no_jvm.py` t
 ## Relation to `tests/spark/`
 
 The project also has `tests/spark/test_pyspark_dataframe.py` (pytest, optional JVM). These examples are **user-facing** copies you can run ad hoc without pytest.
+
+---
+
+## Performance on Spark, and where Glue / workers / DPU are defined
+
+**What the library does for performance**
+
+- `apply_drl` **broadcasts** the DRL string and uses **`mapPartitions`**, so each partition parses once per task and evaluates rows in bulk — that is the main in-repo pattern for distributed throughput.
+- **Tuning** (partitions, shuffle, AQE, executor size) is **standard Spark** on **your** cluster: the examples use `local[2]` only; production jobs set `--conf` / job parameters in **Glue, Databricks, Dataproc**, etc.
+
+**Where “worker size / DPU / Glue vs Databricks” live in *this* repo**
+
+They are modeled as **`EngineConfig`** and the derived map from **`runtime_conf()`** in:
+
+- `src/sre/runtime/config_contract.py` — fields include `platform` (`local`, `glue`, `databricks`, `gcp-dataproc`, `azure-synapse`), `executor_cores`, `executor_workers`, `executor_memory_gb`, and **`glue_dpu`** (used when `platform == "glue"`), plus `spark_version` normalization.
+
+That is a **zero-code-change config contract** for *documenting* what a deployment should use; it does **not** automatically reconfigure a running `SparkSession` in the examples. Your **Glue job** or **Databricks cluster** is where you set real DPU / workers / `spark.*` in practice.
+
+- **Read-only view in the API:** `GET /system/deployment` returns a map built from a **default** `EngineConfig()` (see `sre.api.app`); adjust behavior in a custom deployment by using `AppDeps.engine_cfg` or your own process’ env — the stock server is illustrative.
+
+- **Cloud how-tos:** [deploy/README.md](../../deploy/README.md) and subfolders `deploy/aws-glue/`, `deploy/databricks/`, etc.
