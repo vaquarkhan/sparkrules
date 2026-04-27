@@ -18,6 +18,12 @@ SparkRules is a Drools-style business rule engine for Spark-oriented data workfl
 
 Repository: https://github.com/vaquarkhan/sparkrules
 
+> ### Spark (PySpark) vs default Python — read this first
+>
+> **`/simulations`**, the **Workbench**, and typical API calls run rules in **one Python process** — they do **not** start `SparkSession` or distribute work across a cluster.
+>
+> To run rules on a **cluster `DataFrame`**, use **`apply_drl`** in your own PySpark job (`sre/spark/dataframe.py`). Full guide: **[docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md)** — there is **no** “enable Spark” flag on the HTTP server; you **wire Spark yourself** where you need scale.
+
 ## Feature catalog
 
 ### Rule authoring and modeling
@@ -217,6 +223,8 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Citation metadata | [CITATION.cff](CITATION.cff) |
 | Roadmap (Phase 3 / 4) | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| Known limitations vs enterprise blueprint | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
+| **Using Spark (optional)** vs default Python | [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md) |
 | PyPI / release artifacts | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Governance (Phase 4) | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 
