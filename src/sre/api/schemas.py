@@ -105,3 +105,16 @@ class GuidedFieldItem(BaseModel):
 
 class RuleValidateRequest(BaseModel):
     drl: str = Field(..., min_length=1)
+
+
+class RuleVersionDiffResponse(BaseModel):
+    rule_handle: str
+    version_a: int
+    version_b: int
+    drl_a: str
+    drl_b: str
+    unified_diff: str
+
+
+class RuleImportRequest(BaseModel):
+    items: list[RuleCreateRequest] = Field(..., min_length=1)

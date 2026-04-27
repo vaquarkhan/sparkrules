@@ -1,13 +1,15 @@
 ﻿from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from starlette.staticfiles import StaticFiles
 
+from sre.api.rulepack import build_export_payload, unified_diff_drl
 from sre.api.schemas import (
     DeploymentStatusResponse,
     DqEvaluateRequest,
@@ -16,8 +18,10 @@ from sre.api.schemas import (
     GuidedFieldItem,
     RuleAssetResponse,
     RuleCreateRequest,
+    RuleImportRequest,
     RuleResponse,
     RuleValidateRequest,
+    RuleVersionDiffResponse,
     SimulationRequest,
     SimulationResponse,
 )
@@ -29,7 +33,7 @@ from sre.parser import parse
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.iceberg_store import IcebergLikeTable
 from sre.sim import RuleSimulator
-from sre.store import InMemoryRuleMetadataStore
+from sre.store import InMemoryRuleMetadataStore, UnknownRuleError
 
 
 @dataclass
@@ -113,11 +117,25 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
 
     @app.get(
+        "/rules/groups",
+        tags=["workbench", "rules"],
+    )
+    def list_rule_groups() -> list[str]:
+        return sorted(
+            {r.rule_group for r in d.store.list(None)},
+        )
+
+    @app.get(
         "/rules/assets",
         response_model=list[RuleAssetResponse],
         tags=["workbench", "rules"],
     )
-    def list_rule_assets() -> list[RuleAssetResponse]:
+    def list_rule_assets(
+        q: str | None = Query(None, description="Filter: substring on handle or DRL"),
+        group: str | None = Query(
+            None, description="Filter: exact rule_group"
+        ),
+    ) -> list[RuleAssetResponse]:
         rows = d.store.list(None)
         out = [
             RuleAssetResponse(
@@ -130,7 +148,95 @@ def create_app(deps: AppDeps | None = None) -> Any:
             )
             for r in rows
         ]
+        if q is not None and q != "":
+            ql = q.lower()
+            out = [
+                x
+                for x in out
+                if ql in x.rule_handle.lower() or ql in x.drl.lower()
+            ]
+        if group is not None and group != "":
+            out = [x for x in out if x.rule_group == group]
         return sorted(out, key=lambda x: (x.rule_handle, x.version))
+
+    @app.get(
+        "/rules/diff",
+        response_model=RuleVersionDiffResponse,
+        tags=["workbench", "rules"],
+    )
+    def rule_version_diff(
+        handle: str = Query(..., min_length=1),
+        version_a: int = Query(..., ge=1),
+        version_b: int = Query(..., ge=1),
+    ) -> RuleVersionDiffResponse:
+        try:
+            ra = d.store.get(handle, version_a)
+            rb = d.store.get(handle, version_b)
+        except UnknownRuleError as e:  # noqa: BLE001
+            raise HTTPException(404, str(e)) from e
+        da = ra.rule_definition.source
+        db = rb.rule_definition.source
+        return RuleVersionDiffResponse(
+            rule_handle=handle,
+            version_a=version_a,
+            version_b=version_b,
+            drl_a=da,
+            drl_b=db,
+            unified_diff=unified_diff_drl(da, db),
+        )
+
+    @app.get(
+        "/rules/export",
+        tags=["workbench", "rules"],
+    )
+    def export_rule_pack() -> dict[str, Any]:
+        rows = d.store.list(None)
+        pack_rules = [
+            {
+                "rule_handle": r.rule_handle,
+                "version": r.version,
+                "rule_group": r.rule_group,
+                "drl": r.rule_definition.source,
+            }
+            for r in rows
+        ]
+        return json.loads(build_export_payload(pack_rules))
+
+    @app.post(
+        "/rules/import",
+        tags=["workbench", "rules"],
+    )
+    def import_rule_pack(b: RuleImportRequest) -> dict[str, Any]:
+        out: list[dict[str, object]] = []
+        for it in b.items:
+            try:
+                parse(it.drl)
+            except Exception as e:  # noqa: BLE001
+                raise HTTPException(400, f"{it.rule_handle}: {e}") from e
+        for it in b.items:
+            t0 = datetime.now(UTC) - timedelta(days=1)
+            r0 = Rule(
+                rule_id=new_rule_id(),
+                rule_handle=it.rule_handle,
+                version=0,
+                rule_group=it.group,
+                salience=0,
+                effective_from=t0,
+                effective_to=None,
+                is_active=True,
+                rule_definition=RuleDefinition(
+                    it.drl, RuleFormat.DRL
+                ),
+                activation_group=None,
+            )
+            ins = d.store.insert(r0)
+            out.append(
+                {
+                    "rule_handle": ins.rule_handle,
+                    "version": ins.version,
+                }
+            )
+        return {"ok": True, "created": out, "count": len(out)}
 
     @app.post(
         "/rules/validate",
