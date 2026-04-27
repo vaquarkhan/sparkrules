@@ -6,12 +6,21 @@ This document records **intentional honesty** about what is **not** production-c
 
 ## Identity and access (Phase 2g)
 
+**Implicit `platform_admin` removed (critical for deployments)**  
+- If no `X-Roles` header and no JWT role claims, the principal now has **no roles** (`roles` is empty). Mutating routes (e.g. `POST /rules`, governance enforce) return **403** unless the caller supplies roles or a token with roles.  
+- **Local / CI backward compatibility:** set `SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true` to restore the old implicit `platform_admin` for header-less requests (the test suite sets this via `tests/conftest.py` unless you override it).  
+- Optional: `SPARKRULES_LOCAL_DEFAULT_ROLES=rule_reader,rule_author` for a fixed non-superuser role set when not using JWT.  
+- **Reason:** shipping with anonymous full superuser was unsafe when `SPARKRULES_AUTH_MODE` defaults to `local`.
+
 **OIDC / SAML / full federation**  
 - The service supports **`SPARKRULES_API_KEY`**, `X-Principal` / `X-Tenant-Id` / `X-Roles` headers, and an **`SPARKRULES_AUTH_MODE`** switch (`local`, `oidc`, `mtls`, `iam`) in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sre/api/security.py).  
 - **OIDC mode** enforces optional issuer/audience checks on environment variables; the JWT payload is still parsed **without** full signature verification in the current helper path (suitable for dev/tests behind a trust boundary, not a complete IdP integration).  
 - **SAML** is **not** implemented.  
 - **mTLS** mode checks for a **header** `X-Client-Cert-Subject` (simulating a gateway-passed identity), not a real TLS client-cert stack inside this process by default.  
 - **Reason:** real federated identity needs deployment-specific gateways, key stores, and verified JWTs—this repo provides hooks and local/dev behavior, not a turnkey IdP product.
+
+**Default / local principals**  
+- In unauthenticated or header-missing local flows, the API may accept identifiers such as `anonymous` for `requested_by` / `X-Principal`—suitable for **dev and tests only**, not a production trust model.
 
 **Per-tenant Iceberg namespace isolation**  
 - **Namespace** is a field on the **Rule** and used for governance, filtering, and tenant-scoped access checks.  

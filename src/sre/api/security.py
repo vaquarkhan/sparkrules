@@ -111,8 +111,20 @@ def principal_from_request(request: Request) -> Principal:
         elif isinstance(rc, str) and rc.strip():
             roles = tuple(x.strip() for x in rc.split(",") if x.strip())
         else:
-            # Backward-compatible default for local/dev without identity headers.
-            roles = ("platform_admin",)
+            # Production-safe default: no roles without explicit headers or token claims.
+            # For local/tests that relied on implicit superuser, set
+            # SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true (see KNOWN_LIMITATIONS.md).
+            dev_super = (
+                os.environ.get("SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER", "") or ""
+            ).strip().lower()
+            if dev_super in ("1", "true", "yes"):
+                roles = ("platform_admin",)
+            else:
+                raw = (os.environ.get("SPARKRULES_LOCAL_DEFAULT_ROLES", "") or "").strip()
+                if raw:
+                    roles = tuple(x.strip() for x in raw.split(",") if x.strip())
+                else:
+                    roles = ()
     return Principal(principal=principal, tenant_id=tenant_id, roles=roles)
 
 

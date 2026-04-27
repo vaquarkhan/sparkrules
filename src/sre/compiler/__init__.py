@@ -1,11 +1,13 @@
 from sre.compiler.compiler import CompiledRulePackage, RuleCompiler
 from sre.compiler.classifier import Strategy, StrategyClassifier
 from sre.compiler.evaluator import RuleMatch, evaluate_expr, evaluate_rule
+from sre.compiler.exceptions import RuleEvaluationError
 
 __all__ = [
     "CompiledRulePackage",
     "RuleCompiler",
     "RuleMatch",
+    "RuleEvaluationError",
     "Strategy",
     "StrategyClassifier",
     "evaluate_expr",

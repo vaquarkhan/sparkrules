@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, MutableMapping
 
 import sre.parser.ast as A
+from sre.compiler.exceptions import RuleEvaluationError
 from sre.parser.ast import BinaryOperator, Expr, RuleAst
 
 
@@ -87,21 +88,44 @@ def _eval(e: Expr, env: dict[str, Any]) -> Any:
         if op == BinaryOperator.OR:
             return bool(a) or bool(b)
         if op == BinaryOperator.CONTAINS:
-            return str(b) in str(a) if a is not None and b is not None else False
+            if a is None or b is None:
+                return False
+            if isinstance(a, (list, tuple, set)):
+                return b in a
+            return str(b) in str(a)
         if op == BinaryOperator.MATCHES:
             return re.search(str(b), str(a or "")) is not None
         if op == BinaryOperator.EQ:
             return a == b
         if op == BinaryOperator.NE:
             return a != b
-        if op == BinaryOperator.LT:
-            return a < b  # type: ignore[no-any-return]
-        if op == BinaryOperator.LE:
-            return a <= b  # type: ignore[no-any-return]
-        if op == BinaryOperator.GT:
-            return a > b  # type: ignore[no-any-return]
-        if op == BinaryOperator.GE:
-            return a >= b  # type: ignore[no-any-return]
+        if op in (
+            BinaryOperator.LT,
+            BinaryOperator.LE,
+            BinaryOperator.GT,
+            BinaryOperator.GE,
+        ):
+            if a is None or b is None:
+                raise RuleEvaluationError(
+                    "Comparison uses a missing or unbound value. "
+                    "Check that the fact JSON provides every variable path used in the DRL "
+                    "(e.g. if the rule uses `$t.amount`, the fact must include a `t` object). "
+                    f"Left: {a!r}, right: {b!r}.",
+                    code="UNBOUND_OR_NULL",
+                ) from None
+            try:
+                if op == BinaryOperator.LT:
+                    return a < b  # type: ignore[no-any-return]
+                if op == BinaryOperator.LE:
+                    return a <= b  # type: ignore[no-any-return]
+                if op == BinaryOperator.GT:
+                    return a > b  # type: ignore[no-any-return]
+                return a >= b  # type: ignore[no-any-return]
+            except TypeError as err:
+                raise RuleEvaluationError(
+                    f"Cannot compare these values: {err}",
+                    code="COMPARISON_TYPE_ERROR",
+                ) from err
     raise TypeError(type(e).__name__)
 
 
