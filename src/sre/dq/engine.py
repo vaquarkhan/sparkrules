@@ -10,12 +10,18 @@ class DqSeverity(str, Enum):
     ERROR = "ERROR"
 
 
+class DqScope(str, Enum):
+    ROW = "ROW"
+    FIELD = "FIELD"
+
+
 @dataclass(frozen=True, slots=True)
 class DqViolation:
     code: str
     field: str
     message: str
     severity: DqSeverity
+    scope: DqScope = DqScope.ROW
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +29,7 @@ class ExpectNotNull:
     field: str
     severity: DqSeverity = DqSeverity.ERROR
     code: str = "not_null"
+    scope: DqScope = DqScope.FIELD
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +40,7 @@ class ExpectBetween:
     inclusive: bool = True
     severity: DqSeverity = DqSeverity.ERROR
     code: str = "between"
+    scope: DqScope = DqScope.FIELD
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,9 +49,23 @@ class ExpectInSet:
     allowed_values: tuple[Any, ...]
     severity: DqSeverity = DqSeverity.ERROR
     code: str = "in_set"
+    scope: DqScope = DqScope.FIELD
 
 
 DqCheck = ExpectNotNull | ExpectBetween | ExpectInSet
+
+
+@dataclass(frozen=True, slots=True)
+class DqViolationRecord:
+    run_id: str
+    fact_id: str
+    rule_set_version: str
+    config_fingerprint: str
+    code: str
+    field: str
+    message: str
+    severity: str
+    scope: str
 
 
 class DataQualityEngine:
@@ -63,6 +85,7 @@ class DataQualityEngine:
                             field=c.field,
                             message=f"{c.field!r} is null",
                             severity=c.severity,
+                            scope=c.scope,
                         )
                     )
                 continue
@@ -75,6 +98,7 @@ class DataQualityEngine:
                             field=c.field,
                             message=f"{c.field!r} is not numeric",
                             severity=c.severity,
+                            scope=c.scope,
                         )
                     )
                     continue
@@ -94,6 +118,7 @@ class DataQualityEngine:
                                 else f"{c.field!r}={raw} is outside ({c.min_value}, {c.max_value})"
                             ),
                             severity=c.severity,
+                            scope=c.scope,
                         )
                     )
                 continue
@@ -108,11 +133,45 @@ class DataQualityEngine:
                                 f"{c.field!r}={raw!r} is not in {list(c.allowed_values)!r}"
                             ),
                             severity=c.severity,
+                            scope=c.scope,
                         )
                     )
                 continue
             raise TypeError(type(c).__name__)
         return out
+
+
+def summarize_violations(items: Sequence[DqViolation]) -> dict[str, int]:
+    warn_count = sum(1 for x in items if x.severity == DqSeverity.WARN)
+    error_count = sum(1 for x in items if x.severity == DqSeverity.ERROR)
+    return {
+        "warn_count": warn_count,
+        "error_count": error_count,
+        "total": warn_count + error_count,
+    }
+
+
+def to_violation_records(
+    run_id: str,
+    fact_id: str,
+    rule_set_version: str,
+    config_fingerprint: str,
+    items: Sequence[DqViolation],
+) -> list[DqViolationRecord]:
+    return [
+        DqViolationRecord(
+            run_id=run_id,
+            fact_id=fact_id,
+            rule_set_version=rule_set_version,
+            config_fingerprint=config_fingerprint,
+            code=x.code,
+            field=x.field,
+            message=x.message,
+            severity=x.severity.value,
+            scope=x.scope.value,
+        )
+        for x in items
+    ]
 
 
 def checks_from_api(items: Iterable[dict[str, Any]]) -> list[DqCheck]:
@@ -122,8 +181,9 @@ def checks_from_api(items: Iterable[dict[str, Any]]) -> list[DqCheck]:
         field = str(i.get("field", ""))
         sev = DqSeverity(str(i.get("severity", "ERROR")).upper())
         code = str(i.get("code") or kind)
+        scope = DqScope(str(i.get("scope", "FIELD")).upper())
         if kind == "not_null":
-            out.append(ExpectNotNull(field=field, severity=sev, code=code))
+            out.append(ExpectNotNull(field=field, severity=sev, code=code, scope=scope))
         elif kind == "between":
             out.append(
                 ExpectBetween(
@@ -133,6 +193,7 @@ def checks_from_api(items: Iterable[dict[str, Any]]) -> list[DqCheck]:
                     inclusive=bool(i.get("inclusive", True)),
                     severity=sev,
                     code=code,
+                    scope=scope,
                 )
             )
         elif kind == "in_set":
@@ -145,6 +206,7 @@ def checks_from_api(items: Iterable[dict[str, Any]]) -> list[DqCheck]:
                     allowed_values=tuple(vals),
                     severity=sev,
                     code=code,
+                    scope=scope,
                 )
             )
         else:

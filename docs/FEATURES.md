@@ -6,28 +6,50 @@
 - Salience-based priority control
 - Agenda group and activation group execution controls
 - Explainable outputs with bound data and reason codes
+- Optional SQL-join execution path flag in executor for multi-pattern rules
 
 ## Authoring formats
 
 - DRL text
 - Decision table JSON model
 - XLSX decision table import/export
+- Template-driven guided field schema generation for UI/editor surfaces
 
 ## Execution and runtime
 
 - Single-fact and batch-style execution paths
 - Spark dataframe helper paths for partition processing
 - Replay metadata model for deterministic re-runs
+- Spark version targeting for Spark 3.x runtimes with normalization (`3`, `3.5`, `3.5.1`)
+- Config-only platform switching across Glue/Databricks/GCP Dataproc/Azure Synapse/local
+- Configurable executor resources (cores, workers, memory, Glue DPU)
+- Streaming rule refresh orchestration for micro-batch pipelines
+- Input-source contract validation (batch and streaming profiles)
+- Format policy classification for supported source types
+- Output sink abstraction with `iceberg`/`delta`/`hudi`/`parquet` targets
+- Export service with manifest and SHA-256 output integrity hash
+- Zero-code-change runtime configuration contract validation
+- Performance harness and scale evidence estimation utilities
+- UDF registry with versioned resolution and replay-time pinning
 
 ## Service surfaces
 
 - FastAPI endpoints for health, rules, and simulation
 - Python package APIs for parser, compiler, executor, store, and runtime modules
+- Data quality API endpoint for check evaluation and summarized violation outputs
+
+## Metadata lifecycle
+
+- Versioned rule metadata lifecycle operations
+- Active window overlap detection and conflict protection
+- Pluggable store backends (`in_memory`, `duckdb`, `iceberg`, `postgres`)
 
 ## Observability
 
 - Structured logging helpers
 - Metrics endpoint support
+- Runtime health analysis for UI integration payloads
+- Slow-stage, high-shuffle, and task-failure issue detection
 
 ## Delivery quality
 

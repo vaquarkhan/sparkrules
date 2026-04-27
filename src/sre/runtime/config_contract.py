@@ -1,0 +1,73 @@
+﻿from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, slots=True)
+class EngineConfig:
+    store_backend: str = "in_memory"
+    result_sink_format: str = "iceberg"
+    input_source: str = "iceberg"
+    runtime_profile: str = "local"
+    ai_provider: str | None = None
+    spark_version: str = "3.5"
+    platform: str = "local"
+    output_source: str = "iceberg"
+    executor_cores: int = 4
+    executor_workers: int = 4
+    executor_memory_gb: int = 16
+    glue_dpu: int = 10
+
+
+def validate_zero_code_change(cfg: EngineConfig) -> None:
+    if cfg.store_backend not in {"in_memory", "duckdb", "iceberg", "postgres"}:
+        raise ValueError("unsupported store backend")
+    if cfg.result_sink_format not in {"iceberg", "delta", "hudi", "parquet"}:
+        raise ValueError("unsupported result sink format")
+    if cfg.input_source not in {"iceberg", "delta", "hudi", "parquet", "kafka", "kinesis", "jdbc"}:
+        raise ValueError("unsupported input source")
+    if cfg.output_source not in {"iceberg", "delta", "hudi", "parquet"}:
+        raise ValueError("unsupported output source")
+    if normalize_spark_version(cfg.spark_version).split(".")[0] != "3":
+        raise ValueError("only Spark 3.x is supported")
+    if cfg.platform not in {"local", "glue", "databricks", "gcp-dataproc", "azure-synapse"}:
+        raise ValueError("unsupported platform")
+    if cfg.executor_cores < 1 or cfg.executor_workers < 1 or cfg.executor_memory_gb < 1:
+        raise ValueError("executor resources must be positive")
+    if cfg.platform == "glue" and cfg.glue_dpu < 2:
+        raise ValueError("glue_dpu must be >= 2")
+
+
+def normalize_spark_version(v: str) -> str:
+    raw = v.strip()
+    if not raw:
+        raise ValueError("spark version required")
+    if raw == "3":
+        return "3.0"
+    parts = raw.split(".")
+    if len(parts) == 1:
+        return f"{parts[0]}.0"
+    return f"{parts[0]}.{parts[1]}"
+
+
+def runtime_conf(cfg: EngineConfig) -> dict[str, str]:
+    validate_zero_code_change(cfg)
+    conf = {
+        "spark.version.target": normalize_spark_version(cfg.spark_version),
+        "spark.executor.cores": str(cfg.executor_cores),
+        "spark.executor.instances": str(cfg.executor_workers),
+        "spark.executor.memory": f"{cfg.executor_memory_gb}g",
+        "sre.input.source": cfg.input_source,
+        "sre.output.source": cfg.output_source,
+        "sre.result.sink": cfg.result_sink_format,
+        "sre.platform": cfg.platform,
+    }
+    if cfg.platform == "glue":
+        conf["spark.glue.dpu"] = str(cfg.glue_dpu)
+    elif cfg.platform == "databricks":
+        conf["spark.databricks.cluster.profile"] = "serverless"
+    elif cfg.platform == "gcp-dataproc":
+        conf["spark.dataproc.autoscaling.enabled"] = "true"
+    elif cfg.platform == "azure-synapse":
+        conf["spark.synapse.optimizeWrite"] = "true"
+    return conf

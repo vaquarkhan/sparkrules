@@ -15,4 +15,5 @@ This documentation set is customer and developer focused.
 ## Notes
 
 - Internal planning drafts are intentionally excluded from this documentation set.
+- Historical recovery artifacts under `docs/history/` are for local reference and are git-ignored.
 - Customer-facing docs should focus on capabilities, operation, integration, and usage.
