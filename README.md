@@ -154,7 +154,7 @@ python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 
 Open http://127.0.0.1:8042/docs
 
-If the browser shows **connection refused**, the server is not running: keep the terminal open, use the **same port** in the URL, and use `http://` not `https://` unless you use a proxy.
+If the browser shows **connection refused**, the server is not running: keep the terminal open, use the **same port** in the URL, and use `http://` not `https://` unless you use a proxy. If it still fails, run **`scripts\check_env.cmd`** (tests import + prints which `python` is used). Multiple Pythons (Anaconda, Store, etc.): use the same interpreter for `pip install` and `dev_server` — the server prints **`Python: ...`** at startup; that path must be the one you installed into.
 
 ## Rules Workbench (browser UI)
 

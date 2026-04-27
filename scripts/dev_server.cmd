@@ -3,28 +3,24 @@ setlocal
 cd /d "%~dp0.."
 where python >nul 2>&1
 if errorlevel 1 (
-  echo ERROR: python not in PATH. Install Python 3.11+ and enable "Add to PATH".
+  echo ERROR: python not in PATH. Install Python 3.11+ from https://www.python.org/downloads/
+  echo During setup, check "Add python.exe to PATH".
   pause
   exit /b 1
 )
-echo Installing package (editable)...
+echo [1/2] pip install (editable) ...
 python -m pip install -e "." -q
 if errorlevel 1 (
-  echo ERROR: pip install -e . failed. Run this window from the repo you cloned.
+  echo ERROR: pip install failed. Open cmd in this folder: %cd%
   pause
   exit /b 1
 )
 if "%SPARKRULES_PORT%"=="" set SPARKRULES_PORT=8042
+echo [2/2] Starting server (port=%SPARKRULES_PORT%) ...
 echo.
-echo  SparkRules API
-echo  Workbench: http://127.0.0.1:%SPARKRULES_PORT%/workbench/
-echo  Health:    http://127.0.0.1:%SPARKRULES_PORT%/health
-echo  OpenAPI:   http://127.0.0.1:%SPARKRULES_PORT%/docs
-echo  Leave this window open. Press Ctrl+C to stop.
-echo.
-python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port %SPARKRULES_PORT%
+python "%~dp0dev_server.py"
 if errorlevel 1 (
   echo.
-  echo If you see "No module named sre", run from the repository root: pip install -e .
+  echo If import failed, run:  scripts\check_env.cmd
   pause
 )
