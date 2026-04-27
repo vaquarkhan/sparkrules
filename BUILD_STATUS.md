@@ -18,6 +18,6 @@ Full target from `idea-brainstrom.txt` §8–9: **328 passed, 2 skipped, 1 desel
 | `pytest tests/ -q` → `328 passed, 2 skipped, 1 deselected` | **Met** (on this tree) |
 | `pytest tests/perf -m perf -q` → `1 passed` | **Met** |
 | `BUILD_STATUS.md` counts | **Updated** (this file) |
-| `README.md` points newcomers to docs by role | **Met** — see **Documentation index** at top of `README.md` |
+| `README.md` points newcomers to docs by role | **Met** — see root `README.md` and **Documentation hub** [`docs/README.md`](docs/README.md) |
 | Every requirement in `.kiro/.../requirements.md` has a test | **N/A** here — that spec file is not in-repo; **README.md** (requirements) is cross-covered by `tests/property/`, `tests/integration/`, and `tests/unit/test_requirement_ladder.py` for the reference build |
 | P1–P38 Hypothesis **≥ 100** examples (where `@given` is used) | **Met** — `tests/property/hypo_settings.py` `PROFILE.max_examples=100` |

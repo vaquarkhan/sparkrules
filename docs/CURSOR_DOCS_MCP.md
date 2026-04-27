@@ -1,5 +1,7 @@
 # Where documentation lives, and Cursor / MCP
 
+**Navigation:** [Documentation home](README.md) · [Repository README](../README.md)
+
 ## Project documentation (in this repository)
 
 | What | Path |

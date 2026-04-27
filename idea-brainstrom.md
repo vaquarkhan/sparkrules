@@ -2477,5 +2477,5 @@ The code agent may declare the build complete when:
 
 The checklist above originally referenced **234 passed, 1 deselected**. The reference
 build has since gained additional tests. **Authoritative** numbers, coverage gate,
-and doc links: root **`BUILD_STATUS.md`**, and **`docs/CURSOR_DOCS_MCP.md`**
+and doc links: root **`BUILD_STATUS.md`**, **`docs/README.md`**, **`docs/REQUIREMENTS.md`**, and **`docs/CURSOR_DOCS_MCP.md`**
 (IDE and MCP context, plus reliable editable install for `import sre`).

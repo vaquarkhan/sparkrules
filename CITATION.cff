@@ -1,0 +1,30 @@
+# Citation file for GitHub "Cite this repository" and compatible tools
+# See also: https://citation-file-format.github.io/
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "sparkrules"
+abstract: "Drools-equivalent business rule engine reference implementation for Apache Spark (Python), with DRL parsing, decision tables, and REST API surface."
+authors:
+  - family-names: "Khan"
+    given-names: "Vaquar"
+repository-code: "https://github.com/vaquarkhan/sparkrules"
+url: "https://github.com/vaquarkhan/sparkrules"
+license: "MIT"
+version: "0.1.0"
+date-released: "2026-04-26"
+keywords:
+  - "business-rules"
+  - "Apache Spark"
+  - "Drools"
+  - "rule engine"
+  - "DRL"
+type: "software"
+identifiers:
+  - type: "url"
+    value: "https://github.com/vaquarkhan/sparkrules"
+    description: "Source repository"
+references:
+  - type: "software"
+    title: "MCP-Bastion (documentation structure reference)"
+    url: "https://github.com/vaquarkhan/MCP-Bastion"
+    relationship: "related"
