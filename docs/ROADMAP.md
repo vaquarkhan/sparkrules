@@ -14,7 +14,7 @@ Focus: **enterprise workbench and packaging**.
 ## Recent additions (shipped; see [FEATURES.md](FEATURES.md))
 
 - [x] **Workbench:** **Monaco** DRL editor, **Validate** + **LSP** (`/rules/validate`, `/ide/lsp/analyze`), light/dark theme
-- [x] **Simulations:** **counterfactual** (`/simulations/counterfactual`), **chain** (`/simulations/chain`) with `stop_on_fire` and engine policy
+- [x] **Simulations:** **counterfactual** (`/simulations/counterfactual`), **chain** (`/simulations/chain`) with DRL per-rule `stop_on_fire` and request/engine `stop_on_decline` policy
 - [x] **Debug:** time-travel **capture** / **replay** (`/debug/time-travel/*`) backed by a `debug_runs` table
 - [x] **Governance:** **deprecations** — propose, approve, list, **enforce** (deactivate version) under `/governance/deprecations*`
 - [x] **Executor:** local `SQL_JOIN` / list-binding **Cartesian** expansion for multi-pattern rules (when enabled)

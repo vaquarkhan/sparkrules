@@ -330,15 +330,6 @@
       font-size: 0.84rem;
       margin: 0.35rem 0 0;
     }
-    .analysis-block {
-      margin-top: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.8rem 0.95rem;
-      background: var(--panel-solid);
-    }
-    .analysis-block p { margin: 0.2rem 0 0.45rem; }
-    .analysis-block .k { font-weight: 600; }
     .spark-callout {
       border-left: 3px solid var(--warn);
       padding: 0.6rem 0.75rem;
@@ -448,7 +439,6 @@
           <div class="spark-callout" id="spark-callout">
             Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package — see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
           </div>
-          <div class="analysis-block" id="claims-summary"></div>
         </div>
       </section>
       <section id="view-assets" class="view hidden">
@@ -582,12 +572,6 @@
       { rule: "uw_fico_deep (FICO < 580)", fired: 1115, pct: 22.3 },
       { rule: "auth_ins_funds", fired: 922, pct: 18.4 },
       { rule: "uw_fico_prime", fired: 893, pct: 17.9 }
-    ];
-    var claimRealityRows = [
-      { claim: "Drools-style rule engine", reality: "True — predicates, when/then, salience, activation groups, version store work as designed." },
-      { claim: "Apache Spark for evaluating many rules / huge fact volumes (default API path)", reality: "Not demonstrated here. PySpark may be installed, but default /simulations does not create SparkSession or use executors — single-process Python." },
-      { claim: "Scales to billions of rows in seconds", reality: "Not shown on this path; would need distributed DataFrame evaluation and measured cluster runs." },
-      { claim: "Rule evaluation over Iceberg snapshots", reality: "Iceberg-like in-memory model works; live Iceberg catalog + cluster evidence is deployment-specific." }
     ];
     function setMessage(text, type) {
       const el = document.getElementById("message");
@@ -913,17 +897,6 @@
       var sc = document.getElementById("spark-callout");
       if (sc) {
         sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None — no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
-      }
-      var cs = document.getElementById("claims-summary");
-      if (cs) {
-        var t = "<p class='k'>What this tells us about product claims</p>";
-        t += "<table><tr><th>Claim</th><th>Reality</th></tr>";
-        claimRealityRows.forEach(function (r) {
-          t += "<tr><td>" + escapeHtml(r.claim) + "</td><td>" + escapeHtml(r.reality) + "</td></tr>";
-        });
-        t += "</table>";
-        t += "<p><span class='k'>Honest summary:</span> the engine is a legitimate Python-first Drools-style core. “Spark” in the name is aspirational until you wire mapPartitions, broadcast CompiledRulePackage (see <span class='mono'>broadcaster.py</span>), and run on a real cluster — see <span class='mono'>docs/KNOWN_LIMITATIONS.md</span>.</p>";
-        cs.innerHTML = t;
       }
     }
     function renderAssetsTablePaged() {
