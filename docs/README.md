@@ -13,6 +13,7 @@ This documentation set is customer and developer focused.
 | [../examples/README.md](../examples/README.md) | Runnable examples |
 | [BENCHMARKS.md](BENCHMARKS.md) | Large-scale and benchmark methodology |
 | [GOVERNANCE.md](GOVERNANCE.md) | Phase 4 namespaces, promotion pins, and API |
+| [PUBLISHING.md](PUBLISHING.md) | PyPI (incl. tag releases), GitHub Container Registry, CI |
 | [ROADMAP.md](ROADMAP.md) | Phases: workbench, governance, future scope |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment notes |
 

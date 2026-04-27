@@ -34,15 +34,16 @@
 
 ## Service surfaces
 
-- FastAPI endpoints for health, rules, and simulation
-- Browser **Rules Workbench** at `/workbench/` (assets, DRL validate, simulation, deployment readout, template helper)
+- FastAPI endpoints for health, rules, rule-pack import/export, version diff, governance, simulation, deployment config, DQ, Workbench helper routes
+- Browser **Rules Workbench** at `/workbench/`: **Overview** (stats, charts), **light/dark theme**, assets with filters, per-version **activate/deactivate** (see API), DRL validate, simulation, deployment readout, template helper, **Phase 3** pack + diff, **Phase 4** governance pane
 - Python package APIs for parser, compiler, executor, store, and runtime modules
 - Data quality API endpoint for check evaluation and summarized violation outputs
-- Reference **Docker** image build and `docker compose` for local full-stack runs
+- Optional **`SPARKRULES_API_KEY`**: also required for sensitive **GET**s on rules, deployment, and governance when set (public: `/health`, OpenAPI, `OPTIONS`, static `/workbench/…` shell)
+- **Docker** `Dockerfile` and `docker compose`; **CI** can push images to **GHCR** and publish **sdist/wheel** to **PyPI** (trusted publishing) — [PUBLISHING.md](PUBLISHING.md)
 - **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
-- **Phase 3:** rule pack import/export, asset search, group filter, DRL version diff API and workbench panes; optional `SPARKRULES_API_KEY` gate for `POST`/`PUT`/`PATCH`/`DELETE`
-- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory) with sync and adjacent promote on the API and Workbench — see [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
-- Release/publish notes: [PUBLISHING.md](PUBLISHING.md) (local build, CI artifacts, org-specific PyPI and container registry)
+- **Phase 3:** rule pack, asset search, group/namespace filter, DRL version diff, API key (writes + sensitive reads)
+- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory) — [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist: [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
+- Release: [PUBLISHING.md](PUBLISHING.md) (local build, **PyPI on `v*` tags** or manual, **ghcr.io** images on branch/tag push)
 
 ## Metadata lifecycle
 
