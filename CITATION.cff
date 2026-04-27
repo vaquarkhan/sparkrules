@@ -1,4 +1,4 @@
-# Citation file for GitHub "Cite this repository" and compatible tools
+﻿# Citation file for GitHub "Cite this repository" and compatible tools
 # See also: https://citation-file-format.github.io/
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
@@ -28,3 +28,4 @@ references:
     title: "MCP-Bastion (documentation structure reference)"
     url: "https://github.com/vaquarkhan/MCP-Bastion"
     relationship: "related"
+
