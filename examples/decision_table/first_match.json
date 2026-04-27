@@ -1,0 +1,23 @@
+{
+  "name": "pricing_hint",
+  "hit_policy": "FIRST",
+  "input_columns": [
+    {
+      "name": "c1",
+      "field_ref": "spend",
+      "col_type": "INT",
+      "operator": ">="
+    }
+  ],
+  "output_columns": [
+    {
+      "name": "o1",
+      "field_ref": "tier",
+      "col_type": "STRING"
+    }
+  ],
+  "rows": [
+    { "cells": [1000, "GOLD"], "priority": 0 },
+    { "cells": [100, "SILVER"], "priority": 0 }
+  ]
+}

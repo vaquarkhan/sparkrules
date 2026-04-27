@@ -11,6 +11,7 @@ SparkRules—this system combines the sophisticated logic of a rule engine (simi
 | **Product, BA, compliance** | **## Glossary** and **## Requirements** below for domain language and acceptance criteria. Diagrams: **## Architecture Overview**. |
 | **Platform / SRE** | `deploy/k8s/` for sample manifests. This repository is a **Python reference** implementation; the full distributed stack is specified here, not all of it is wired to a live cluster in-tree. |
 | **Cursor / IDE / “where is MCP?”** | Short guide: [`docs/CURSOR_DOCS_MCP.md`](docs/CURSOR_DOCS_MCP.md) — where docs live, reliable `import sre` after install, and how **MCP** fits Cursor (it is not a file in this repo). |
+| **Examples (DRL, JSON, scripts)** | [`examples/README.md`](examples/README.md) — sample rules, decision table JSON, and Python one-liners. |
 
 **Phase 1 complete (per `idea-brainstrom.txt` §8–9, §34.2):** test counts in `BUILD_STATUS.md`; properties P1–P38 in `tests/property/`; extended example coverage in `tests/unit/test_requirement_ladder.py`. Build gates and later phases: root **`idea-brainstrom.txt`**. Older text in that file may still say “234 tests”; the **authoritative** current counts are in **`BUILD_STATUS.md`**.
 
