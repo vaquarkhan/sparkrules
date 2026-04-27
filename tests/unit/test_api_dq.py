@@ -26,6 +26,34 @@ def test_dq_evaluate_ok() -> None:
     j = r.json()
     assert j["ok"] is True
     assert j["violations"] == []
+    assert j["warn_count"] == 0
+    assert j["error_count"] == 0
+    assert j["total"] == 0
+
+
+def test_dq_evaluate_with_warn_and_error() -> None:
+    c = TestClient(create_app(AppDeps()))
+    r = c.post(
+        "/dq/evaluate",
+        json={
+            "fact": {"id": None, "country": "DE"},
+            "checks": [
+                {"kind": "not_null", "field": "id", "severity": "warn"},
+                {
+                    "kind": "in_set",
+                    "field": "country",
+                    "allowed_values": ["US", "CA"],
+                    "severity": "error",
+                },
+            ],
+        },
+    )
+    assert r.status_code == 200
+    j = r.json()
+    assert j["ok"] is False
+    assert j["warn_count"] == 1
+    assert j["error_count"] == 1
+    assert j["total"] == 2
 
 
 def test_dq_evaluate_bad_kind() -> None:

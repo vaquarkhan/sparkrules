@@ -53,6 +53,9 @@ class DqViolationResponse(BaseModel):
 class DqEvaluateResponse(BaseModel):
     ok: bool
     violations: list[DqViolationResponse]
+    warn_count: int = 0
+    error_count: int = 0
+    total: int = 0
 
 
 class RunSubmissionRequest(BaseModel):

@@ -9,7 +9,7 @@ from sre.dq import (
     ExpectInSet,
     ExpectNotNull,
 )
-from sre.dq.engine import checks_from_api
+from sre.dq.engine import checks_from_api, summarize_violations
 
 
 def test_dq_engine_happy() -> None:
@@ -35,6 +35,19 @@ def test_dq_engine_violations() -> None:
     assert v[0].code == "not_null"
     assert v[1].code == "between"
     assert v[2].code == "in_set"
+
+
+def test_summarize_violations() -> None:
+    e = DataQualityEngine()
+    checks = [
+        ExpectNotNull("id", severity=DqSeverity.WARN),
+        ExpectInSet("country", ("US",), severity=DqSeverity.ERROR),
+    ]
+    v = e.evaluate({"id": None, "country": "CA"}, checks)
+    s = summarize_violations(v)
+    assert s["warn_count"] == 1
+    assert s["error_count"] == 1
+    assert s["total"] == 2
 
 
 def test_checks_from_api_and_errors() -> None:
