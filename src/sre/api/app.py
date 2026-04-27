@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -7,11 +7,16 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 
 from sre.api.schemas import (
+    DqEvaluateRequest,
+    DqEvaluateResponse,
+    DqViolationResponse,
     RuleCreateRequest,
     RuleResponse,
     SimulationRequest,
     SimulationResponse,
 )
+from sre.dq import DataQualityEngine
+from sre.dq.engine import checks_from_api
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.parser import parse
 from sre.sim import RuleSimulator
@@ -24,6 +29,7 @@ class AppDeps:
         default_factory=InMemoryRuleMetadataStore
     )
     sim: RuleSimulator = field(default_factory=RuleSimulator)
+    dq: DataQualityEngine = field(default_factory=DataQualityEngine)
 
 
 def create_app(deps: AppDeps | None = None) -> Any:
@@ -80,4 +86,29 @@ def create_app(deps: AppDeps | None = None) -> Any:
         return SimulationResponse(
             fired=f.fired, action=f.action, bound=f.bound
         )
+
+    @app.post(
+        "/dq/evaluate",
+        response_model=DqEvaluateResponse,
+        tags=["dq"],
+    )
+    def dq_evaluate(req: DqEvaluateRequest) -> DqEvaluateResponse:
+        try:
+            checks = checks_from_api(
+                [x.model_dump() for x in req.checks]
+            )
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        v = d.dq.evaluate(dict(req.fact), checks)
+        out = [
+            DqViolationResponse(
+                code=x.code,
+                field=x.field,
+                message=x.message,
+                severity=x.severity.value,
+            )
+            for x in v
+        ]
+        return DqEvaluateResponse(ok=not out, violations=out)
+
     return app
