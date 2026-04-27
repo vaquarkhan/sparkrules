@@ -1,8 +1,8 @@
 ﻿# sparkrules
 
 <p align="center">
-  <a href="docs/images/sparkrule-logo.png">
-    <img src="docs/images/sparkrule-logo.png" alt="SparkRules logo" width="520">
+  <a href="docs/images/sparkrules-logo.png">
+    <img src="docs/images/sparkrules-logo.png" alt="SparkRules logo" width="520">
   </a>
 </p>
 
