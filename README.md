@@ -1,5 +1,11 @@
 ﻿# sparkrules
 
+<p align="center">
+  <a href="docs/images/sparkrule-logo.png">
+    <img src="docs/images/sparkrule-logo.png" alt="SparkRules logo" width="520">
+  </a>
+</p>
+
 SparkRules is a Drools-style business rule engine for Spark-oriented data workflows. It supports DRL authoring, decision-table authoring, explainable execution, deterministic replay patterns, and API integration for high-volume decisioning services.
 
 Repository: https://github.com/vaquarkhan/sparkrules
@@ -31,12 +37,24 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - Discrimination network structures
 - Batch and two-pass runtime helper modules
 - Streaming helper primitives (refresh and TTL checks)
+- Streaming orchestration helper for micro-batch rule refresh
 - Derived-column cache utility
 - Iceberg-like snapshot store for deterministic replay/testing workflows
+- Export service with manifest and SHA-256 integrity hash
+- Output sink abstraction with format targets: `iceberg`, `delta`, `hudi`, `parquet`
+- Input source contract validation for batch/stream profiles
+- Zero-code-change configuration contract validation
+- Spark target version normalization and validation (`3`, `3.x`, `3.x.y`)
+- Platform switch by configuration only: `local`, `glue`, `databricks`, `gcp-dataproc`, `azure-synapse`
+- Executor sizing controls: cores, workers, memory, Glue DPU
+- Performance harness and scale evidence estimators
+- UDF registry with version resolution and replay-time pinning semantics
+- Guided template field schema generation for authoring surfaces
 
 ### Metadata store and lifecycle
 
 - In-memory versioned metadata store
+- Pluggable metadata backends: `in_memory`, `duckdb`, `iceberg`, `postgres`
 - Active-window overlap detection
 - Rule activation/deactivation
 - Soft delete behavior
@@ -79,6 +97,8 @@ Repository: https://github.com/vaquarkhan/sparkrules
 
 - Logging helper functions
 - Metrics endpoint helpers
+- Runtime health diagnostics for UI payloads
+- Automatic issue flags for slow stages, high shuffle, and failed tasks
 
 ### Quality and reliability
 
@@ -89,6 +109,8 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - 100% line coverage gate on `src/sre`
 
 ## How it works
+
+![SparkRules flow](docs/images/sparrule-flow.png)
 
 1. Author rules in DRL or decision-table form.
 2. Parse and validate rule source.
@@ -141,4 +163,8 @@ Open http://127.0.0.1:8000/docs
 
 ## License
 
-[MIT](LICENSE)
+SparkRules Non-Commercial Citation License 1.0.
+
+- Citation is mandatory for use and redistribution.
+- Commercial publishing/sale is not permitted without prior written permission.
+- Full terms: [LICENSE](LICENSE)

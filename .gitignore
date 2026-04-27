@@ -223,3 +223,7 @@ idea-brainstrom.txt
 requirments.md
 docs/REQUIREMENTS.md
 docs/PHASE1_STATUS.md
+
+# Historical recovery artifacts (local reference only)
+docs/history/
+docs/FEATURE_COMPARE_HISTORY.md
