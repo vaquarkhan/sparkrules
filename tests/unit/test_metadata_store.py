@@ -69,6 +69,21 @@ def test_update_unknown_handle_and_version() -> None:
         s.update("h", p.with_updates(version=99, rule_id=r.rule_id))
 
 
+def test_list_filter_namespace() -> None:
+    s = InMemoryRuleMetadataStore()
+    t0 = datetime(2020, 1, 1, tzinfo=UTC)
+    a = s.insert(
+        _r("a1", 0, t0, None, True).with_updates(namespace="X")
+    )
+    b = s.insert(
+        _r("b1", 0, t0, None, True).with_updates(namespace="Y")
+    )
+    assert a.rule_handle == "a1" and b.rule_handle == "b1"
+    x = s.list(RuleFilter(namespace="X"))
+    assert len(x) == 1
+    assert x[0].namespace == "X"
+
+
 def test_get_activate_list_filters() -> None:
     s = InMemoryRuleMetadataStore()
     t0 = datetime(2020, 1, 1, tzinfo=UTC)

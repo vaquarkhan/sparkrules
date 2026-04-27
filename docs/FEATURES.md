@@ -40,6 +40,9 @@
 - Data quality API endpoint for check evaluation and summarized violation outputs
 - Reference **Docker** image build and `docker compose` for local full-stack runs
 - **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
+- **Phase 3:** rule pack import/export, asset search, group filter, DRL version diff API and workbench panes; optional `SPARKRULES_API_KEY` gate for `POST`/`PUT`/`PATCH`/`DELETE`
+- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory) with sync and adjacent promote on the API and Workbench — see [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
+- Release/publish notes: [PUBLISHING.md](PUBLISHING.md) (local build, CI artifacts, org-specific PyPI and container registry)
 
 ## Metadata lifecycle
 

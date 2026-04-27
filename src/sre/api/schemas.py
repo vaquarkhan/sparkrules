@@ -8,12 +8,23 @@ from pydantic import BaseModel, Field
 class RuleCreateRequest(BaseModel):
     rule_handle: str
     group: str = "default"
+    namespace: str = "default"
     drl: str = Field(..., min_length=1)
 
 
 class RuleResponse(BaseModel):
     rule_handle: str
     version: int
+
+
+class RuleVersionActivePatchRequest(BaseModel):
+    is_active: bool
+
+
+class RuleVersionActiveResponse(BaseModel):
+    rule_handle: str
+    version: int
+    is_active: bool
 
 
 class SimulationRequest(BaseModel):
@@ -76,6 +87,7 @@ class RuleAssetResponse(BaseModel):
     rule_handle: str
     version: int
     rule_group: str
+    namespace: str = "default"
     salience: int
     is_active: bool
     drl: str
@@ -105,3 +117,28 @@ class GuidedFieldItem(BaseModel):
 
 class RuleValidateRequest(BaseModel):
     drl: str = Field(..., min_length=1)
+
+
+class RuleVersionDiffResponse(BaseModel):
+    rule_handle: str
+    version_a: int
+    version_b: int
+    drl_a: str
+    drl_b: str
+    unified_diff: str
+
+
+class RuleImportRequest(BaseModel):
+    items: list[RuleCreateRequest] = Field(..., min_length=1)
+
+
+class GovernanceSyncRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+
+
+class GovernancePromoteRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+    from_env: str
+    to_env: str

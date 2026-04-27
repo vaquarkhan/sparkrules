@@ -2,6 +2,6 @@ services:
   sparkrules:
     build: .
     ports:
-      - "8000:8000"
+      - "8042:8000"
     environment:
       - UVICORN_WORKERS=1
