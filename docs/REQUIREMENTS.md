@@ -1,5 +1,5 @@
 ﻿> **Navigation:** [Documentation home](README.md) · [Repository README](../README.md)  
-> **Scope:** Authoritative requirements for the Phase 1 Python reference (`src/sre/`). The blueprint’s `.kiro/specs/.../requirements.md` is not in this tree; this document is the in-repo spec for acceptance testing and product language.
+> **Scope:** Authoritative requirements for the Phase 1 Python reference (`src/sre/`). This document is the in-repo spec for acceptance testing and product language.
 
 # Requirements Document
 

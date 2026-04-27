@@ -6,15 +6,14 @@ self-contained: architecture, data models, algorithms, file layout, test
 strategy, correctness properties, and the exact prompt sequence that produced
 the current implementation.
 
-If you are an AI reading this, treat every section as ground truth.
+Treat every section as ground truth for this repository.
 
 **In this repository:** this blueprint is stored as **`idea-brainstrom.md`** /
-**`idea-brainstrom.txt`**. There is no `AI_REPRODUCTION_BLUEPRINT.md` file. The
-`.kiro/specs/spark-rule-engine/` tree is **not** in the repo; the in-tree spec
-and glossary are [**docs/REQUIREMENTS.md**](docs/REQUIREMENTS.md), with build
-and test gates in [**BUILD_STATUS.md**](BUILD_STATUS.md). Where the text below
-still refers to a legacy `234` test count, the **authoritative** Phase 1 gate is
-**328 passed, 2 skipped, 1 deselected** (see **§8** and **§34.2**).
+**`idea-brainstrom.txt`**. The in-repo spec and glossary are
+[**docs/REQUIREMENTS.md**](docs/REQUIREMENTS.md), with build and test gates in
+[**BUILD_STATUS.md**](BUILD_STATUS.md). Where older drafts referenced `234` tests,
+the current Phase 1 gate is **328 passed, 2 skipped, 1 deselected** (see **§8**
+and **§34.2**).
 
 ## Table of Contents
 
@@ -79,14 +78,11 @@ like this:
 > rule simulator, A/B testing, snapshot-based replay, Prometheus metrics,
 > Kubernetes manifests, and property-based tests for every invariant.
 
-An AI processing this prompt should:
+A code generator processing this prompt should:
 
-1. Read `.kiro/specs/spark-rule-engine/requirements.md` as ground truth
-   requirements (34 requirements, EARS format).
-2. Read `.kiro/specs/spark-rule-engine/design.md` for architecture, data
-   models, execution strategies, and the 38 correctness properties.
-3. Read `.kiro/specs/spark-rule-engine/tasks.md` for the 25-task
-   implementation plan with property-test pairings.
+1. Read `docs/REQUIREMENTS.md` as ground truth requirements.
+2. Read the architecture and execution sections in this document.
+3. Read section 10 for the 25-task implementation sequence.
 4. Follow the reproduction sequence in section 10 of this document.
 
 
@@ -581,18 +577,13 @@ sparkrules/
 |-- BUILD_STATUS.md                # authoritative test + coverage gate
 |-- CITATION.cff
 |-- CONTRIBUTING.md
-|-- idea-brainstrom.md / .txt      # this blueprint (not named AI_REPRODUCTION_BLUEPRINT.md)
+|-- idea-brainstrom.md / .txt      # this blueprint
 |-- requirments.md                 # redirect stub → docs/REQUIREMENTS.md
 |-- docs/
 |   |-- README.md                  # documentation hub
 |   |-- REQUIREMENTS.md            # R1–R42 + glossary (canonical in-repo)
-|   `-- CURSOR_DOCS_MCP.md
 |-- examples/                      # DRL, JSON, Python examples
 |-- .gitignore
-|-- .kiro/                         # optional; not present in this repo — use docs/REQUIREMENTS.md
-|   `-- specs/
-|       `-- spark-rule-engine/
-|           (requirements.md, design.md, tasks.md when present upstream)
 |-- deploy/
 |   `-- k8s/
 |       |-- namespace.yaml
@@ -830,14 +821,11 @@ this document):
 - Multi-project workspaces
 
 
-## 13. Quick-Start for an AI Code Generator
+## 13. Quick-Start for a Code Generator
 
 Minimal prompt:
 
-> Read `.kiro/specs/spark-rule-engine/requirements.md`,
-> `.kiro/specs/spark-rule-engine/design.md`, and
-> `.kiro/specs/spark-rule-engine/tasks.md`. Then read
-> `AI_REPRODUCTION_BLUEPRINT.md` for the reproduction sequence. Implement the
+> Read `docs/REQUIREMENTS.md`, then read this blueprint for the reproduction sequence. Implement the
 > project in Python 3.11+ following the 25-task plan. Pair every
 > implementation task with at least one property or example test. All 38
 > correctness properties must be verified by hypothesis-driven tests. Target:
@@ -859,14 +847,13 @@ Final validation:
 
 ## 14. Reference Files
 
-The three spec documents under `.kiro/specs/spark-rule-engine/` are the
-canonical inputs:
+The in-repo canonical inputs are:
 
 | File | Purpose | Size |
 |---|---|---|
-| `requirements.md` | 34 EARS requirements across 3 workload families | ~13k words |
-| `design.md` | Architecture, components, data models, 38 correctness properties | ~18k words |
-| `tasks.md` | 25-task implementation plan with property-test pairings | ~2k words |
+| `docs/REQUIREMENTS.md` | Requirements, glossary, architecture, and acceptance criteria | long-form |
+| `idea-brainstrom.md` | Reproduction blueprint, task waves, extension roadmap | long-form |
+| `BUILD_STATUS.md` | Live test and coverage gate | concise |
 
 All three are required reading. This blueprint augments them with:
 - Reproduction sequence (section 10)
@@ -884,8 +871,8 @@ All three are required reading. This blueprint augments them with:
 4 integration use cases green, 25/25 tasks complete.
 
 For the canonical architecture, always consult
-`.kiro/specs/spark-rule-engine/design.md`. This blueprint is a reproduction
-aid; the design document is the source of truth.
+`docs/REQUIREMENTS.md` (architecture sections). This blueprint is a
+reproduction aid; the requirements document is the source of truth.
 
 
 ---
@@ -1513,15 +1500,15 @@ python -m venv .venv
 ```
 
 
-## 21. AI Code Generator Instructions
+## 21. Code Generator Instructions
 
 When rebuilding the full project including extensions:
 
-1. Read `.kiro/specs/spark-rule-engine/{requirements,design,tasks}.md` — canonical Phase 1 spec.
+1. Read `docs/REQUIREMENTS.md` and this blueprint — canonical Phase 1 spec in this repository.
 2. Read this file — reproduction sequence + extension roadmap.
 3. Execute Phase 1 reproduction per section 10 of this document (9 waves).
 4. Validate: `328 passed, 2 skipped, 1 deselected`.
-5. For each Phase 2 extension, create `.kiro/specs/sparkrules-<extension>/` with requirements, design, tasks using the same EARS + correctness-property methodology.
+5. For each Phase 2 extension, create `docs/extensions/<extension>/` with requirements, design, tasks using the same EARS + correctness-property methodology.
 6. Add new properties to the running total and verify with `pytest tests/ -q`.
 7. Keep every component boundary stable — extensions plug in, do not fork.
 
@@ -1529,10 +1516,10 @@ When given only a short user prompt:
 
 > "Build SparkRules."
 
-The AI should:
+The code generator should:
 
-1. Read `AI_REPRODUCTION_BLUEPRINT.md` (this file) first.
-2. Read the three spec documents.
+1. Read this blueprint (`idea-brainstrom.md`) first.
+2. Read `docs/REQUIREMENTS.md`.
 3. Implement Phase 1 verbatim (328 tests, counts per **BUILD_STATUS.md**).
 4. Ask the user which Phase 2 extensions to include before proceeding further.
 
@@ -1541,11 +1528,9 @@ The AI should:
 **End of blueprint.**
 
 Authoritative references in priority order:
-1. `.kiro/specs/spark-rule-engine/requirements.md` — 34 requirements
-2. `.kiro/specs/spark-rule-engine/design.md` — architecture + 38 properties
-3. `.kiro/specs/spark-rule-engine/tasks.md` — 25-task plan
-4. `AI_REPRODUCTION_BLUEPRINT.md` — reproduction + extensions (this file)
-5. `BUILD_STATUS.md` — current engine state
+1. `docs/REQUIREMENTS.md` — requirements and architecture
+2. `idea-brainstrom.md` — reproduction + extensions (this file)
+3. `BUILD_STATUS.md` — current engine state
 
 
 ## 22. Phase 2d — Graph-Enriched Fraud Rules
@@ -2047,19 +2032,17 @@ independent of Phase 2 but benefits from settled Phase 2 APIs.
 Every property is universally quantified, machine-verified by Hypothesis
 (Python) or ScalaCheck (Scala port), minimum 100 iterations.
 
-## 29. Revised AI Code Generator Instructions
+## 29. Revised Code Generator Instructions
 
 When given only a short user prompt:
 
 > "Build SparkRules."
 
-The AI should:
+The code generator should:
 
-1. Read `AI_REPRODUCTION_BLUEPRINT.md` (this file) first.
-2. Read the three canonical specs:
-   - `.kiro/specs/spark-rule-engine/requirements.md`
-   - `.kiro/specs/spark-rule-engine/design.md`
-   - `.kiro/specs/spark-rule-engine/tasks.md`
+1. Read this blueprint (`idea-brainstrom.md`) first.
+2. Read the canonical in-repo requirement spec:
+   - `docs/REQUIREMENTS.md`
 3. Implement Phase 1 verbatim (328 tests, 38 properties; see **BUILD_STATUS.md**).
 4. Ask the user which Phase 2 extensions to include:
    - 2a Data quality
@@ -2071,7 +2054,7 @@ The AI should:
    - 2g RBAC + SSO (OIDC / SAML / IAM)
    - 2h Dev UX (CLI / IDE / SDK / chaos tests)
 5. For each selected Phase 2 stream, create a sub-spec under
-   `.kiro/specs/sparkrules-<extension>/` with requirements, design, tasks
+   `docs/extensions/<extension>/` with requirements, design, tasks
    following the same EARS + correctness-property methodology as Phase 1.
 6. Implement one Phase 2 stream at a time; run `pytest tests/ -q` after each.
 7. Phase 3 (UI) only after at least one Phase 2 stream is complete.
@@ -2089,10 +2072,8 @@ Never fork the engine. Extensions plug in through the existing abstractions
 
 | File | Purpose |
 |---|---|
-| `.kiro/specs/spark-rule-engine/requirements.md` | 34 EARS requirements (Phase 1) |
-| `.kiro/specs/spark-rule-engine/design.md` | Architecture + 38 properties (Phase 1) |
-| `.kiro/specs/spark-rule-engine/tasks.md` | 25-task implementation plan (Phase 1) |
-| `AI_REPRODUCTION_BLUEPRINT.md` | This file — reproduction + Phase 2 extensions |
+| `docs/REQUIREMENTS.md` | Requirements and architecture (Phase 1) |
+| `idea-brainstrom.md` | This file — reproduction + Phase 2 extensions |
 | `USE_CASES.md` | Five real-world domain catalogues + execution-control feature map |
 | `BUILD_STATUS.md` | Current engine state |
 
@@ -2100,16 +2081,16 @@ Phase 2 extension specs (to be created as streams are picked up):
 
 | Planned path | Coverage |
 |---|---|
-| `.kiro/specs/sparkrules-data-quality/` | Phase 2a |
-| `.kiro/specs/sparkrules-runtime-profiles/` | Phase 2b |
-| `.kiro/specs/sparkrules-ai-assist/` | Phase 2c |
-| `.kiro/specs/sparkrules-graph-fraud/` | Phase 2d |
-| `.kiro/specs/sparkrules-ml-scoring/` | Phase 2e |
-| `.kiro/specs/sparkrules-lineage/` | Phase 2f |
-| `.kiro/specs/sparkrules-rbac/` | Phase 2g |
-| `.kiro/specs/sparkrules-devux/` | Phase 2h |
-| `.kiro/specs/sparkrules-ui/` | Phase 3 |
-| `.kiro/specs/sparkrules-scala-port/` | Phase 4 |
+| `docs/extensions/data-quality/` | Phase 2a |
+| `docs/extensions/runtime-profiles/` | Phase 2b |
+| `docs/extensions/ai-assist/` | Phase 2c |
+| `docs/extensions/graph-fraud/` | Phase 2d |
+| `docs/extensions/ml-scoring/` | Phase 2e |
+| `docs/extensions/lineage/` | Phase 2f |
+| `docs/extensions/rbac/` | Phase 2g |
+| `docs/extensions/devux/` | Phase 2h |
+| `docs/extensions/ui/` | Phase 3 |
+| `docs/extensions/scala-port/` | Phase 4 |
 
 
 ## 30. Phase 2j — dbt Integration
@@ -2424,8 +2405,8 @@ Users opt in per tenant. Register-once, use-from-any-rule.
 
 When given a short user prompt like "Build SparkRules":
 
-1. **Read `AI_REPRODUCTION_BLUEPRINT.md` in full** (this file).
-2. **Read the three canonical specs** referenced at §14 of this file.
+1. **Read this blueprint in full** (`idea-brainstrom.md`).
+2. **Read `docs/REQUIREMENTS.md`**.
 3. **Read `USE_CASES.md`** for concrete domain semantics.
 4. **Read `ARCHITECTURE.md`** for system context diagrams.
 5. **Implement Phase 1 per §10** (9 waves, 25 tasks, 38 properties).
@@ -2450,7 +2431,7 @@ When given a short user prompt like "Build SparkRules":
    | 4 | Scala port | Production JVM path |
 
 7. For each selected Phase 2 stream, create a sub-spec under
-   `.kiro/specs/sparkrules-<extension>/` with requirements, design, tasks
+   `docs/extensions/<extension>/` with requirements, design, tasks
    using the same EARS + correctness-property methodology as Phase 1.
 8. Implement one Phase 2 stream at a time; run `pytest tests/ -q` after each.
 9. Never fork the engine. Extensions plug in through the existing protocols
@@ -2475,7 +2456,7 @@ The code agent may declare the build complete when:
 
 - `pytest tests/ -q` returns `328 passed, 2 skipped, 1 deselected` on a fresh clone.
 - `pytest tests/perf -m perf -q` returns `1 passed`.
-- Every requirement in `.kiro/specs/spark-rule-engine/requirements.md` maps
+- Every requirement in `docs/REQUIREMENTS.md` maps
   to at least one test.
 - Every correctness property P1-P38 (plus extension properties) has a
   property-based test with at least 100 Hypothesis examples.
@@ -2488,4 +2469,4 @@ Early drafts used **234 passed, 1 deselected**; Phase 1 on this tree is **328 pa
 2 skipped, 1 deselected** with **100%** line coverage on `src/sre` (see
 **BUILD_STATUS.md**). The blueprint text in **§8** and **§34.2** is aligned to that
 gate. **Authoritative** numbers and links: **`BUILD_STATUS.md`**, [`docs/README.md`](docs/README.md),
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md), and [`docs/CURSOR_DOCS_MCP.md`](docs/CURSOR_DOCS_MCP.md).
+and [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).

@@ -8,7 +8,7 @@ All examples assume a working install of the package from the repo root:
 python -m pip install -e ".[test]"
 ```
 
-On Windows, if `import sre` fails, use the **same** interpreter for `pip` and `python` (see [docs/CURSOR_DOCS_MCP.md](../docs/CURSOR_DOCS_MCP.md)).
+On Windows, if `import sre` fails, use the **same** interpreter for `pip` and `python`.
 
 | Path | What it shows |
 |------|----------------|
