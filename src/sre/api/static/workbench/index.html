@@ -338,6 +338,19 @@
       font-size: 0.82rem;
       margin-top: 0.55rem;
     }
+    details.adv-panel {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.45rem 0.85rem 0.75rem;
+      background: var(--panel);
+    }
+    details.adv-panel summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0.25rem 0;
+    }
+    details.adv-panel .adv-body { padding-top: 0.5rem; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       nav {
@@ -387,6 +400,8 @@
       <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark">Light</button>
       <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
+      <input type="text" id="hdr-roles" placeholder="X-Roles (optional)" style="max-width:200px" title="e.g. ai_reviewer, dq_steward, platform_admin" />
+      <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
         <span class="link-quiet" style="padding:0 0.2rem;pointer-events:none">·</span>
@@ -401,6 +416,7 @@
       <button type="button" data-view="assets">Rule assets</button>
       <button type="button" data-view="author">Author / validate</button>
       <button type="button" data-view="sim">Simulate</button>
+      <button type="button" data-view="advanced">Advanced tools</button>
       <p class="nav-label">Ship &amp; control</p>
       <button type="button" data-view="deploy">Deployment</button>
       <button type="button" data-view="template">Template helper</button>
@@ -495,11 +511,129 @@
           <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
+          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">Bulk load (CSV with header row, JSON array, or JSONL):</p>
+          <div class="row" style="flex-wrap:wrap;align-items:center">
+            <input type="file" id="fact-bulk-file" accept=".csv,.json,.jsonl,.txt,text/csv,application/json" />
+            <label class="mono" style="font-size:0.8rem;color:var(--muted)">Row index</label>
+            <input type="number" id="fact-bulk-idx" value="0" min="0" style="max-width:72px" />
+            <button type="button" class="btn btn-sm" id="btn-bulk-to-fact">Load row into fact JSON</button>
+            <button type="button" class="btn btn-sm" id="btn-sim-batch">Run batch (first 25 rows)</button>
+          </div>
+          <pre id="sim-batch-out" class="mono" style="max-height:160px;overflow:auto;display:none;font-size:0.78rem"></pre>
           <div class="row">
             <button class="btn" type="button" id="btn-sim">Run simulation</button>
           </div>
           <pre id="sim-out" class="panel mono"></pre>
         </div>
+      </section>
+      <section id="view-advanced" class="view hidden">
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled — graph response is JSON only.</p>
+        <details class="adv-panel" open>
+          <summary>Natural language → rule suggestions</summary>
+          <div class="adv-body">
+            <div class="row">
+              <input id="adv-suggest-ns" value="default" style="max-width:100px" />
+              <input id="adv-suggest-handle" placeholder="rule_handle" value="candidate" style="max-width:160px" />
+              <button type="button" class="btn" id="btn-adv-suggest">POST /ai/suggest-rules</button>
+            </div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Sample facts JSON array (optional):</p>
+            <textarea id="adv-suggest-facts" style="min-height:56px;width:100%">[]</textarea>
+            <pre id="adv-suggest-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel" open>
+          <summary>AI suggestions queue</summary>
+          <div class="adv-body">
+            <div class="row">
+              <button type="button" class="btn" id="btn-adv-ai-refresh">Refresh list</button>
+            </div>
+            <div id="adv-ai-table" style="margin-top:0.5rem;font-size:0.85rem"></div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact for simulate (JSON object):</p>
+            <textarea id="adv-ai-sim-fact" style="min-height:52px;width:100%">{"t":{}}</textarea>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Chain / shadow / counterfactual</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">DRL (multi-rule for chain):</p>
+            <textarea id="adv-chain-drl" style="min-height:100px;width:100%">rule a when $t : T ( true ) then result.n = 1; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact JSON:</p>
+            <textarea id="adv-chain-fact" style="min-height:52px;width:100%">{"t":{}}</textarea>
+            <div class="row">
+              <label class="mono" style="font-size:0.75rem"><input type="checkbox" id="adv-chain-sod" /> stop_on_decline</label>
+              <button type="button" class="btn" id="btn-adv-chain">POST /simulations/chain</button>
+            </div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Shadow — primary DRL:</p>
+            <textarea id="adv-sh-primary" style="min-height:72px;width:100%">rule a when $t : T ( true ) then result.d = "p"; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Shadow DRL:</p>
+            <textarea id="adv-sh-shadow" style="min-height:72px;width:100%">rule b when $t : T ( true ) then result.d = "s"; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact + run_id:</p>
+            <input id="adv-sh-run" placeholder="run_id" value="shadow-ui" style="max-width:200px" />
+            <textarea id="adv-sh-fact" style="min-height:44px;width:100%;margin-top:0.35rem">{"t":{}}</textarea>
+            <button type="button" class="btn" id="btn-adv-shadow">POST /simulations/shadow</button>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Counterfactual — same DRL, two facts:</p>
+            <textarea id="adv-cf-drl" style="min-height:72px;width:100%">rule r when $t : T ( $t.x > 5 ) then result.v = 1; end</textarea>
+            <p class="mono" style="font-size:0.75rem">baseline_fact</p>
+            <textarea id="adv-cf-base" style="min-height:40px;width:100%">{"t":{"x":1}}</textarea>
+            <p class="mono" style="font-size:0.75rem">candidate_fact</p>
+            <textarea id="adv-cf-cand" style="min-height:40px;width:100%">{"t":{"x":9}}</textarea>
+            <button type="button" class="btn" id="btn-adv-cf">POST /simulations/counterfactual</button>
+            <pre id="adv-multi-out" class="mono" style="max-height:240px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Time travel (capture / replay)</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Capture — run_id, DRL, fact:</p>
+            <input id="adv-tt-run" placeholder="run_id" style="max-width:220px;margin-bottom:0.35rem" />
+            <textarea id="adv-tt-drl" style="min-height:80px;width:100%">rule r when $t : T ( true ) then result.ok = true; end</textarea>
+            <textarea id="adv-tt-fact" style="min-height:44px;width:100%">{"t":{"x":1}}</textarea>
+            <button type="button" class="btn" id="btn-adv-tt-cap">POST /debug/time-travel/capture</button>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Replay — snapshot_id from capture response, same run_id:</p>
+            <input id="adv-tt-snap" type="number" placeholder="snapshot_id" style="max-width:120px" />
+            <input id="adv-tt-replay-run" placeholder="run_id" style="max-width:220px" />
+            <textarea id="adv-tt-override" style="min-height:36px;width:100%;margin-top:0.35rem" placeholder='optional fact_override JSON (or leave {})'></textarea>
+            <button type="button" class="btn" id="btn-adv-tt-rep">POST /debug/time-travel/replay</button>
+            <pre id="adv-tt-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>DQ evaluate</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Requires role <span class="mono">dq_steward</span> (or admin). Fact JSON:</p>
+            <textarea id="adv-dq-fact" style="min-height:44px;width:100%">{"id": "row-1"}</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Checks JSON array:</p>
+            <textarea id="adv-dq-checks" style="min-height:100px;width:100%">[{"kind":"not_null","field":"id"}]</textarea>
+            <div class="row">
+              <input id="adv-dq-runid" value="dq-ui" style="max-width:140px" />
+              <button type="button" class="btn" id="btn-adv-dq">POST /dq/evaluate</button>
+            </div>
+            <pre id="adv-dq-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Graph enrich (JSON)</summary>
+          <div class="adv-body">
+            <textarea id="adv-graph-fact" style="min-height:56px;width:100%">{"entity_id": "e1", "related": []}</textarea>
+            <div class="row">
+              <input id="adv-graph-entity" value="entity_id" style="max-width:140px" />
+              <label class="mono" style="font-size:0.8rem"><input type="checkbox" id="adv-graph-pii" /> pii_reveal</label>
+              <button type="button" class="btn" id="btn-adv-graph">POST /graph/enrich</button>
+            </div>
+            <pre id="adv-graph-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Lineage events (run history)</summary>
+          <div class="adv-body">
+            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events — typically needs <span class="mono">platform_admin</span>.</p>
+            <div class="row">
+              <input id="adv-lin-run" placeholder="filter run_id (optional)" style="max-width:220px" />
+              <button type="button" class="btn" id="btn-adv-lin">Load events</button>
+            </div>
+            <pre id="adv-lin-out" class="mono" style="max-height:280px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
       </section>
       <section id="view-deploy" class="view hidden">
         <div class="panel">
@@ -544,6 +678,32 @@
             <button class="btn" type="button" id="btn-gov-refresh">Refresh pins</button>
           </div>
           <div id="gov-pins" class="mono" style="margin-top:0.75rem"></div>
+        </div>
+        <div class="panel">
+          <h2>Deprecations</h2>
+          <p style="color:var(--muted);font-size:0.9rem">Propose → approve → enforce deactivates matching rule versions. Requires <span class="mono">rule_admin</span> for mutations.</p>
+          <div class="row">
+            <input type="text" id="dep-ns" value="default" style="max-width:120px" />
+            <button type="button" class="btn" id="btn-dep-refresh">List deprecations</button>
+          </div>
+          <div id="dep-list" class="mono" style="margin-top:0.5rem;font-size:0.85rem"></div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Propose</p>
+          <div class="row">
+            <input type="text" id="dep-prop-handle" placeholder="rule_handle" style="max-width:180px" />
+            <input type="text" id="dep-prop-reason" placeholder="reason" style="flex:1;min-width:160px" />
+            <button type="button" class="btn" id="btn-dep-propose">Propose</button>
+          </div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">Approve</p>
+          <div class="row">
+            <input type="text" id="dep-app-handle" placeholder="rule_handle" style="max-width:180px" />
+            <button type="button" class="btn" id="btn-dep-approve">Approve</button>
+          </div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">Enforce (optional handle filter)</p>
+          <div class="row">
+            <input type="text" id="dep-enf-handle" placeholder="rule_handle or empty for all approved" style="max-width:260px" />
+            <button type="button" class="btn" id="btn-dep-enforce">Enforce</button>
+          </div>
+          <pre id="dep-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
         </div>
       </section>
       <section id="view-template" class="view hidden">
@@ -592,8 +752,11 @@
       document.querySelectorAll("nav button").forEach(function (b) {
         b.classList.toggle("active", b.getAttribute("data-view") === name);
       });
-      if (name === "governance" && typeof loadGovernancePins === "function") {
-        loadGovernancePins();
+      if (name === "governance") {
+        if (typeof loadGovernancePins === "function") loadGovernancePins();
+        if (typeof loadDeprecations === "function") {
+          loadDeprecations().catch(function () {});
+        }
       }
       if (name === "overview" && typeof loadDashboard === "function") {
         loadDashboard().catch(function (e) { setMessage(e.message, "err"); });
@@ -603,6 +766,9 @@
       }
       if ((name === "author" || name === "sim") && typeof window.layoutDrlMonaco === "function") {
         requestAnimationFrame(function () { window.layoutDrlMonaco(); });
+      }
+      if (name === "advanced" && typeof loadAdvAiTable === "function") {
+        loadAdvAiTable().catch(function () {});
       }
     }
     (function initTheme() {
@@ -643,11 +809,20 @@
       if (!v) return {};
       return { "X-API-Key": v };
     }
+    function roleHeaders() {
+      var o = {};
+      var r = document.getElementById("hdr-roles");
+      if (r && r.value.trim()) o["X-Roles"] = r.value.trim();
+      var t = document.getElementById("hdr-tenant");
+      if (t && t.value.trim()) o["X-Tenant-Id"] = t.value.trim();
+      return o;
+    }
     async function getJson(path, opts) {
       opts = opts || {};
       const h = Object.assign(
         { "Accept": "application/json" },
         apiKeyHeaders(),
+        roleHeaders(),
         opts.headers || {}
       );
       const r = await fetch(path, Object.assign({}, opts, { headers: h }));
@@ -659,7 +834,8 @@
         method: "POST",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
-          apiKeyHeaders()
+          apiKeyHeaders(),
+          roleHeaders()
         ),
         body: JSON.stringify(body),
       });
@@ -672,7 +848,8 @@
         method: "PATCH",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
-          apiKeyHeaders()
+          apiKeyHeaders(),
+          roleHeaders()
         ),
         body: JSON.stringify(body),
       });
@@ -883,6 +1060,90 @@
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
+    window._bulkFacts = [];
+    function parseBulkFactsFromText(text) {
+      text = (text || "").trim();
+      if (!text) return [];
+      if (text.charAt(0) === "[") {
+        var arr = JSON.parse(text);
+        if (!Array.isArray(arr)) throw new Error("JSON root must be an array of objects");
+        arr.forEach(function (x, i) {
+          if (x == null || typeof x !== "object" || Array.isArray(x)) {
+            throw new Error("Row " + i + " must be a JSON object");
+          }
+        });
+        return arr;
+      }
+      var lines = text.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+      var jsonlOk = true;
+      var jsonl = [];
+      for (var li = 0; li < lines.length; li++) {
+        try {
+          var o = JSON.parse(lines[li]);
+          if (typeof o !== "object" || o === null || Array.isArray(o)) { jsonlOk = false; break; }
+          jsonl.push(o);
+        } catch (e) {
+          jsonlOk = false;
+          break;
+        }
+      }
+      if (jsonlOk && jsonl.length) return jsonl;
+      if (!lines.length) return [];
+      var hdr = lines[0].split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); });
+      var rows = [];
+      for (var r = 1; r < lines.length; r++) {
+        var cells = lines[r].split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); });
+        var row = {};
+        for (var c = 0; c < hdr.length; c++) {
+          row[hdr[c]] = cells[c] != null ? cells[c] : "";
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+    function loadAdvAiTable() {
+      return getJson("/ai/suggestions").then(function (rows) {
+        var host = document.getElementById("adv-ai-table");
+        if (!host) return;
+        if (!rows.length) {
+          host.innerHTML = "<span style='color:var(--muted)'>No pending suggestions.</span>";
+          setMessage("No pending AI suggestions.", "");
+          return;
+        }
+        var h = "<table style='width:100%;border-collapse:collapse'><tr><th>ID</th><th>Handle</th><th>Status</th><th>Sim OK</th><th></th></tr>";
+        rows.forEach(function (s) {
+          var sim = s.simulator_result && s.simulator_result.ok;
+          var ds = JSON.stringify(s.id);
+          h += "<tr><td class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id) + "</td><td class='mono'>" + escapeHtml(s.rule_handle) + "</td><td>" + escapeHtml(s.status) + "</td><td>" + (sim ? "yes" : "no") + "</td><td style='white-space:nowrap'>";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-sim' data-sid=" + ds + ">Simulate</button> ";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-appr' data-sid=" + ds + ">Approve</button> ";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-rej' data-sid=" + ds + ">Reject</button>";
+          h += "</td></tr>";
+        });
+        h += "</table>";
+        host.innerHTML = h;
+        setMessage("Loaded " + rows.length + " AI suggestion(s).", "ok");
+      });
+    }
+    function loadDeprecations() {
+      var ns0 = document.getElementById("dep-ns");
+      var ns = (ns0 && ns0.value.trim()) || "";
+      var q = ns ? ("?namespace=" + encodeURIComponent(ns)) : "";
+      return getJson("/governance/deprecations" + q).then(function (rows) {
+        var host = document.getElementById("dep-list");
+        if (!host) return;
+        if (!rows.length) {
+          host.innerHTML = "<span style='color:var(--muted)'>No deprecations.</span>";
+          return;
+        }
+        var h = "<table style='width:100%;border-collapse:collapse'><tr><th>Handle</th><th>Status</th><th>Reason</th></tr>";
+        rows.forEach(function (r) {
+          h += "<tr><td class='mono'>" + escapeHtml(r.rule_handle) + "</td><td>" + escapeHtml(r.status) + "</td><td>" + escapeHtml(r.reason || "") + "</td></tr>";
+        });
+        h += "</table>";
+        host.innerHTML = h;
+      });
+    }
     function renderFireSamples(totalRules) {
       var title = document.getElementById("fire-sample-title");
       if (title) title.textContent = "Sample rule-fire results (top 20 of " + totalRules + ")";
@@ -937,7 +1198,11 @@
     async function downloadRulePack() {
       setMessage("Preparing download…", "");
       try {
-        const h = Object.assign({ "Accept": "application/json" }, apiKeyHeaders());
+        const h = Object.assign(
+          { "Accept": "application/json" },
+          apiKeyHeaders(),
+          roleHeaders()
+        );
         const r = await fetch("/rules/export", { method: "GET", headers: h });
         if (!r.ok) { throw new Error((await r.text()) || r.status); }
         const blob = await r.blob();
@@ -1091,6 +1356,228 @@
       postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
         document.getElementById("sim-out").textContent = JSON.stringify(j, null, 2);
         setMessage("Simulation complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("fact-bulk-file").addEventListener("change", function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          window._bulkFacts = parseBulkFactsFromText(String(rd.result || ""));
+          setMessage("Loaded " + window._bulkFacts.length + " row(s) from file.", "ok");
+        } catch (e) {
+          window._bulkFacts = [];
+          setMessage("Bulk parse failed: " + e.message, "err");
+        }
+      };
+      rd.onerror = function () { setMessage("Could not read file.", "err"); };
+      rd.readAsText(f, "UTF-8");
+      this.value = "";
+    });
+    document.getElementById("btn-bulk-to-fact").addEventListener("click", function () {
+      var rows = window._bulkFacts || [];
+      if (!rows.length) { setMessage("Load a CSV / JSON / JSONL file first.", "err"); return; }
+      var idx = parseInt(document.getElementById("fact-bulk-idx").value, 10) || 0;
+      if (idx < 0 || idx >= rows.length) { setMessage("Row index out of range (0–" + (rows.length - 1) + ").", "err"); return; }
+      document.getElementById("fact-json").value = JSON.stringify(rows[idx], null, 2);
+      setMessage("Loaded bulk row " + idx + " into fact JSON.", "ok");
+    });
+    document.getElementById("btn-sim-batch").addEventListener("click", function () {
+      var drl = getSimDrl();
+      var rows = window._bulkFacts || [];
+      if (!rows.length) { setMessage("Load a bulk file first.", "err"); return; }
+      var n = Math.min(25, rows.length);
+      var outEl = document.getElementById("sim-batch-out");
+      outEl.style.display = "block";
+      outEl.textContent = "Running…";
+      var results = [];
+      (function step(i) {
+        if (i >= n) {
+          outEl.textContent = JSON.stringify(results, null, 2);
+          setMessage("Batch simulation: " + n + " row(s).", "ok");
+          return;
+        }
+        postJson("/simulations", { drl: drl, fact: rows[i] }).then(function (j) {
+          results.push({ row: i, ok: true, result: j });
+          step(i + 1);
+        }).catch(function (e) {
+          results.push({ row: i, ok: false, error: e.message });
+          step(i + 1);
+        });
+      })(0);
+    });
+    document.getElementById("btn-adv-suggest").addEventListener("click", function () {
+      var ns = (document.getElementById("adv-suggest-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("adv-suggest-handle").value || "candidate").trim() || "candidate";
+      var facts;
+      try { facts = JSON.parse(document.getElementById("adv-suggest-facts").value || "[]"); } catch (e) { setMessage("Facts must be a JSON array: " + e, "err"); return; }
+      if (!Array.isArray(facts)) { setMessage("Facts must be a JSON array.", "err"); return; }
+      postJson("/ai/suggest-rules", { namespace: ns, rule_handle: h, facts: facts }).then(function (j) {
+        document.getElementById("adv-suggest-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Suggestions created.", "ok");
+        if (typeof loadAdvAiTable === "function") loadAdvAiTable().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-ai-refresh").addEventListener("click", function () {
+      loadAdvAiTable().catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("adv-ai-table").addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      var sid = t.getAttribute("data-sid");
+      if (!sid) return;
+      if (t.classList.contains("js-adv-ai-sim")) {
+        var fact;
+        try { fact = JSON.parse(document.getElementById("adv-ai-sim-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/simulate", { fact: fact }).then(function () {
+          setMessage("Simulated suggestion " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      } else if (t.classList.contains("js-adv-ai-appr")) {
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/approve", {}).then(function () {
+          setMessage("Approved " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      } else if (t.classList.contains("js-adv-ai-rej")) {
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/reject", {}).then(function () {
+          setMessage("Rejected " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      }
+    });
+    document.getElementById("btn-adv-chain").addEventListener("click", function () {
+      var drl = document.getElementById("adv-chain-drl").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-chain-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var sodEl = document.getElementById("adv-chain-sod");
+      var body = { drl: drl, fact: fact, agenda_group_modes: {} };
+      if (sodEl && sodEl.checked) body.stop_on_decline = true;
+      postJson("/simulations/chain", body).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Chain simulation done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-shadow").addEventListener("click", function () {
+      var primary_drl = document.getElementById("adv-sh-primary").value || "";
+      var shadow_drl = document.getElementById("adv-sh-shadow").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-sh-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var run_id = (document.getElementById("adv-sh-run").value || "").trim() || "shadow-ui";
+      postJson("/simulations/shadow", {
+        primary_drl: primary_drl,
+        shadow_drl: shadow_drl,
+        fact: fact,
+        run_id: run_id,
+      }).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Shadow simulation done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-cf").addEventListener("click", function () {
+      var drl = document.getElementById("adv-cf-drl").value || "";
+      var baseline_fact;
+      var candidate_fact;
+      try { baseline_fact = JSON.parse(document.getElementById("adv-cf-base").value || "{}"); } catch (e) { setMessage("Invalid baseline_fact: " + e, "err"); return; }
+      try { candidate_fact = JSON.parse(document.getElementById("adv-cf-cand").value || "{}"); } catch (e) { setMessage("Invalid candidate_fact: " + e, "err"); return; }
+      postJson("/simulations/counterfactual", { drl: drl, baseline_fact: baseline_fact, candidate_fact: candidate_fact }).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Counterfactual done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-tt-cap").addEventListener("click", function () {
+      var run_id = (document.getElementById("adv-tt-run").value || "").trim();
+      if (!run_id) { setMessage("run_id required for capture.", "err"); return; }
+      var drl = document.getElementById("adv-tt-drl").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-tt-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      postJson("/debug/time-travel/capture", { run_id: run_id, drl: drl, fact: fact }).then(function (j) {
+        document.getElementById("adv-tt-out").textContent = JSON.stringify(j, null, 2);
+        if (j.snapshot_id != null) document.getElementById("adv-tt-snap").value = String(j.snapshot_id);
+        if (j.run_id) document.getElementById("adv-tt-replay-run").value = j.run_id;
+        setMessage("Time-travel capture stored snapshot " + j.snapshot_id + ".", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-tt-rep").addEventListener("click", function () {
+      var snap = parseInt(document.getElementById("adv-tt-snap").value, 10);
+      if (isNaN(snap)) { setMessage("snapshot_id (number) required.", "err"); return; }
+      var run_id = (document.getElementById("adv-tt-replay-run").value || "").trim();
+      if (!run_id) { setMessage("run_id required for replay.", "err"); return; }
+      var body = { snapshot_id: snap, run_id: run_id };
+      var ovRaw = (document.getElementById("adv-tt-override").value || "").trim();
+      if (ovRaw && ovRaw !== "{}") {
+        try { body.fact_override = JSON.parse(ovRaw); } catch (e) { setMessage("Invalid fact_override JSON: " + e, "err"); return; }
+      }
+      postJson("/debug/time-travel/replay", body).then(function (j) {
+        document.getElementById("adv-tt-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Replay complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-dq").addEventListener("click", function () {
+      var fact;
+      var checks;
+      try { fact = JSON.parse(document.getElementById("adv-dq-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      try { checks = JSON.parse(document.getElementById("adv-dq-checks").value || "[]"); } catch (e) { setMessage("Invalid checks JSON: " + e, "err"); return; }
+      if (!Array.isArray(checks)) { setMessage("checks must be a JSON array.", "err"); return; }
+      var run_id = (document.getElementById("adv-dq-runid").value || "").trim() || "dq-ui";
+      postJson("/dq/evaluate", { fact: fact, checks: checks, run_id: run_id, persist: false }).then(function (j) {
+        document.getElementById("adv-dq-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("DQ evaluate complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-graph").addEventListener("click", function () {
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-graph-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var entity_field = (document.getElementById("adv-graph-entity").value || "entity_id").trim() || "entity_id";
+      var pii = document.getElementById("adv-graph-pii") && document.getElementById("adv-graph-pii").checked;
+      postJson("/graph/enrich", { fact: fact, entity_field: entity_field, pii_reveal: pii }).then(function (j) {
+        document.getElementById("adv-graph-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Graph enrich done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-lin").addEventListener("click", function () {
+      var run = (document.getElementById("adv-lin-run").value || "").trim();
+      var path = "/lineage/events" + (run ? ("?run_id=" + encodeURIComponent(run)) : "");
+      getJson(path).then(function (rows) {
+        document.getElementById("adv-lin-out").textContent = JSON.stringify(rows, null, 2);
+        setMessage("Loaded " + rows.length + " lineage event(s).", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-refresh").addEventListener("click", function () {
+      loadDeprecations().catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-propose").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-prop-handle").value || "").trim();
+      var reason = (document.getElementById("dep-prop-reason").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      if (!reason) { setMessage("reason required.", "err"); return; }
+      postJson("/governance/deprecations/propose", { namespace: ns, rule_handle: h, reason: reason }).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Deprecation proposed.", "ok");
+        loadDeprecations().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-approve").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-app-handle").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/governance/deprecations/approve", { namespace: ns, rule_handle: h }).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Deprecation approved.", "ok");
+        loadDeprecations().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-enforce").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-enf-handle").value || "").trim();
+      var body = { namespace: ns };
+      if (h) body.rule_handle = h;
+      postJson("/governance/deprecations/enforce", body).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Enforce complete: " + (j.deactivated_versions || 0) + " version(s) deactivated.", "ok");
+        loadDeprecations().catch(function () {});
+        if (typeof loadAssets === "function") loadAssets().catch(function () {});
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
     function loadDeployment() {
