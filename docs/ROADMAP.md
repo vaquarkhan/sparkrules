@@ -1,6 +1,6 @@
 # Roadmap
 
-## Phase 3 (in progress)
+## Phase 3
 
 Focus: **enterprise workbench and packaging**.
 
@@ -8,8 +8,8 @@ Focus: **enterprise workbench and packaging**.
 - [x] **Version diff** (unified) for two versions of the same `rule_handle` (`/rules/diff`).
 - [x] **Rule pack** export (`/rules/export`) and bulk import (`/rules/import`), format `sparkrules-rulepack-1`.
 - [x] Workbench UI: filters, pack download, import, compare.
-- [ ] Optional: auth (API keys or OIDC) for the API and workbench in shared environments.
-- [ ] PyPI and container releases wired to your org with trusted publishing (build artifacts already produced in CI).
+- [x] Optional: **API key** for mutating API calls when `SPARKRULES_API_KEY` is set (Workbench sends `X-API-Key`; OIDC for shared environments is future work). See [README.md](../README.md#api-run).
+- [x] **PyPI / container** release path documented ([PUBLISHING.md](PUBLISHING.md)); trusted publishing and registry push are org-specific. CI **Release build** workflow produces sdist and wheel artifacts.
 
 ## Phase 4 (future)
 

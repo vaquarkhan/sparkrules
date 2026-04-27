@@ -25,6 +25,7 @@ from sre.api.schemas import (
     SimulationRequest,
     SimulationResponse,
 )
+from sre.api.security import install_optional_api_key_middleware
 from sre.dq import DataQualityEngine
 from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
@@ -323,6 +324,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
             run_id=req.run_id,
             dq_snapshot_id=dq_snapshot_id,
         )
+
+    install_optional_api_key_middleware(app)
 
     static_dir = Path(__file__).resolve().parent / "static" / "workbench"
     app.mount(

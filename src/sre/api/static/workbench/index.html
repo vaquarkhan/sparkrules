@@ -97,7 +97,11 @@
 <body>
   <header>
     <h1>SparkRules Workbench</h1>
-    <span class="mono"><a href="/docs" target="_blank" rel="noopener">OpenAPI</a> &middot; <a href="/health" target="_blank" rel="noopener">Health</a></span>
+    <div class="row" style="margin:0;flex-wrap:wrap;justify-content:flex-end">
+      <input type="password" id="api-key" placeholder="X-API-Key (if SPARKRULES_API_KEY is set on server)" style="max-width:280px" title="Enter the same value as the server environment variable" />
+      <button type="button" class="btn" id="btn-api-key-save">Save key in browser</button>
+      <span class="mono"><a href="/docs" target="_blank" rel="noopener">OpenAPI</a> &middot; <a href="/health" target="_blank" rel="noopener">Health</a></span>
+    </div>
   </header>
   <div class="layout">
     <nav>
@@ -211,15 +215,40 @@
     document.querySelectorAll("nav button").forEach(function (b) {
       b.addEventListener("click", function () { showView(b.getAttribute("data-view")); });
     });
+    (function initApiKey() {
+      var inp = document.getElementById("api-key");
+      if (inp) inp.value = localStorage.getItem("sparkrulesApiKey") || "";
+      var btn = document.getElementById("btn-api-key-save");
+      if (btn) btn.addEventListener("click", function () {
+        var v = (document.getElementById("api-key") && document.getElementById("api-key").value) || "";
+        if (v) localStorage.setItem("sparkrulesApiKey", v); else localStorage.removeItem("sparkrulesApiKey");
+        setMessage("API key " + (v ? "saved in this browser" : "cleared") + ".", "ok");
+      });
+    })();
+    function apiKeyHeaders() {
+      var v = (document.getElementById("api-key") && document.getElementById("api-key").value) || "";
+      if (!v) v = localStorage.getItem("sparkrulesApiKey") || "";
+      if (!v) return {};
+      return { "X-API-Key": v };
+    }
     async function getJson(path, opts) {
-      const r = await fetch(path, Object.assign({ headers: { "Accept": "application/json" } }, opts));
+      opts = opts || {};
+      const h = Object.assign(
+        { "Accept": "application/json" },
+        apiKeyHeaders(),
+        opts.headers || {}
+      );
+      const r = await fetch(path, Object.assign({}, opts, { headers: h }));
       if (!r.ok) throw new Error((await r.text()) || r.status);
       return r.json();
     }
     async function postJson(path, body) {
       const r = await fetch(path, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: Object.assign(
+          { "Content-Type": "application/json", "Accept": "application/json" },
+          apiKeyHeaders()
+        ),
         body: JSON.stringify(body),
       });
       const t = await r.text();

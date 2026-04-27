@@ -156,6 +156,8 @@ Open http://127.0.0.1:8042/docs
 
 If the browser shows **connection refused**, the server is not running: keep the terminal open, use the **same port** in the URL, and use `http://` not `https://` unless you use a proxy. If it still fails, run **`scripts\check_env.cmd`** (tests import + prints which `python` is used). Multiple Pythons (Anaconda, Store, etc.): use the same interpreter for `pip install` and `dev_server` — the server prints **`Python: ...`** at startup; that path must be the one you installed into.
 
+**Shared or production exposure:** if you set the environment variable **`SPARKRULES_API_KEY`**, the API requires the same value in the **`X-API-Key`** header (or `Authorization: Bearer …`) for `POST`/`PUT`/`PATCH`/`DELETE` requests. The Workbench can store the key in the browser (field in the header bar). `GET`/`HEAD`/`OPTIONS` stay open so health checks and read-only use stay simple; tighten network access separately if you need read protection.
+
 ## Rules Workbench (browser UI)
 
 Drools Workbench–style **authoring and operations shell** (rule asset list, DRL validate, simulation, engine/deployment readout, template helper):
@@ -164,7 +166,7 @@ Drools Workbench–style **authoring and operations shell** (rule asset list, DR
 
 The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
 
-**Phase 3 (started):** search and filter assets, download or import a **rule pack** JSON, and **compare two versions** of the same rule handle. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Phase 3:** search and filter assets, download or import a **rule pack** JSON, and **compare two versions** of the same rule handle. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Docker
 
@@ -191,6 +193,7 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Citation metadata | [CITATION.cff](CITATION.cff) |
 | Roadmap (Phase 3 / 4) | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| PyPI / release artifacts | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 
 ## License
 
