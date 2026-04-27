@@ -1,4 +1,4 @@
-# AI Reproduction Blueprint — SparkRules
+﻿# AI Reproduction Blueprint â€” SparkRules
 
 This document contains everything an AI code generator needs to rebuild the
 SparkRules engine from scratch when given a single user prompt. It is
@@ -12,8 +12,8 @@ Treat every section as ground truth for this repository.
 **`idea-brainstrom.txt`**. The in-repo spec and glossary are
 [**docs/REQUIREMENTS.md**](docs/REQUIREMENTS.md), with build and test gates in
 [**BUILD_STATUS.md**](BUILD_STATUS.md). Where older drafts referenced `234` tests,
-the current Phase 1 gate is **328 passed, 2 skipped, 1 deselected** (see **§8**
-and **§34.2**).
+the current Phase 1 gate is **328 passed, 2 skipped, 1 deselected** (see **Â§8**
+and **Â§34.2**).
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ and **§34.2**).
 4. High-level architecture
 5. Component inventory (module-by-module)
 6. Data models
-7. Correctness properties (P1–P38)
+7. Correctness properties (P1â€“P38)
 8. Test strategy
 9. Directory layout
 10. Reproduction sequence (ordered task list)
@@ -267,7 +267,7 @@ rows 8+ = data. Trailing `priority` column only when any row has non-zero priori
 
 | File | Public surface |
 |---|---|
-| `evaluator.py` | `evaluate_expr`, `evaluate_rule`, `RuleMatch` — reference oracle |
+| `evaluator.py` | `evaluate_expr`, `evaluate_rule`, `RuleMatch` â€” reference oracle |
 | `classifier.py` | `Strategy` (PUSHDOWN/DATAFRAME/BROADCAST/SQL_JOIN), `StrategyClassifier` |
 | `batcher.py` | `RuleBatch`, `RuleBatcher` (default batch_size=200) |
 | `discrimination.py` | `AlphaNode`, `DiscriminationNetwork.build()/evaluate()` with `eval_counter` |
@@ -444,7 +444,7 @@ class CompiledRulePackage:
 ```
 
 
-## 7. Correctness Properties (P1–P38)
+## 7. Correctness Properties (P1â€“P38)
 
 Every property is universally quantified and must be implemented as a
 property-based test with `hypothesis` (or ScalaCheck in the Scala port).
@@ -578,10 +578,10 @@ sparkrules/
 |-- CITATION.cff
 |-- CONTRIBUTING.md
 |-- idea-brainstrom.md / .txt      # this blueprint
-|-- requirments.md                 # redirect stub → docs/REQUIREMENTS.md
+|-- requirments.md                 # redirect stub â†’ docs/REQUIREMENTS.md
 |-- docs/
 |   |-- README.md                  # documentation hub
-|   |-- REQUIREMENTS.md            # R1–R42 + glossary (canonical in-repo)
+|   |-- REQUIREMENTS.md            # R1â€“R42 + glossary (canonical in-repo)
 |-- examples/                      # DRL, JSON, Python examples
 |-- .gitignore
 |-- deploy/
@@ -624,7 +624,7 @@ sparkrules/
 This is the exact ordered task list an AI should execute. Each task produces
 runnable code end-to-end and is paired with at least one property-based or
 example-based test. The original implementation shipped these in 8 delegation
-waves — the AI can batch similarly or execute sequentially.
+waves â€” the AI can batch similarly or execute sequentially.
 
 ### Wave 1: Project bootstrap (Task 1)
 
@@ -635,8 +635,8 @@ waves — the AI can batch similarly or execute sequentially.
 
 ### Wave 2: Rule model + store (Task 2)
 
-1. `src/sre/model/rule.py` — `Rule`, `RuleDefinition`, `Pass`, `new_rule_id`.
-2. `src/sre/store/metadata_store.py` — `RuleMetadataStore`, `RuleFilter`, `ConflictError`.
+1. `src/sre/model/rule.py` â€” `Rule`, `RuleDefinition`, `Pass`, `new_rule_id`.
+2. `src/sre/store/metadata_store.py` â€” `RuleMetadataStore`, `RuleFilter`, `ConflictError`.
 3. Tests: `test_rule_model.py`, `test_metadata_store.py`, plus P1, P2, P3, P5.
 
 ### Wave 3: DRL parser (Task 3)
@@ -647,47 +647,47 @@ waves — the AI can batch similarly or execute sequentially.
 
 ### Wave 4: Decision tables + XLSX + templates (Tasks 4, 5, 6)
 
-1. `src/sre/model/decision_table.py` — hit policies, evaluator, JSON round-trip.
-2. `src/sre/ioxls/` — exporter + importer with per-cell error list.
-3. `src/sre/model/rule_template.py` — placeholders + DRL expansion.
+1. `src/sre/model/decision_table.py` â€” hit policies, evaluator, JSON round-trip.
+2. `src/sre/ioxls/` â€” exporter + importer with per-cell error list.
+3. `src/sre/model/rule_template.py` â€” placeholders + DRL expansion.
 4. Tests: P8 (hit policy), P9/P10 (XLSX), P11/P12 (templates), P26 (DT JSON).
 
 ### Wave 5: Compiler + transport + runtime primitives (Tasks 7-11)
 
-1. `src/sre/compiler/` — evaluator, classifier, batcher, discrimination network, compiler.
-2. `src/sre/transport/` — broadcaster with chunking.
+1. `src/sre/compiler/` â€” evaluator, classifier, batcher, discrimination network, compiler.
+2. `src/sre/transport/` â€” broadcaster with chunking.
 3. `src/sre/runtime/catalyst.py` + `runtime/cache.py`.
 4. `src/sre/executor/rule_executor.py` + `executor/agenda.py`.
 5. Tests: P13, P14, P15, P16, P17, P18, P19, P20, P21, P27, P37, P38.
 
 ### Wave 6: Runtime + simulation (Tasks 13-17)
 
-1. `src/sre/runtime/iceberg_store.py` — snapshot-per-mutation.
-2. `src/sre/runtime/batch.py` — BatchEvaluator with run_history.
-3. `src/sre/runtime/streaming.py` — StreamingEvaluator + Refresher.
-4. `src/sre/runtime/two_pass.py` — TwoPassOrchestrator.
+1. `src/sre/runtime/iceberg_store.py` â€” snapshot-per-mutation.
+2. `src/sre/runtime/batch.py` â€” BatchEvaluator with run_history.
+3. `src/sre/runtime/streaming.py` â€” StreamingEvaluator + Refresher.
+4. `src/sre/runtime/two_pass.py` â€” TwoPassOrchestrator.
 5. `src/sre/sim/simulator.py`, `sim/ab.py`, `sim/replay.py`.
 6. Tests: P22, P23, P24, P25, P28, P29, P30, P31, P32, P33, P34, P35, P36.
 
 ### Wave 7: REST API + client + observability (Tasks 18-20)
 
-1. `src/sre/api/app.py` + `api/schemas.py` — FastAPI + pydantic.
-2. `src/sre/connect/server.py` — in-process ConnectServer.
-3. `src/sre/client/sdk.py` — SreClient with retries.
+1. `src/sre/api/app.py` + `api/schemas.py` â€” FastAPI + pydantic.
+2. `src/sre/connect/server.py` â€” in-process ConnectServer.
+3. `src/sre/client/sdk.py` â€” SreClient with retries.
 4. `src/sre/obs/metrics.py` + `obs/logging.py`.
 5. Tests: REST contract, connect, SDK, DTO round-trip, P4 (list filters), metrics + logs.
 
 ### Wave 8: Integration + deployment + perf (Tasks 22-24)
 
-1. `tests/integration/` — POS, auth streaming, settlement, underwriting.
-2. `deploy/k8s/` — namespace, configmap, secret example, rule-api, connect, values.
-3. `tests/perf/test_benchmark.py` — opt-in with `@pytest.mark.perf`.
-4. `tests/unit/test_k8s_manifests.py` — PyYAML validation.
+1. `tests/integration/` â€” POS, auth streaming, settlement, underwriting.
+2. `deploy/k8s/` â€” namespace, configmap, secret example, rule-api, connect, values.
+3. `tests/perf/test_benchmark.py` â€” opt-in with `@pytest.mark.perf`.
+4. `tests/unit/test_k8s_manifests.py` â€” PyYAML validation.
 
 ### Wave 9: Finalisation
 
-1. Run `pytest tests/ -q` — expect **328 passed, 2 skipped, 1 deselected** (per **BUILD_STATUS.md** if numbers shift).
-2. Run `pytest tests/perf -m perf -q` — expect **1 passed**.
+1. Run `pytest tests/ -q` â€” expect **328 passed, 2 skipped, 1 deselected** (per **BUILD_STATUS.md** if numbers shift).
+2. Run `pytest tests/perf -m perf -q` â€” expect **1 passed**.
 3. Update `BUILD_STATUS.md` with the final count.
 
 
@@ -697,7 +697,7 @@ The reference implementation makes three deliberate deviations from the Scala
 design document. An AI reproducing the project in Scala does **not** inherit
 these deviations.
 
-### 11.1 Host language — Python vs Scala
+### 11.1 Host language â€” Python vs Scala
 
 **Deviation:** Reference implementation is pure Python 3.11+ using FastAPI,
 httpx, pydantic, openpyxl, pytest+hypothesis. The design calls for Scala 2.13
@@ -711,7 +711,7 @@ preserves every architectural component, data model, and correctness property
 tests (ScalaCheck instead of hypothesis). No changes to requirements,
 architecture, or data models.
 
-### 11.2 SQL_JOIN strategy — stub only
+### 11.2 SQL_JOIN strategy â€” stub only
 
 **Deviation:** The `RuleExecutor` classifies and dispatches SQL_JOIN rules
 but returns `error_class="SqlJoinNotImplemented"` for the pure-Python runtime.
@@ -724,7 +724,7 @@ scope for the Python reference.
 sort-merge based on statistics. P17 (strategy equivalence) must then include
 SQL_JOIN cases.
 
-### 11.3 Spark Connect gRPC — in-process
+### 11.3 Spark Connect gRPC â€” in-process
 
 **Deviation:** `ConnectServer` is a Python object dispatched via method
 calls; the client SDK speaks either HTTP (to FastAPI) or direct method calls.
@@ -735,7 +735,7 @@ calls; the client SDK speaks either HTTP (to FastAPI) or direct method calls.
 (embedded in the driver) and a thin client holding only a gRPC channel.
 Method surface and contract remain identical.
 
-### 11.4 Performance harness — reduced scale
+### 11.4 Performance harness â€” reduced scale
 
 **Deviation:** Perf test runs 50 rules x 10,000 facts (smoke mode) rather
 than the Phase-1 target of 500 rules x 1M facts.
@@ -877,11 +877,11 @@ reproduction aid; the requirements document is the source of truth.
 
 ---
 
-# Part II — Product Extensions
+# Part II â€” Product Extensions
 
 The sections below describe planned product extensions beyond the current 328-test
 reference implementation. Each extension reuses the existing engine, parser, store,
-simulator, executor, and replay infrastructure — they are NOT forks. An AI code
+simulator, executor, and replay infrastructure â€” they are NOT forks. An AI code
 generator should treat each extension as an additive spec tree that plugs into
 the existing `src/sre/` package.
 
@@ -891,7 +891,7 @@ the existing `src/sre/` package.
 
 Three tiers of differentiation.
 
-**Tier 1 — Features no existing product combines**
+**Tier 1 â€” Features no existing product combines**
 
 1. **Two-pass quota rules as a first-class concept**
    Pass 1 per-row classification, Pass 2 aggregate-then-rule on qualified facts.
@@ -906,13 +906,13 @@ Three tiers of differentiation.
    Same `(rule_handle, version)` produces identical results in both modes.
    Property P33. No existing engine proves this.
 
-4. **Property-verified correctness** — 38 universal invariants machine-verified.
+4. **Property-verified correctness** â€” 38 universal invariants machine-verified.
    Regulators and risk teams get *proof*, not example tests.
 
-5. **Explanation sufficiency** (P38) — fired rules carry bound_fields
+5. **Explanation sufficiency** (P38) â€” fired rules carry bound_fields
    sufficient to re-evaluate without the original fact.
 
-**Tier 2 — Individually available, combined rarely**
+**Tier 2 â€” Individually available, combined rarely**
 
 6. Drools-equivalent authoring + Spark-scale execution under one config.
 7. Dynamic rule refresh without redeploy (P23).
@@ -920,7 +920,7 @@ Three tiers of differentiation.
 9. Snapshot-isolated rule catalog (`rule_set_version` hash).
 10. XLSX round-trip with exhaustive per-cell error reporting (P10).
 
-**Tier 3 — Table stakes**
+**Tier 3 â€” Table stakes**
 
 Versioned metadata, soft delete, effective dates, salience, agenda + activation
 groups, decision tables with four hit policies, forward/backward chaining,
@@ -943,9 +943,9 @@ Reasons no open-source product has glued them:
 - Rule-engine skill set (PHREAK, DRL, decision tables) rarely overlaps with Spark internals skill set (Catalyst, shuffle, Iceberg).
 - Red Hat Drools team focuses on Java/Quarkus, not Spark.
 - Databricks focuses on ML + SQL, not Drools parity.
-- Target market (high-volume transaction processors — POS, auth, settlement) is small but has no alternative.
+- Target market (high-volume transaction processors â€” POS, auth, settlement) is small but has no alternative.
 - Spark 4 features (VARIANT, `transformWithState`, Spark Connect) only landed May 2025.
-- Apache Iceberg matured 2023–2024.
+- Apache Iceberg matured 2023â€“2024.
 - Two-pass quota is a POS pattern most rule-engine papers skip.
 - Property-based correctness guarantees are rare in rule engines.
 
@@ -953,33 +953,33 @@ Reasons no open-source product has glued them:
 
 | Audience | Line |
 |---|---|
-| Risk / compliance | "Deterministic, replayable rule evaluation for regulated workloads — prove any decision, months later, byte-for-byte." |
+| Risk / compliance | "Deterministic, replayable rule evaluation for regulated workloads â€” prove any decision, months later, byte-for-byte." |
 | Platform engineers | "Drools authoring UX on Spark 4 scale, without gluing them yourself." |
-| POS / payments product owners | "Two-pass quota rules — spend tiers, top-N kickers, first-M promos — as declarative business rules instead of Spark SQL." |
+| POS / payments product owners | "Two-pass quota rules â€” spend tiers, top-N kickers, first-M promos â€” as declarative business rules instead of Spark SQL." |
 | Databricks shops | "Drools-equivalent rule management on top of Iceberg + Spark Connect, with snapshot-pinned replay." |
 
 
-## 16. Phase 2a — Data Quality Extension
+## 16. Phase 2a â€” Data Quality Extension
 
 Data quality checks are rules with a specific shape: predicates over facts that
 emit pass/fail with reason codes and severity. Everything SparkRules already
-supports — this extension adds DQ-specific primitives on top.
+supports â€” this extension adds DQ-specific primitives on top.
 
 ### 16.1 Mapping
 
 | DQ concept | SparkRules equivalent | Already built |
 |---|---|---|
-| Validation rule | Single-fact rule, side-effect-free action | ✅ |
-| Row-level check | Pass_1 rule | ✅ |
-| Aggregate check (row count, sum) | Pass_2 aggregate rule | ✅ |
-| Reconciliation (fact matches reference) | SQL_JOIN strategy | ⚠️ classified, stub only |
-| Schema check | Rule over field types | ⚠️ needs sugar primitive |
-| Null / required check | Simple predicate | ✅ |
-| Referential integrity | Cross-fact rule | ⚠️ classified, stub only |
-| Freshness / staleness | Timestamp predicate | ✅ |
-| Anomaly threshold | Aggregate rule w/ stddev/percentile | ⚠️ aggregates limited today |
-| Quarantine / DLQ | FactResult with severity=ERROR | ⚠️ add severity field |
-| Data contract | Declarative rule bundle per dataset | ⚠️ new concept |
+| Validation rule | Single-fact rule, side-effect-free action | âœ… |
+| Row-level check | Pass_1 rule | âœ… |
+| Aggregate check (row count, sum) | Pass_2 aggregate rule | âœ… |
+| Reconciliation (fact matches reference) | SQL_JOIN strategy | âš ï¸ classified, stub only |
+| Schema check | Rule over field types | âš ï¸ needs sugar primitive |
+| Null / required check | Simple predicate | âœ… |
+| Referential integrity | Cross-fact rule | âš ï¸ classified, stub only |
+| Freshness / staleness | Timestamp predicate | âœ… |
+| Anomaly threshold | Aggregate rule w/ stddev/percentile | âš ï¸ aggregates limited today |
+| Quarantine / DLQ | FactResult with severity=ERROR | âš ï¸ add severity field |
+| Data contract | Declarative rule bundle per dataset | âš ï¸ new concept |
 
 ### 16.2 New rule attributes
 
@@ -989,7 +989,7 @@ Extend `Rule` dataclass:
 severity: Literal["INFO", "WARN", "ERROR", "CRITICAL"] = "INFO"
 scope: Literal["ROW", "DATASET", "RELATIONSHIP"] = "ROW"
 data_contract_id: str | None = None
-tolerance: float | int | None = None   # e.g. "≤0.1% nulls OK"
+tolerance: float | int | None = None   # e.g. "â‰¤0.1% nulls OK"
 ```
 
 ### 16.3 New rule shapes (sugar over existing primitives)
@@ -1004,7 +1004,7 @@ tolerance: float | int | None = None   # e.g. "≤0.1% nulls OK"
 | `ExpectColumnValuesToBeInSet(col, set)` | Predicate w/ `in` op |
 | `FreshnessCheck(ts_col, max_age)` | Timestamp predicate |
 
-All compile down to ordinary `RuleAst` — the compiler, executor, and simulator
+All compile down to ordinary `RuleAst` â€” the compiler, executor, and simulator
 are unchanged.
 
 ### 16.4 Data contract format
@@ -1034,7 +1034,7 @@ rules:
 
 ### 16.5 New run type + outputs
 
-- `DqRun` — runs only DQ-scoped rules, emits a quality score.
+- `DqRun` â€” runs only DQ-scoped rules, emits a quality score.
 - `run_history.summary.violations_by_severity`, `pass_rate`.
 - New Iceberg table `dq_violations` keyed by `(run_id, fact_id, rule_id)`.
 - Quarantine routing: facts firing `CRITICAL` rules can be written to a
@@ -1050,7 +1050,7 @@ rules:
 | # | Property | Statement |
 |---|---|---|
 | P39 | Severity monotonicity | A rule's severity can only escalate without a version bump; demotions require new version. |
-| P40 | Tolerance correctness | Rule with tolerance τ fires iff violation count > τ × total row count. |
+| P40 | Tolerance correctness | Rule with tolerance Ï„ fires iff violation count > Ï„ Ã— total row count. |
 | P41 | Quarantine completeness | Every fact triggering a CRITICAL rule appears exactly once in `dq_violations`. |
 | P42 | Contract closure | Running a data contract produces exactly the union of results for its declared rules. |
 | P43 | Reconciliation commutativity | `reconcile(A, B) = reconcile(B, A)` on fired-pair set. |
@@ -1070,7 +1070,7 @@ rules:
 Spark-scale DQ execution + snapshot-based replay under one catalog.
 
 
-## 17. Phase 2b — Runtime Profile Extension
+## 17. Phase 2b â€” Runtime Profile Extension
 
 The engine is runtime-agnostic by construction. The `CompiledRulePackage` is a
 serializable artifact. The executor reads facts, evaluates, emits
@@ -1081,7 +1081,7 @@ that as user-facing configuration.
 
 | Runtime | Backend implementation |
 |---|---|
-| Local Python process | `InProcessBackend` — reference impl |
+| Local Python process | `InProcessBackend` â€” reference impl |
 | Spark on EMR | `SparkBackend` (YARN / cluster mode) |
 | Spark on EMR Serverless | `EmrServerlessBackend` |
 | Spark on EKS via Spark Connect | `SparkConnectBackend` |
@@ -1119,7 +1119,7 @@ Source/Sink implementations:
 | Type | Runtime |
 |---|---|
 | `IcebergLikeSource/Sink` | Reference in-memory (already built) |
-| `IcebergSource/Sink` | pyiceberg or Spark Iceberg — Glue, Nessie, REST, Hive |
+| `IcebergSource/Sink` | pyiceberg or Spark Iceberg â€” Glue, Nessie, REST, Hive |
 | `ParquetSource` | Legacy read-only |
 | `DeltaSource/Sink` | Delta Lake (Databricks, open-source) |
 | `KafkaSource` | Streaming |
@@ -1131,7 +1131,7 @@ Source/Sink implementations:
 ### 17.3 Config examples
 
 ```yaml
-# sparkrules.yaml — local dev
+# sparkrules.yaml â€” local dev
 runtime:
   profile: local
   executor: in_process
@@ -1140,7 +1140,7 @@ runtime:
 ```
 
 ```yaml
-# sparkrules.yaml — EMR prod
+# sparkrules.yaml â€” EMR prod
 runtime:
   profile: emr
   executor: spark
@@ -1159,7 +1159,7 @@ runtime:
 ```
 
 ```yaml
-# sparkrules.yaml — EKS Spark Connect
+# sparkrules.yaml â€” EKS Spark Connect
 runtime:
   profile: eks_spark_connect
   executor: spark_connect
@@ -1173,7 +1173,7 @@ runtime:
 ```
 
 ```yaml
-# sparkrules.yaml — AWS Glue
+# sparkrules.yaml â€” AWS Glue
 runtime:
   profile: glue
   executor: glue
@@ -1190,7 +1190,7 @@ runtime:
 ```
 
 ```yaml
-# sparkrules.yaml — Databricks
+# sparkrules.yaml â€” Databricks
 runtime:
   profile: databricks
   executor: databricks
@@ -1218,8 +1218,8 @@ Three ways to bind:
 
 ### 17.5 Backend-parity invariant
 
-**P44: Backend-parity invariant** — ∀ rules R, facts F, backends
-B1 B2 ∈ {in_process, spark, glue, databricks, ...},
+**P44: Backend-parity invariant** â€” âˆ€ rules R, facts F, backends
+B1 B2 âˆˆ {in_process, spark, glue, databricks, ...},
 `evaluate(B1, R, F) = evaluate(B2, R, F)` on `rule_results` fields excluding
 `evaluated_ts` and `run_id`. Tested by running the same rule set and fact
 multiset through every enabled backend in CI and asserting multiset equality.
@@ -1228,10 +1228,10 @@ multiset through every enabled backend in CI and asserting multiset equality.
 
 - **Procurement answer:** "We don't lock you into a runtime. Run it on whatever Spark you already pay for."
 - **Multi-cloud:** Same ruleset on Glue for batch, EKS Spark Connect for streaming, Databricks for simulation.
-- **Dev → prod parity:** Developers run `profile: local`. CI runs `profile: local` with fixtures. Staging runs `profile: eks_spark_connect`. Prod runs `profile: emr` or `profile: glue`.
+- **Dev â†’ prod parity:** Developers run `profile: local`. CI runs `profile: local` with fixtures. Staging runs `profile: eks_spark_connect`. Prod runs `profile: emr` or `profile: glue`.
 
 
-## 18. Phase 2c — AI-Assisted Rule Authoring
+## 18. Phase 2c â€” AI-Assisted Rule Authoring
 
 After the platform has run for N days, three kinds of data are captured:
 fact samples per dataset, the existing rule catalog with DRL, and
@@ -1240,30 +1240,30 @@ propose new rules (business + DQ) that a human reviews and promotes.
 
 ### 18.1 Three AI features
 
-**Feature 1 — Rule suggestion** ("Propose rules I don't have")
+**Feature 1 â€” Rule suggestion** ("Propose rules I don't have")
 
 Pipeline:
 1. Sample the Iceberg fact table (10k rows + schema).
 2. Summarise distributions: null rates, min/max, cardinality, top values, timestamp ranges.
 3. Summarise existing rule catalog: handles, reason codes, covered columns.
-4. Compute "uncovered columns" = dataset columns × no existing rule references them.
+4. Compute "uncovered columns" = dataset columns Ã— no existing rule references them.
 5. Prompt the LLM with schema + stats + existing rules + the gap. Request 5-10 candidates.
 6. LLM returns DRL drafts.
 7. **Run each draft through `RuleSimulator`** against the last N days of facts.
-8. Human reviews in the UI → promote or discard.
+8. Human reviews in the UI â†’ promote or discard.
 
-**Feature 2 — DQ rule mining** ("Propose DQ checks from observed behaviour")
+**Feature 2 â€” DQ rule mining** ("Propose DQ checks from observed behaviour")
 
 Pipeline:
 1. Profile last N days: null rate, uniqueness, value ranges, referential integrity.
-2. Detect stable patterns: `null_rate < 0.1%` in 99% of days → `ExpectColumnValuesToBeNotNull`.
-3. Detect stable ranges: `amount ∈ [0, 9999]` 100% of observations → `ExpectColumnValuesToBeBetween`.
-4. Detect categorical closure: `country ∈ {US, CA, GB, FR}` always → `ExpectColumnValuesToBeInSet`.
+2. Detect stable patterns: `null_rate < 0.1%` in 99% of days â†’ `ExpectColumnValuesToBeNotNull`.
+3. Detect stable ranges: `amount âˆˆ [0, 9999]` 100% of observations â†’ `ExpectColumnValuesToBeBetween`.
+4. Detect categorical closure: `country âˆˆ {US, CA, GB, FR}` always â†’ `ExpectColumnValuesToBeInSet`.
 5. Pass detected patterns + raw stats to LLM. Request DRL rules with `severity: WARN` and tolerance based on observed variance.
 6. Simulator validates each against historical data; expected fire rate should be 0% on training window.
 7. Human reviews, possibly adjusts, promotes.
 
-**Feature 3 — Drift detection** ("This rule's behaviour is changing")
+**Feature 3 â€” Drift detection** ("This rule's behaviour is changing")
 
 Pipeline:
 1. Daily aggregate of fire rate, unique bound_field values, reason_code distribution.
@@ -1310,11 +1310,11 @@ class LocalOllamaProvider(AiProvider): ...   # air-gapped deployments
 ### 18.3 Bedrock-specific positioning
 
 - IAM role via IRSA (EKS) or instance profile (EMR).
-- VPC endpoint for `bedrock-runtime` keeps traffic in-VPC — no egress.
+- VPC endpoint for `bedrock-runtime` keeps traffic in-VPC â€” no egress.
 - Model choice: Claude Sonnet for quality; Claude Haiku for cost-sensitive bulk profiling.
 - Bedrock Guardrails for PII redaction at the provider level (defense in depth).
 - CloudWatch logs every prompt + response (auditability).
-- Bedrock Knowledge Bases optional — index rule catalog + DRL grammar doc for retrieval-grounded prompts.
+- Bedrock Knowledge Bases optional â€” index rule catalog + DRL grammar doc for retrieval-grounded prompts.
 
 This matters for regulated industries: OpenAI direct is often a non-starter
 because data can't leave AWS. Bedrock stays within the customer's AWS account.
@@ -1345,12 +1345,12 @@ POST /ai/suggestions/{id}/reject
 
 ### 18.5 Lifecycle of an AI suggestion
 
-1. AI generates → stored as `is_active=false` with metadata tag `source: AI_SUGGESTION`.
-2. Simulator scored → attached as `simulator_result` in the suggestion record.
-3. Human approves via UI → promoted to active, overlap check, version assigned.
+1. AI generates â†’ stored as `is_active=false` with metadata tag `source: AI_SUGGESTION`.
+2. Simulator scored â†’ attached as `simulator_result` in the suggestion record.
+3. Human approves via UI â†’ promoted to active, overlap check, version assigned.
 4. Optional: A/B test against current rule for N days before full rollout.
 
-Every suggestion flows through the existing rule lifecycle — no bypass.
+Every suggestion flows through the existing rule lifecycle â€” no bypass.
 
 ### 18.6 Safety + correctness guarantees
 
@@ -1365,21 +1365,21 @@ New AI-specific properties:
 
 | # | Property |
 |---|---|
-| P45 | AI safety boundary — rule tagged `source: AI_SUGGESTION` is `is_active=false` until a human principal (≠ `ai_agent`) activates it. |
-| P46 | Simulator evidence required — no AI suggestion is promoted to active without a linked `simulator_result` row. |
-| P47 | PII redaction — fact samples sent to the LLM never contain values from `redact_pii_columns`. Test: ∀ LLM requests, payload field set is disjoint from configured PII column set. |
+| P45 | AI safety boundary â€” rule tagged `source: AI_SUGGESTION` is `is_active=false` until a human principal (â‰  `ai_agent`) activates it. |
+| P46 | Simulator evidence required â€” no AI suggestion is promoted to active without a linked `simulator_result` row. |
+| P47 | PII redaction â€” fact samples sent to the LLM never contain values from `redact_pii_columns`. Test: âˆ€ LLM requests, payload field set is disjoint from configured PII column set. |
 
 ### 18.7 Why this is the feature that "sells"
 
-Most vendors ship "LLM writes a rule from natural language" — a demo, not a
+Most vendors ship "LLM writes a rule from natural language" â€” a demo, not a
 product. SparkRules' AI is different because every suggestion is:
 
-- **Grounded in real data** — comes from customer's own historical runs.
-- **Simulator-validated** — every suggestion has a replay score before a human sees it.
-- **Explainable** — fired rule rows carry bound_fields, not just "AI said so".
-- **Auditable** — every AI-generated rule carries `source: AI_SUGGESTION` + linked prompt/response in the audit log.
-- **Pluggable provider** — Bedrock, OpenAI, Azure, Vertex, Databricks FM, or air-gapped Ollama.
-- **Opt-in** — regulated customers can run the whole platform with `ai.enabled: false` and never touch an LLM.
+- **Grounded in real data** â€” comes from customer's own historical runs.
+- **Simulator-validated** â€” every suggestion has a replay score before a human sees it.
+- **Explainable** â€” fired rule rows carry bound_fields, not just "AI said so".
+- **Auditable** â€” every AI-generated rule carries `source: AI_SUGGESTION` + linked prompt/response in the audit log.
+- **Pluggable provider** â€” Bedrock, OpenAI, Azure, Vertex, Databricks FM, or air-gapped Ollama.
+- **Opt-in** â€” regulated customers can run the whole platform with `ai.enabled: false` and never touch an LLM.
 
 Positioning line:
 > "Self-improving rule platform on Spark. After 30 days of running, SparkRules proposes new business rules and data quality checks based on how your data actually behaves. Every suggestion is simulator-validated and human-reviewed before it goes live. Works with AWS Bedrock, OpenAI, Azure, Vertex, or your own model."
@@ -1388,31 +1388,31 @@ Positioning line:
 ## 19. Consolidated Roadmap
 
 ```
-Phase 1 — Core engine (DONE)
+Phase 1 â€” Core engine (DONE)
   - 25 tasks, 328 tests, 38 properties
   - POS EoD, auth streaming, settlement replay, underwriting integration tests
   - Reference Python implementation + Kubernetes manifests
 
-Phase 2a — Data quality extension
+Phase 2a â€” Data quality extension
   - severity / scope / tolerance / data_contract_id on Rule
   - Sugar primitives: ExpectColumnValuesToBeUnique, MatchRegex, etc.
   - data contracts (YAML)
   - DqRun + dq_violations Iceberg table + quarantine routing
   - Properties P39-P43
 
-Phase 2b — Runtime profile extension
+Phase 2b â€” Runtime profile extension
   - ExecutorBackend / FactSource / ResultSink protocols
   - Backends: InProcess, Spark (EMR/Dataproc/Synapse), SparkConnect (EKS/GKE), Glue, Databricks, EmrServerless
   - Sources/sinks: Iceberg, Delta, UnityCatalog, Kafka, Kinesis, Jdbc, Snowflake, Parquet
   - Property P44 (backend parity)
 
-Phase 2c — AI-assisted rule authoring
+Phase 2c â€” AI-assisted rule authoring
   - AiProvider abstraction: Bedrock, OpenAI, Azure OpenAI, Vertex, Databricks FM, Ollama
   - Endpoints: /ai/suggest-rules, /ai/mine-dq-rules, /ai/analyze-drift, /ai/explain-rule, /ai/suggestions
   - Simulator-validated lifecycle for every suggestion
   - Properties P45-P47 (safety boundary, evidence required, PII redaction)
 
-Phase 3 — Web UI (React + Monaco + AG Grid)
+Phase 3 â€” Web UI (React + Monaco + AG Grid)
   - Rules list with enable/disable
   - DRL editor with parse-error highlighting
   - Decision table editor
@@ -1423,7 +1423,7 @@ Phase 3 — Web UI (React + Monaco + AG Grid)
   - A/B test configurator
   - AI suggestions review queue
 
-Phase 4 — Scala production port
+Phase 4 â€” Scala production port
   - sbt multi-module: engine-core, rule-api (Spring Boot), spark-connect-server
   - ANTLR4 grammar (Drl.g4) replaces hand-rolled Python parser
   - ScalaCheck ports every property test
@@ -1489,13 +1489,13 @@ python -m venv .venv
 ### Future (per-extension)
 
 ```powershell
-# Phase 2a — DQ tests once added
+# Phase 2a â€” DQ tests once added
 .\.venv\Scripts\python.exe -m pytest tests/property/test_dq_properties.py -q
 
-# Phase 2b — backend-parity test once added
+# Phase 2b â€” backend-parity test once added
 .\.venv\Scripts\python.exe -m pytest tests/property/test_backend_parity.py -q
 
-# Phase 2c — AI safety tests once added
+# Phase 2c â€” AI safety tests once added
 .\.venv\Scripts\python.exe -m pytest tests/property/test_ai_safety.py -q
 ```
 
@@ -1504,13 +1504,13 @@ python -m venv .venv
 
 When rebuilding the full project including extensions:
 
-1. Read `docs/REQUIREMENTS.md` and this blueprint — canonical Phase 1 spec in this repository.
-2. Read this file — reproduction sequence + extension roadmap.
+1. Read `docs/REQUIREMENTS.md` and this blueprint â€” canonical Phase 1 spec in this repository.
+2. Read this file â€” reproduction sequence + extension roadmap.
 3. Execute Phase 1 reproduction per section 10 of this document (9 waves).
 4. Validate: `328 passed, 2 skipped, 1 deselected`.
 5. For each Phase 2 extension, create `docs/extensions/<extension>/` with requirements, design, tasks using the same EARS + correctness-property methodology.
 6. Add new properties to the running total and verify with `pytest tests/ -q`.
-7. Keep every component boundary stable — extensions plug in, do not fork.
+7. Keep every component boundary stable â€” extensions plug in, do not fork.
 
 When given only a short user prompt:
 
@@ -1528,12 +1528,12 @@ The code generator should:
 **End of blueprint.**
 
 Authoritative references in priority order:
-1. `docs/REQUIREMENTS.md` — requirements and architecture
-2. `idea-brainstrom.md` — reproduction + extensions (this file)
-3. `BUILD_STATUS.md` — current engine state
+1. `docs/REQUIREMENTS.md` â€” requirements and architecture
+2. `idea-brainstrom.md` â€” reproduction + extensions (this file)
+3. `BUILD_STATUS.md` â€” current engine state
 
 
-## 22. Phase 2d — Graph-Enriched Fraud Rules
+## 22. Phase 2d â€” Graph-Enriched Fraud Rules
 
 Fraud rings, collusion networks, synthetic identity clusters, and money-mule
 trees are invisible to single-fact rules because the signal lives *between*
@@ -1570,7 +1570,7 @@ No engine change needed. What changes is the enrichment pipeline upstream.
 
 ### 22.2 Three layers
 
-**Layer 1 — Graph storage (pluggable backend)**
+**Layer 1 â€” Graph storage (pluggable backend)**
 
 ```python
 class GraphSource(Protocol):
@@ -1590,7 +1590,7 @@ class GraphSource(Protocol):
 | `SparkGraphFramesSource` | GraphFrames on Spark (batch-computed features) |
 | `InMemoryGraphSource` | NetworkX for reference/tests |
 
-**Layer 2 — Enrichment step**
+**Layer 2 â€” Enrichment step**
 
 `GraphEnricher` runs before the executor, writing graph-derived fields into
 each fact dict. Two modes:
@@ -1600,7 +1600,7 @@ each fact dict. Two modes:
 - **Live query** (streaming): enricher calls Neptune/Neo4j per fact with a
   short TTL cache. Real-time signal, higher per-fact latency.
 
-**Layer 3 — Graph-derived rule primitives (sugar)**
+**Layer 3 â€” Graph-derived rule primitives (sugar)**
 
 | Primitive | Expands to |
 |---|---|
@@ -1648,16 +1648,16 @@ graph:
 
 `GraphSource.snapshot_id()` becomes part of `config_fingerprint`. Replay
 reads the exact graph snapshot that the original run used. P36 extends
-naturally — a replay is byte-equal across graph + fact snapshots together.
+naturally â€” a replay is byte-equal across graph + fact snapshots together.
 
 ### 22.5 New correctness properties
 
 | # | Property |
 |---|---|
-| P48 | Graph snapshot determinism — same `(graph_snapshot_id, fact_snapshot_id, rule_set_version)` yields multiset-equal `rule_results`. |
-| P49 | Enrichment idempotency — re-enriching an already-enriched fact produces the same dict. |
-| P50 | Graph primitive expansion equivalence — sugar AST evaluates to the same fired set as the hand-written equivalent DRL. |
-| P51 | PII-aware graph redaction — node ids in `bound_fields` are pseudonymous tokens unless caller has `pii_reveal` role. |
+| P48 | Graph snapshot determinism â€” same `(graph_snapshot_id, fact_snapshot_id, rule_set_version)` yields multiset-equal `rule_results`. |
+| P49 | Enrichment idempotency â€” re-enriching an already-enriched fact produces the same dict. |
+| P50 | Graph primitive expansion equivalence â€” sugar AST evaluates to the same fired set as the hand-written equivalent DRL. |
+| P51 | PII-aware graph redaction â€” node ids in `bound_fields` are pseudonymous tokens unless caller has `pii_reveal` role. |
 
 ### 22.6 Why this matters for positioning
 
@@ -1668,7 +1668,7 @@ naturally — a replay is byte-equal across graph + fact snapshots together.
   a business analyst can author, version, and replay.
 
 
-## 23. Phase 2e — ML Model Scoring as a Rule Action
+## 23. Phase 2e â€” ML Model Scoring as a Rule Action
 
 Rule engines and ML models are usually deployed separately with duplicate
 feature pipelines and no shared audit trail. SparkRules can host both under
@@ -1714,23 +1714,23 @@ Concrete backends:
 ### 23.3 Feature assembly from bound fields
 
 The model call is fed by `bound_fields` from the matched pattern. That keeps
-explanation sufficiency (P38) intact — the same bound_fields that explain
+explanation sufficiency (P38) intact â€” the same bound_fields that explain
 the rule also explain the model call.
 
 ### 23.4 Replay semantics
 
 Every run records `(model_id, model_version)` per rule invocation. Replay
 pins the model version. When a model is retrained, replay still uses the
-version live at the original run — unless the caller explicitly asks to
+version live at the original run â€” unless the caller explicitly asks to
 replay against the current version (for regression comparison).
 
 ### 23.5 New correctness properties
 
 | # | Property |
 |---|---|
-| P52 | Model version pinning — replay uses the model version recorded on the original run. |
-| P53 | Model score determinism (pinned version) — same `(model_id, version, features)` yields the same score. |
-| P54 | Score explanation — every fired rule whose action invoked a model emits `{model_id, model_version, features, score}` in `action_output`. |
+| P52 | Model version pinning â€” replay uses the model version recorded on the original run. |
+| P53 | Model score determinism (pinned version) â€” same `(model_id, version, features)` yields the same score. |
+| P54 | Score explanation â€” every fired rule whose action invoked a model emits `{model_id, model_version, features, score}` in `action_output`. |
 
 ### 23.6 Positioning
 
@@ -1738,7 +1738,7 @@ replay against the current version (for regression comparison).
 every application, every settlement carries the exact model version and
 score that drove its decision, replayable months later for any regulator."
 
-## 24. Phase 2f — Data Lineage and Governance
+## 24. Phase 2f â€” Data Lineage and Governance
 
 Regulated shops need evidence of data provenance end-to-end. SparkRules
 already records `run_history` with snapshot ids and rule set versions; this
@@ -1785,10 +1785,10 @@ query over `rule_results` + `run_history`.
 
 | # | Property |
 |---|---|
-| P55 | Lineage completeness — ∀ run_id in run_history, exactly one START and one COMPLETE/FAIL event. |
-| P56 | Audit chain integrity — every active rule's version history is reconstructible from audit_log + rules table with no gaps. |
+| P55 | Lineage completeness â€” âˆ€ run_id in run_history, exactly one START and one COMPLETE/FAIL event. |
+| P56 | Audit chain integrity â€” every active rule's version history is reconstructible from audit_log + rules table with no gaps. |
 
-## 25. Phase 2g — Multi-Tenancy, SSO, and RBAC
+## 25. Phase 2g â€” Multi-Tenancy, SSO, and RBAC
 
 Already partially accounted for in the design (`X-Principal` header). This
 phase formalises enterprise identity.
@@ -1804,7 +1804,7 @@ phase formalises enterprise identity.
 
 - OIDC (generic): Okta, Auth0, Azure AD, Google Workspace, Keycloak.
 - SAML 2.0 for legacy enterprise.
-- mTLS for service-to-service (executors ↔ Iceberg catalog, Connect ↔ gRPC).
+- mTLS for service-to-service (executors â†” Iceberg catalog, Connect â†” gRPC).
 - AWS IAM via IRSA on EKS or instance profile on EMR.
 
 ### 25.3 RBAC roles
@@ -1831,11 +1831,11 @@ logged behind a flag for high-compliance tenants.
 
 | # | Property |
 |---|---|
-| P57 | Tenant isolation — ∀ requests, response rows are a subset of the caller's tenant namespace. |
-| P58 | RBAC enforcement — a principal without role R cannot invoke any endpoint requiring R; returns 403. |
-| P59 | Audit log append-only — no UPDATE or DELETE succeeds against audit_log (Iceberg row-level deletes disabled on this table). |
+| P57 | Tenant isolation â€” âˆ€ requests, response rows are a subset of the caller's tenant namespace. |
+| P58 | RBAC enforcement â€” a principal without role R cannot invoke any endpoint requiring R; returns 403. |
+| P59 | Audit log append-only â€” no UPDATE or DELETE succeeds against audit_log (Iceberg row-level deletes disabled on this table). |
 
-## 26. Phase 2h — Developer Experience and Operational Tooling
+## 26. Phase 2h â€” Developer Experience and Operational Tooling
 
 Features that lower adoption friction, not strictly part of the engine.
 
@@ -1902,7 +1902,7 @@ scenarios:
 
 ### 26.4 Chaos and failure injection for tests
 
-Under `tests/chaos/` — injects random failures into the executor, broadcast
+Under `tests/chaos/` â€” injects random failures into the executor, broadcast
 assembler, and Iceberg sink to validate the existing exception-isolation and
 retry invariants (P27, P23) at integration scale.
 
@@ -1912,14 +1912,14 @@ retry invariants (P27, P23) at integration scale.
 - Go client for infra tooling.
 - TypeScript client generated from OpenAPI schema (feeds the web UI).
 
-## 27. Phase 2i — Additional Strategic Extensions
+## 27. Phase 2i â€” Additional Strategic Extensions
 
 Shortlist of "what else" ideas worth considering, each single-paragraph.
 
 ### 27.1 Natural-language rule authoring
 
 Layer on top of Phase 2c AI. Business user writes "when a customer's spend
-this month is over $500 and they're Gold tier, apply a 5% discount" — LLM
+this month is over $500 and they're Gold tier, apply a 5% discount" â€” LLM
 converts to DRL, simulator validates, human approves. Not a replacement for
 the structured editor, a convenience for power users.
 
@@ -1936,7 +1936,7 @@ triggers a scheduled job to clean up after N days of zero firings.
 
 ### 27.4 Shadow mode / canary deployment
 
-Activate a rule in `shadow=true` — it runs, emits `rule_results`, but its
+Activate a rule in `shadow=true` â€” it runs, emits `rule_results`, but its
 `action_output` is tagged SHADOW and not forwarded to downstream consumers.
 Compare shadow outcomes against production for a week before full activation.
 
@@ -1979,35 +1979,35 @@ RBAC, disable AI suggestion auto-approve. One flag to apply.
 ## 28. Updated Consolidated Roadmap
 
 ```
-Phase 1 — Core engine               (DONE: 328 tests, P1–P38, 100% `sre` line coverage, see **BUILD_STATUS.md**)
+Phase 1 â€” Core engine               (DONE: 328 tests, P1â€“P38, 100% `sre` line coverage, see **BUILD_STATUS.md**)
   |
-  +-- Phase 2a — Data quality              (P39-P43)
-  +-- Phase 2b — Runtime profiles          (P44)
-  +-- Phase 2c — AI-assisted authoring     (P45-P47)
-  +-- Phase 2d — Graph-enriched fraud      (P48-P51)
-  +-- Phase 2e — ML model scoring          (P52-P54)
-  +-- Phase 2f — Lineage and governance    (P55-P56)
-  +-- Phase 2g — Multi-tenancy + RBAC      (P57-P59)
-  +-- Phase 2h — Developer UX              (no new P)
-  +-- Phase 2i — Strategic add-ons         (no new P, case-by-case)
+  +-- Phase 2a â€” Data quality              (P39-P43)
+  +-- Phase 2b â€” Runtime profiles          (P44)
+  +-- Phase 2c â€” AI-assisted authoring     (P45-P47)
+  +-- Phase 2d â€” Graph-enriched fraud      (P48-P51)
+  +-- Phase 2e â€” ML model scoring          (P52-P54)
+  +-- Phase 2f â€” Lineage and governance    (P55-P56)
+  +-- Phase 2g â€” Multi-tenancy + RBAC      (P57-P59)
+  +-- Phase 2h â€” Developer UX              (no new P)
+  +-- Phase 2i â€” Strategic add-ons         (no new P, case-by-case)
   |
-  +-- Phase 3 — Web UI
+  +-- Phase 3 â€” Web UI
   |
-  +-- Phase 4 — Scala production port
+  +-- Phase 4 â€” Scala production port
 ```
 
 ### 28.1 Independence matrix
 
 | Phase | Blocks | Blocked by |
 |---|---|---|
-| 2a DQ | — | 1 |
-| 2b Runtime | — | 1 |
+| 2a DQ | â€” | 1 |
+| 2b Runtime | â€” | 1 |
 | 2c AI | benefits from 2a + 2d | 1 |
-| 2d Graph | — | 1 |
-| 2e ML | — | 1 |
-| 2f Lineage | — | 1 |
-| 2g RBAC | — | 1 |
-| 2h Dev UX | — | 1 |
+| 2d Graph | â€” | 1 |
+| 2e ML | â€” | 1 |
+| 2f Lineage | â€” | 1 |
+| 2g RBAC | â€” | 1 |
+| 2h Dev UX | â€” | 1 |
 | 2i Add-ons | case-by-case | 1 |
 | 3 UI | full stack | 2a, 2b, 2c |
 | 4 Scala | production | 1 (can parallel with 2x) |
@@ -2073,7 +2073,7 @@ Never fork the engine. Extensions plug in through the existing abstractions
 | File | Purpose |
 |---|---|
 | `docs/REQUIREMENTS.md` | Requirements and architecture (Phase 1) |
-| `idea-brainstrom.md` | This file — reproduction + Phase 2 extensions |
+| `idea-brainstrom.md` | This file â€” reproduction + Phase 2 extensions |
 | `USE_CASES.md` | Five real-world domain catalogues + execution-control feature map |
 | `BUILD_STATUS.md` | Current engine state |
 
@@ -2093,7 +2093,7 @@ Phase 2 extension specs (to be created as streams are picked up):
 | `docs/extensions/scala-port/` | Phase 4 |
 
 
-## 30. Phase 2j — dbt Integration
+## 30. Phase 2j â€” dbt Integration
 
 dbt is the de-facto tool for shaping raw sources into clean fact tables. It
 is **not** a rule engine and should not be used as one. SparkRules fits
@@ -2125,16 +2125,16 @@ Clean split of responsibilities:
 
 ### 30.1 dbt tests vs SparkRules DQ
 
-- **dbt tests** — "Is this column shaped right?" (not_null, unique, accepted_values, relationships). Schema-level DQ.
-- **SparkRules DQ** — "Is this record a valid business transaction?" Cross-fact reconciliation, multi-column invariants, two-pass aggregate checks, quarantine routing, reason codes, replay.
+- **dbt tests** â€” "Is this column shaped right?" (not_null, unique, accepted_values, relationships). Schema-level DQ.
+- **SparkRules DQ** â€” "Is this record a valid business transaction?" Cross-fact reconciliation, multi-column invariants, two-pass aggregate checks, quarantine routing, reason codes, replay.
 
 Run dbt tests as a pre-flight gate. Run SparkRules for the complex business DQ.
 
 ### 30.2 Integration deliverables
 
-1. **`DbtFactSource` adapter** — resolves a dbt model reference (`mart.pos_transactions`) to its Iceberg location via `manifest.json`. Records the manifest hash in `config_fingerprint` for replay pinning.
-2. **dbt package `sparkrules_dbt`** — macros exposing `rule_results`, `run_history`, `dq_violations` as dbt sources; optional post-hook to trigger a SparkRules run after a dbt model materialises.
-3. **OpenLineage + dbt node linkage** — SparkRules runs emit lineage events that reference the upstream dbt node IDs.
+1. **`DbtFactSource` adapter** â€” resolves a dbt model reference (`mart.pos_transactions`) to its Iceberg location via `manifest.json`. Records the manifest hash in `config_fingerprint` for replay pinning.
+2. **dbt package `sparkrules_dbt`** â€” macros exposing `rule_results`, `run_history`, `dq_violations` as dbt sources; optional post-hook to trigger a SparkRules run after a dbt model materialises.
+3. **OpenLineage + dbt node linkage** â€” SparkRules runs emit lineage events that reference the upstream dbt node IDs.
 
 ### 30.3 Config example
 
@@ -2151,7 +2151,7 @@ fact_source:
 
 | # | Property |
 |---|---|
-| P60 | dbt manifest pinning — a run whose `config_fingerprint` includes a dbt manifest hash replays against the same manifest, producing multiset-equal `rule_results`. |
+| P60 | dbt manifest pinning â€” a run whose `config_fingerprint` includes a dbt manifest hash replays against the same manifest, producing multiset-equal `rule_results`. |
 
 ### 30.5 Positioning
 
@@ -2168,10 +2168,10 @@ capabilities none of these combine under one catalog.
 
 ### 31.1 Research
 
-- **Park et al. 2017 — "When Rule Engine Meets Big Data"** ([IEEE 7944919](https://ieeexplore.ieee.org/document/7944919))
+- **Park et al. 2017 â€” "When Rule Engine Meets Big Data"** ([IEEE 7944919](https://ieeexplore.ieee.org/document/7944919))
   Academic prototype for IoT edge rule engines over Spark. Rete-like on Spark for IoT event/action deployment. Validates the broadcast-based execution model. No production maintainers, no authoring UX, no versioning, no replay, no decision tables. Content rephrased from [ResearchGate abstract](https://www.researchgate.net/publication/317558467).
 
-- **KSSRE 2018 — "A Distributed Rule Engine for Streaming Big Data"** ([Springer](https://link.springer.com/chapter/10.1007/978-3-030-02934-0_12))
+- **KSSRE 2018 â€” "A Distributed Rule Engine for Streaming Big Data"** ([Springer](https://link.springer.com/chapter/10.1007/978-3-030-02934-0_12))
   Kafka + Spark Structured Streaming rule engine research. Ternary-grid rule representation. No production fork.
 
 ### 31.2 Open-source projects
@@ -2193,13 +2193,13 @@ capabilities none of these combine under one catalog.
 
 ### 31.3 Closed-source commercial
 
-- **Delta Live Tables Expectations** — Databricks-only, closed-source, tied to DLT pipeline runtime. No Drools parity.
-- **FICO Blaze Advisor** — closed-source, per-core licensing, not Spark-native.
-- **IBM Operational Decision Manager (ODM)** — same class as FICO.
-- **Pega** — BPM + rules, not Spark-native.
-- **SAS Business Rules Manager** — enterprise, closed-source.
+- **Delta Live Tables Expectations** â€” Databricks-only, closed-source, tied to DLT pipeline runtime. No Drools parity.
+- **FICO Blaze Advisor** â€” closed-source, per-core licensing, not Spark-native.
+- **IBM Operational Decision Manager (ODM)** â€” same class as FICO.
+- **Pega** â€” BPM + rules, not Spark-native.
+- **SAS Business Rules Manager** â€” enterprise, closed-source.
 
-### 31.4 Feature matrix — SparkRules vs prior art
+### 31.4 Feature matrix â€” SparkRules vs prior art
 
 | Capability | Park 2017 | Databricks Labs | DLT Expectations | Drools | FICO Blaze | SparkRules |
 |---|---|---|---|---|---|---|
@@ -2244,7 +2244,7 @@ This is the gap SparkRules fills.
 The blueprint now has formal requirements for pluggable storage. This
 section tells an AI code generator how to honour them.
 
-### 32.1 Rule metadata store — four backends behind one protocol
+### 32.1 Rule metadata store â€” four backends behind one protocol
 
 ```python
 class RuleMetadataStore(Protocol):
@@ -2287,9 +2287,9 @@ store:
 
 | # | Property |
 |---|---|
-| P67 | Store parity — ∀ backends B1 B2 and ∀ rule-store operation sequences Ops, the observable behaviour of `Ops` on B1 equals `Ops` on B2. Every property test for the store (P1, P2, P3, P5) runs against every backend in CI. |
+| P67 | Store parity â€” âˆ€ backends B1 B2 and âˆ€ rule-store operation sequences Ops, the observable behaviour of `Ops` on B1 equals `Ops` on B2. Every property test for the store (P1, P2, P3, P5) runs against every backend in CI. |
 
-### 32.3 Output table format — pluggable
+### 32.3 Output table format â€” pluggable
 
 ```yaml
 result_sink:
@@ -2306,7 +2306,7 @@ result_sink:
 Row-level deletes required for Iceberg / Delta / Hudi (chargeback
 amendments). Parquet rejects replay if amendments exist (Requirement 36.5).
 
-### 32.4 Input fact source — seven formats, one contract
+### 32.4 Input fact source â€” seven formats, one contract
 
 | Format | Production-ready | Snapshot support |
 |---|---|---|
@@ -2338,7 +2338,7 @@ GROUP BY rule_handle
 ORDER BY fires DESC;
 ```
 
-No engine change — DuckDB just reads the files the engine writes.
+No engine change â€” DuckDB just reads the files the engine writes.
 
 ## 33. User-Defined Function Registry (Requirement 42)
 
@@ -2384,9 +2384,9 @@ end
 
 | # | Property |
 |---|---|
-| P68 | UDF determinism (pure) — ∀ pure UDF F and inputs X, F(X) == F(X) across invocations. |
-| P69 | UDF replay pinning — a replay resolves UDFs to versions effective at the original run's timestamp, not the current versions. |
-| P70 | UDF sandbox — impure UDFs exceeding the per-call timeout are cancelled; their exception is isolated per fact (composes with P27). |
+| P68 | UDF determinism (pure) â€” âˆ€ pure UDF F and inputs X, F(X) == F(X) across invocations. |
+| P69 | UDF replay pinning â€” a replay resolves UDFs to versions effective at the original run's timestamp, not the current versions. |
+| P70 | UDF sandbox â€” impure UDFs exceeding the per-call timeout are cancelled; their exception is isolated per fact (composes with P27). |
 
 ### 33.2 Built-in UDF library
 
@@ -2409,7 +2409,7 @@ When given a short user prompt like "Build SparkRules":
 2. **Read `docs/REQUIREMENTS.md`**.
 3. **Read `USE_CASES.md`** for concrete domain semantics.
 4. **Read `ARCHITECTURE.md`** for system context diagrams.
-5. **Implement Phase 1 per §10** (9 waves, 25 tasks, 38 properties).
+5. **Implement Phase 1 per Â§10** (9 waves, 25 tasks, 38 properties).
 6. After Phase 1 green (`328 passed, 2 skipped, 1 deselected`), **ask the user which Phase 2 streams to implement** by presenting this table:
 
    | Phase | Theme | Enables |
@@ -2467,6 +2467,7 @@ The code agent may declare the build complete when:
 
 Early drafts used **234 passed, 1 deselected**; Phase 1 on this tree is **328 passed,
 2 skipped, 1 deselected** with **100%** line coverage on `src/sre` (see
-**BUILD_STATUS.md**). The blueprint text in **§8** and **§34.2** is aligned to that
+**BUILD_STATUS.md**). The blueprint text in **Â§8** and **Â§34.2** is aligned to that
 gate. **Authoritative** numbers and links: **`BUILD_STATUS.md`**, [`docs/README.md`](docs/README.md),
 and [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).
+
