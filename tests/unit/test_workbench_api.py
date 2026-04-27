@@ -73,3 +73,4 @@ def test_workbench_static_index() -> None:
     r = c.get("/workbench/index.html")
     assert r.status_code == 200
     assert b"SparkRules Workbench" in r.content
+    assert b'id="api-key"' in r.content

@@ -53,7 +53,7 @@ python -m pip install build
 python -m build
 ```
 
-Uploads to the Python Package Index are org-specific: configure [trusted publishing](https://docs.pypi.org/trusted-publishers/) or use tokens in your release pipeline. The `release-sdist` workflow uploads build artifacts for inspection.
+Uploads to the Python Package Index are org-specific: configure [trusted publishing](https://docs.pypi.org/trusted-publishers/) or use tokens in your release pipeline. The `release-sdist` workflow uploads build artifacts for inspection. A consolidated checklist is in [PUBLISHING.md](PUBLISHING.md).
 
 ## Project structure
 
