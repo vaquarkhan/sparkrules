@@ -17,6 +17,7 @@ class EngineConfig:
     executor_workers: int = 4
     executor_memory_gb: int = 16
     glue_dpu: int = 10
+    stop_on_decline: bool = False
 
 
 def validate_zero_code_change(cfg: EngineConfig) -> None:
@@ -61,6 +62,7 @@ def runtime_conf(cfg: EngineConfig) -> dict[str, str]:
         "sre.output.source": cfg.output_source,
         "sre.result.sink": cfg.result_sink_format,
         "sre.platform": cfg.platform,
+        "sre.execution.stop_on_decline": "true" if cfg.stop_on_decline else "false",
     }
     if cfg.platform == "glue":
         conf["spark.glue.dpu"] = str(cfg.glue_dpu)

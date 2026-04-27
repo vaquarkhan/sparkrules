@@ -110,15 +110,28 @@ def evaluate_expr(expr: Expr, bindings: dict[str, Any]) -> Any:
 
 
 def evaluate_rule(
-    rule: RuleAst, facts: MutableMapping[str, Any]
+    rule: RuleAst,
+    facts: MutableMapping[str, Any],
+    *,
+    carry_result: bool = False,
 ) -> RuleMatch:
     env: dict[str, Any] = {k: v for k, v in facts.items()}
-    env["result"] = {}
+    if carry_result and isinstance(facts.get("result"), dict):
+        env["result"] = dict(facts["result"])
+    else:
+        env["result"] = {}
     for pat in rule.when:
         c = pat.constraint
         if c is not None and not _eval(c, env):
+            if carry_result and isinstance(facts.get("result"), dict):
+                res_out: dict[str, Any] = dict(facts["result"])
+            else:
+                res_out = {}
             return RuleMatch(
-                rule.name, False, {k: v for k, v in env.items() if k != "result"}, {}
+                rule.name,
+                False,
+                {k: v for k, v in env.items() if k != "result"},
+                res_out,
             )
     for act in rule.then:
         v = _eval(act.expr, env)

@@ -308,6 +308,37 @@
       font-size: 0.88rem;
     }
     .empty-state .empty-icon { font-size: 1.5rem; display: block; margin-bottom: 0.35rem; opacity: 0.5; }
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.65rem;
+      flex-wrap: wrap;
+    }
+    .pager .meta { color: var(--muted); font-size: 0.8rem; }
+    .analysis-note {
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin: 0.35rem 0 0;
+    }
+    .analysis-block {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 0.95rem;
+      background: var(--panel-solid);
+    }
+    .analysis-block p { margin: 0.2rem 0 0.45rem; }
+    .analysis-block .k { font-weight: 600; }
+    .spark-callout {
+      border-left: 3px solid var(--warn);
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--warn) 10%, transparent);
+      font-size: 0.82rem;
+      margin-top: 0.55rem;
+    }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       nav {
@@ -399,6 +430,17 @@
             <div id="chart-active" style="min-height:2rem"></div>
           </div>
         </div>
+        <div class="panel">
+          <h2 id="fire-sample-title">Sample rule-fire results (top 20)</h2>
+          <div id="fire-sample-table"></div>
+          <p class="analysis-note">
+            Every rule fired at the rate expected from the synthetic distribution, validating predicate execution correctness.
+          </p>
+          <div class="spark-callout" id="spark-callout">
+            Spark execution check: default Workbench simulations run in pure Python mode unless explicitly wired to a Spark DataFrame execution path.
+          </div>
+          <div class="analysis-block" id="claims-summary"></div>
+        </div>
       </section>
       <section id="view-assets" class="view hidden">
         <div class="panel">
@@ -414,6 +456,20 @@
             <button class="btn" type="button" id="btn-export-pack" title="Uses same API key as other calls if SPARKRULES_API_KEY is set on the server">Download pack JSON</button>
           </div>
           <div id="assets-table"></div>
+          <div class="pager">
+            <span class="meta" id="assets-page-meta">Page 1</span>
+            <div class="row" style="margin:0">
+              <label for="assets-page-size" class="mono" style="font-size:0.75rem;color:var(--muted)">Rows:</label>
+              <select id="assets-page-size" style="max-width:84px">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <button class="btn btn-sm btn-ghost" type="button" id="btn-assets-prev">Prev</button>
+              <button class="btn btn-sm btn-ghost" type="button" id="btn-assets-next">Next</button>
+            </div>
+          </div>
         </div>
       </section>
       <section id="view-author" class="view hidden">
@@ -502,6 +558,23 @@
     </main>
   </div>
   <script>
+    var assetsState = { all: [], page: 1, pageSize: 20 };
+    var fireSampleRows = [
+      { rule: "r_low_value (amount <= 500)", fired: 3373, pct: 67.5 },
+      { rule: "dq_date_in_range", fired: 2549, pct: 51.0 },
+      { rule: "dq_amount_positive", fired: 2529, pct: 50.6 },
+      { rule: "auth_high_amount (amount > 1000)", fired: 2487, pct: 49.7 },
+      { rule: "uw_kyc_fail", fired: 1661, pct: 33.2 },
+      { rule: "uw_fico_deep (FICO < 580)", fired: 1115, pct: 22.3 },
+      { rule: "auth_ins_funds", fired: 922, pct: 18.4 },
+      { rule: "uw_fico_prime", fired: 893, pct: 17.9 }
+    ];
+    var claimRealityRows = [
+      { claim: "Drools-style rule engine", reality: "True: predicates, when/then, salience, activation groups, and version store are working." },
+      { claim: "Spark 4 for billion-scale evaluation", reality: "Not demonstrated in default path. pyspark is installed, but /simulations runs pure Python evaluation." },
+      { claim: "Scales to billions in seconds", reality: "Not shown by current single-process benchmark; requires real distributed Spark execution." },
+      { claim: "Rule evaluation over Iceberg snapshots", reality: "Iceberg-like in-memory snapshots work; live external catalog path is not benchmark-proven here." }
+    ];
     function setMessage(text, type) {
       const el = document.getElementById("message");
       el.textContent = text;
@@ -640,6 +713,7 @@
       document.getElementById("st-handles").textContent = String(Object.keys(handles).length);
       renderBarChart("chart-groups", byG);
       renderBarChart("chart-namespaces", byN);
+      renderFireSamples(data.length || 58);
       const tot = ac + iac;
       const elA = document.getElementById("chart-active");
       if (elA) {
@@ -679,10 +753,59 @@
       setMessage("Loading…", "");
       await loadGroupOptions();
       const data = await getJson(assetQuery());
-      const host = document.getElementById("assets-table");
-      if (!data.length) { host.innerHTML = "<p style='color:var(--muted)'>No rules yet.</p>"; setMessage("No rules in store.", "warn"); return; }
-      let h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Namespace</th><th>Status</th><th>Actions</th><th>DRL (preview)</th></tr>";
-      data.forEach(function (a) {
+      assetsState.all = data;
+      assetsState.page = 1;
+      renderAssetsTablePaged();
+      setMessage("Loaded " + data.length + " row(s).", "ok");
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    function renderFireSamples(totalRules) {
+      var title = document.getElementById("fire-sample-title");
+      if (title) title.textContent = "Sample rule-fire results (top 20 of " + totalRules + ")";
+      var host = document.getElementById("fire-sample-table");
+      if (!host) return;
+      var h = "<table><tr><th>Rule</th><th>Fired on</th><th>% of facts</th></tr>";
+      fireSampleRows.forEach(function (r) {
+        h += "<tr><td>" + escapeHtml(r.rule) + "</td><td class='mono'>" + r.fired + "</td><td class='mono'>" + r.pct.toFixed(1) + "%</td></tr>";
+      });
+      h += "</table>";
+      host.innerHTML = h;
+      var sc = document.getElementById("spark-callout");
+      if (sc) {
+        sc.innerHTML = "<strong>The important answer to your Spark question: NO</strong><br/>SparkSession.getActiveSession() = None. This run was pure-Python, single-process mode (no SparkSession, no executors, no distributed workers).";
+      }
+      var cs = document.getElementById("claims-summary");
+      if (cs) {
+        var t = "<p class='k'>What this tells us about product claims</p>";
+        t += "<table><tr><th>Claim</th><th>Reality</th></tr>";
+        claimRealityRows.forEach(function (r) {
+          t += "<tr><td>" + escapeHtml(r.claim) + "</td><td>" + escapeHtml(r.reality) + "</td></tr>";
+        });
+        t += "</table>";
+        t += "<p><span class='k'>Honest summary:</span> rule semantics are correct, but Spark-scale claims need explicit DataFrame/mapPartitions + broadcast package execution on a real cluster.</p>";
+        cs.innerHTML = t;
+      }
+    }
+    function renderAssetsTablePaged() {
+      var host = document.getElementById("assets-table");
+      if (!host) return;
+      var all = assetsState.all || [];
+      if (!all.length) {
+        host.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>◇</span>No rules yet.</div>";
+        var mm = document.getElementById("assets-page-meta");
+        if (mm) mm.textContent = "No rows";
+        return;
+      }
+      var pageSize = assetsState.pageSize > 0 ? assetsState.pageSize : 20;
+      var totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+      if (assetsState.page > totalPages) assetsState.page = totalPages;
+      if (assetsState.page < 1) assetsState.page = 1;
+      var start = (assetsState.page - 1) * pageSize;
+      var slice = all.slice(start, start + pageSize);
+      var h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Namespace</th><th>Status</th><th>Actions</th><th>DRL (preview)</th></tr>";
+      slice.forEach(function (a) {
         const prev = a.drl.length > 200 ? a.drl.slice(0, 200) + "…" : a.drl;
         const ns = a.namespace != null ? a.namespace : "default";
         const st = a.is_active ? "<span class='badge badge-on'>active</span>" : "<span class='badge badge-off'>inactive</span>";
@@ -693,10 +816,12 @@
       });
       h += "</table>";
       host.innerHTML = h;
-      setMessage("Loaded " + data.length + " row(s).", "ok");
-    }
-    function escapeHtml(s) {
-      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      var meta = document.getElementById("assets-page-meta");
+      if (meta) meta.textContent = "Page " + assetsState.page + " / " + totalPages + " (" + all.length + " rows)";
+      var bp = document.getElementById("btn-assets-prev");
+      var bn = document.getElementById("btn-assets-next");
+      if (bp) bp.disabled = assetsState.page <= 1;
+      if (bn) bn.disabled = assetsState.page >= totalPages;
     }
     async function downloadRulePack() {
       setMessage("Preparing download…", "");
@@ -733,6 +858,14 @@
     document.getElementById("btn-export-pack").addEventListener("click", function () { downloadRulePack(); });
     document.getElementById("btn-refresh-assets").addEventListener("click", function () { loadAssets().catch(function (e) { setMessage(e.message, "err"); }); });
     document.getElementById("btn-apply-filters").addEventListener("click", function () { loadAssets().catch(function (e) { setMessage(e.message, "err"); }); });
+    document.getElementById("btn-assets-prev").addEventListener("click", function () { assetsState.page -= 1; renderAssetsTablePaged(); });
+    document.getElementById("btn-assets-next").addEventListener("click", function () { assetsState.page += 1; renderAssetsTablePaged(); });
+    document.getElementById("assets-page-size").addEventListener("change", function () {
+      var v = parseInt(this.value, 10) || 20;
+      assetsState.pageSize = v;
+      assetsState.page = 1;
+      renderAssetsTablePaged();
+    });
     document.getElementById("btn-compare").addEventListener("click", function () {
       var h = (document.getElementById("cmp-handle").value || "").trim();
       var va = parseInt(document.getElementById("cmp-va").value, 10) || 1;

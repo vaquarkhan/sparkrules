@@ -10,6 +10,7 @@ from sre.runtime.perf import PerfRun, estimate_scale_runtime, run_perf_harness, 
 from sre.runtime.result_sink import ResultSink, SinkWriteResult, create_result_sink
 from sre.runtime.stream_sink import InMemoryStreamSink, StreamEmitter, StreamNotification
 from sre.runtime.udf_registry import UdfDefinition, UnknownUdfError, UserDefinedFunctionRegistry, eval_registered_pure_udf
+from sre.runtime.lineage import InMemoryLineageSink, LineageEvent, LineageSink, make_lineage_event
 
 __all__ = [
     "CatalystConfigurer",
@@ -21,6 +22,9 @@ __all__ = [
     "GuidedField",
     "IcebergLikeTable",
     "InMemoryStreamSink",
+    "InMemoryLineageSink",
+    "LineageEvent",
+    "LineageSink",
     "MissingFieldError",
     "PerfRun",
     "ResultSink",
@@ -40,6 +44,7 @@ __all__ = [
     "format_tier",
     "guided_fields_from_template",
     "make_event",
+    "make_lineage_event",
     "normalize_spark_version",
     "run_perf_harness",
     "runtime_conf",

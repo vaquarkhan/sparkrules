@@ -86,6 +86,8 @@ def print_ast(rule: RuleAst) -> str:
     if rule.reason_codes:
         items = ", ".join(_quote(x) for x in rule.reason_codes)
         lines.append(f"    reason_codes [ {items} ]")
+    if rule.stop_on_fire:
+        lines.append("    stop_on_fire true")
     lines.append("when")
     whens = " and ".join(_print_pattern(p) for p in rule.when)
     lines.append("    " + whens)

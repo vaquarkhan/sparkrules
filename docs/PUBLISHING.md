@@ -14,6 +14,16 @@ It always **builds** and uploads a **`dist/`** workflow artifact. **PyPI upload*
 
 To publish only a build (no upload), use **Run workflow** and leave the checkbox off. To publish without auto-upload on every tag, do not create the `pypi` environment or adjust the workflow; for most teams, **tag = release to PyPI** is desired.
 
+### Manual publish workflow (explicit release button)
+
+There is also a dedicated manual workflow: **PyPI Release** (`.github/workflows/pypi-release.yml`).
+
+- Open **Actions → PyPI Release → Run workflow**
+- Set **`confirm_publish`** to `publish`
+- Optionally choose the Python build version
+
+This workflow uses the same **trusted publisher** setup (`environment: pypi`, `id-token: write`) and does not require storing PyPI credentials in GitHub secrets.
+
 ## PyPI: trusted publishing (one-time setup)
 
 1. On [PyPI](https://pypi.org), register your project (or claim the `sparkrules` name) and add a **trusted publisher** pointing at this **GitHub repository** and workflow **Release build** (see [PyPI trusted publishers](https://docs.pypi.org/trusted-publishers/)).

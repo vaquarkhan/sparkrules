@@ -109,7 +109,30 @@ class DrlParser:
     def parse(self, text: str) -> RuleAst:
         self._toks = tokenize(text)
         self._i = 0
-        return self._parse_rule()
+        r = self._parse_rule()
+        if not self._match(TokenKind.EOF):
+            t = self._peek()
+            raise ParseError(
+                f"expected end of file after rule, got {t.kind.name} {t.text!r}",
+                t.line,
+                t.col,
+            )
+        return r
+
+    def parse_rules(self, text: str) -> list[RuleAst]:
+        self._toks = tokenize(text)
+        self._i = 0
+        out: list[RuleAst] = []
+        while not self._match(TokenKind.EOF):
+            if not self._match(TokenKind.RULE):
+                t = self._peek()
+                raise ParseError(
+                    f"expected 'rule' or end of file, got {t.kind.name} {t.text!r}",
+                    t.line,
+                    t.col,
+                )
+            out.append(self._parse_rule())
+        return out
 
     def _parse_rule(self) -> RuleAst:
         rule_tok = self._expect(TokenKind.RULE)
@@ -123,6 +146,7 @@ class DrlParser:
         pass_name: str | None = None
         group_by: tuple[str, ...] = ()
         reason_codes: tuple[str, ...] = ()
+        stop_on_fire = False
         while self._match(
             TokenKind.SALIENCE,
             TokenKind.AGENDA_GROUP,
@@ -130,6 +154,7 @@ class DrlParser:
             TokenKind.PASS,
             TokenKind.GROUP_BY,
             TokenKind.REASON_CODES,
+            TokenKind.STOP_ON_FIRE,
         ):
             k = self._advance()
             if k.kind == TokenKind.SALIENCE:
@@ -147,6 +172,18 @@ class DrlParser:
                 group_by = self._parse_string_list()
             elif k.kind == TokenKind.REASON_CODES:
                 reason_codes = self._parse_string_list()
+            else:
+                if self._match(TokenKind.TRUE):
+                    self._advance()
+                    stop_on_fire = True
+                elif self._match(TokenKind.FALSE):
+                    self._advance()
+                    stop_on_fire = False
+                else:
+                    t = self._peek()
+                    raise ParseError(
+                        "expected true or false after stop_on_fire", t.line, t.col
+                    )
         self._expect(TokenKind.WHEN)
         when = self._parse_when()
         bset: set[str] = {p.bind_name for p in when}
@@ -155,7 +192,6 @@ class DrlParser:
         self._expect(TokenKind.THEN)
         then = self._parse_then()
         self._expect(TokenKind.END)
-        self._expect(TokenKind.EOF)
         return RuleAst(
             name=name,
             salience=salience,
@@ -164,6 +200,7 @@ class DrlParser:
             pass_name=pass_name,
             group_by=group_by,
             reason_codes=reason_codes,
+            stop_on_fire=stop_on_fire,
             when=when,
             then=then,
         )
@@ -366,3 +403,7 @@ class DrlParser:
 
 def parse(text: str) -> RuleAst:
     return DrlParser().parse(text)
+
+
+def parse_rules(text: str) -> list[RuleAst]:
+    return DrlParser().parse_rules(text)
