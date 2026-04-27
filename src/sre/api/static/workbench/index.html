@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SparkRules Workbench</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; margin: 0; font-weight: 600; }
+    header a { color: var(--accent); }
+    .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 52px); }
+    nav {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 0.5rem 0;
+    }
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    nav button:hover, nav button.active { background: #243044; }
+    main { padding: 1rem 1.25rem; overflow: auto; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    h2 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    textarea, input, select {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.5rem 0.6rem;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85rem;
+    }
+    textarea { min-height: 180px; resize: vertical; }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
+    button.btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-ok { color: var(--ok); }
+    .status-warn { color: var(--warn); }
+    .status-err { color: var(--err); }
+    pre, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { border: 1px solid var(--border); padding: 0.4rem 0.5rem; text-align: left; }
+    th { background: #243044; }
+    .hidden { display: none !important; }
+    #message { min-height: 1.2rem; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SparkRules Workbench</h1>
+    <span class="mono"><a href="/docs" target="_blank" rel="noopener">OpenAPI</a> &middot; <a href="/health" target="_blank" rel="noopener">Health</a></span>
+  </header>
+  <div class="layout">
+    <nav>
+      <button type="button" class="active" data-view="assets">Rule assets</button>
+      <button type="button" data-view="author">Author / validate</button>
+      <button type="button" data-view="sim">Simulate</button>
+      <button type="button" data-view="deploy">Deployment</button>
+      <button type="button" data-view="template">Template helper</button>
+    </nav>
+    <main>
+      <p id="message"></p>
+      <section id="view-assets" class="view">
+        <div class="panel">
+          <h2>Registered rules</h2>
+          <div class="row">
+            <button class="btn" type="button" id="btn-refresh-assets">Refresh</button>
+          </div>
+          <div id="assets-table"></div>
+        </div>
+      </section>
+      <section id="view-author" class="view hidden">
+        <div class="panel">
+          <h2>Create rule</h2>
+          <div class="row">
+            <input type="text" id="in-handle" placeholder="rule_handle" style="max-width:200px" />
+            <input type="text" id="in-group" placeholder="group (default)" value="default" style="max-width:160px" />
+          </div>
+          <textarea id="drl-new" placeholder="DRL text"></textarea>
+          <div class="row">
+            <button class="btn" type="button" id="btn-validate">Validate</button>
+            <button class="btn" type="button" id="btn-create">Save to repository</button>
+          </div>
+        </div>
+      </section>
+      <section id="view-sim" class="view hidden">
+        <div class="panel">
+          <h2>Simulation (dry run)</h2>
+          <textarea id="drl-sim" placeholder="DRL"></textarea>
+          <p class="mono">Fact JSON (object):</p>
+          <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
+          <div class="row">
+            <button class="btn" type="button" id="btn-sim">Run simulation</button>
+          </div>
+          <pre id="sim-out" class="panel mono"></pre>
+        </div>
+      </section>
+      <section id="view-deploy" class="view hidden">
+        <div class="panel">
+          <h2>Engine / platform (config view)</h2>
+          <p class="mono" style="color:var(--muted)">Read-only view of the active engine config map. Change via environment in production.</p>
+          <div class="row">
+            <button class="btn" type="button" id="btn-deploy-refresh">Refresh</button>
+          </div>
+          <pre id="deploy-out" class="mono"></pre>
+        </div>
+      </section>
+      <section id="view-template" class="view hidden">
+        <div class="panel">
+          <h2>Guided template</h2>
+          <p style="color:var(--muted);font-size:0.9rem">Placeholder pattern for DRL. Fields drive form labels in an editor shell.</p>
+          <textarea id="tpl-pattern" style="min-height:72px">rule {rule_name} when $t : T ( $t.x > {min_x} ) then end</textarea>
+          <div class="row">
+            <button class="btn" type="button" id="btn-tpl">Load fields</button>
+          </div>
+          <div id="tpl-fields"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    function setMessage(text, type) {
+      const el = document.getElementById("message");
+      el.textContent = text;
+      el.className = type === "err" ? "status-err" : type === "warn" ? "status-warn" : "status-ok";
+    }
+    function showView(name) {
+      document.querySelectorAll(".view").forEach(function (v) { v.classList.add("hidden"); });
+      const target = document.getElementById("view-" + name);
+      if (target) target.classList.remove("hidden");
+      document.querySelectorAll("nav button").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-view") === name);
+      });
+    }
+    document.querySelectorAll("nav button").forEach(function (b) {
+      b.addEventListener("click", function () { showView(b.getAttribute("data-view")); });
+    });
+    async function getJson(path, opts) {
+      const r = await fetch(path, Object.assign({ headers: { "Accept": "application/json" } }, opts));
+      if (!r.ok) throw new Error((await r.text()) || r.status);
+      return r.json();
+    }
+    async function postJson(path, body) {
+      const r = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const t = await r.text();
+      if (!r.ok) throw new Error(t || r.status);
+      try { return JSON.parse(t); } catch (e) { return { raw: t }; }
+    }
+    async function loadAssets() {
+      setMessage("Loading…", "");
+      const data = await getJson("/rules/assets");
+      const host = document.getElementById("assets-table");
+      if (!data.length) { host.innerHTML = "<p style='color:var(--muted)'>No rules yet.</p>"; setMessage("No rules in store.", "warn"); return; }
+      let h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Active</th><th>DRL (preview)</th></tr>";
+      data.forEach(function (a) {
+        const prev = a.drl.length > 200 ? a.drl.slice(0, 200) + "…" : a.drl;
+        h += "<tr><td class='mono'>" + escapeHtml(a.rule_handle) + "</td><td>" + a.version + "</td><td>" + escapeHtml(a.rule_group) + "</td><td>" + a.is_active + "</td><td class='mono'>" + escapeHtml(prev) + "</td></tr>";
+      });
+      h += "</table>";
+      host.innerHTML = h;
+      setMessage("Loaded " + data.length + " row(s).", "ok");
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+    document.getElementById("btn-refresh-assets").addEventListener("click", function () { loadAssets().catch(function (e) { setMessage(e.message, "err"); }); });
+    document.getElementById("btn-validate").addEventListener("click", function () {
+      var drl = document.getElementById("drl-new").value;
+      postJson("/rules/validate", { drl: drl }).then(function () { setMessage("Parse OK.", "ok"); }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-create").addEventListener("click", function () {
+      var h = document.getElementById("in-handle").value.trim();
+      var g = document.getElementById("in-group").value.trim() || "default";
+      var drl = document.getElementById("drl-new").value;
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/rules", { rule_handle: h, group: g, drl: drl }).then(function (j) {
+        setMessage("Saved " + j.rule_handle + " v" + j.version, "ok");
+        loadAssets();
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-sim").addEventListener("click", function () {
+      var drl = document.getElementById("drl-sim").value;
+      var fact;
+      try { fact = JSON.parse(document.getElementById("fact-json").value || "{}"); } catch (e) { setMessage("Invalid JSON: " + e, "err"); return; }
+      postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
+        document.getElementById("sim-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Simulation complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    function loadDeployment() {
+      getJson("/system/deployment").then(function (j) {
+        document.getElementById("deploy-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Deployment config loaded.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    }
+    document.getElementById("btn-deploy-refresh").addEventListener("click", loadDeployment);
+    document.getElementById("btn-tpl").addEventListener("click", function () {
+      var p = document.getElementById("tpl-pattern").value;
+      getJson("/workbench/api/guided-fields?pattern=" + encodeURIComponent(p)).then(function (j) {
+        var d = j.fields || [];
+        var h = d.length ? "<table><tr><th>Name</th><th>Label</th><th>Required</th><th>Kind</th></tr>" : "<p class='status-warn'>No placeholders found.</p>";
+        d.forEach(function (f) { h += "<tr><td class='mono'>" + escapeHtml(f.name) + "</td><td>" + escapeHtml(f.label) + "</td><td>" + f.required + "</td><td>" + escapeHtml(f.kind) + "</td></tr>"; });
+        if (d.length) h += "</table>";
+        document.getElementById("tpl-fields").innerHTML = h;
+        setMessage("Template fields loaded.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    loadAssets();
+  </script>
+</body>
+</html>
