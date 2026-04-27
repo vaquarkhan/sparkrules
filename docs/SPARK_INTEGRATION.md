@@ -1,5 +1,18 @@
 # Spark: optional by design
 
+---
+
+> **TL;DR — where Spark actually runs**
+>
+> | You are here | Spark used? |
+> |--------------|-------------|
+> | `POST /simulations`, Workbench **Simulate**, most **REST** traffic | **No** — pure **Python** in the API process (`SparkSession.getActiveSession()` is usually `None`). |
+> | Your **PySpark job** calling **`apply_drl(df, drl)`** on a **`DataFrame`** | **Yes** — work is distributed by **Spark** (your cluster, your `SparkSession`). |
+>
+> **No server environment variable flips the API into Spark mode.** Integrate in code; see **`apply_drl`** below.
+
+---
+
 **SparkRules** is named for **Spark-oriented** data platforms, but **using Apache Spark (PySpark) is optional**. You choose the execution mode for your use case.
 
 | Mode | When to use it | How rules run |
@@ -54,3 +67,24 @@ For **claim-level** honesty about default paths and throughput, see [KNOWN_LIMIT
 | Spark iterator tests (need JVM) | `tests/spark/`, `tests/unit/test_spark_iter.py` |
 
 If you are unsure, start with **pure Python** simulations; add **Spark** when you have a real **DataFrame** and a **cluster** to run on.
+
+---
+
+## Tests and line coverage (`src/sre/spark`)
+
+The **`sre.spark`** package is covered to **100% line** coverage in CI style when you run:
+
+```bash
+python -m pytest tests/unit/ -q --cov=src/sre
+```
+
+How that is achieved:
+
+| Test file | What it covers |
+|-----------|----------------|
+| `tests/unit/test_spark_iter.py` | `iter_rule_rows` with **dict** rows and row-like `asDict()` (no JVM). |
+| `tests/unit/test_cov_spark_apply_mocks.py` | `apply_drl` with a **mock** `DataFrame` / `SparkSession` (no JVM), `rows_from_session`, and non-dict partition elements. |
+| `tests/unit/test_cov_spark_mpartition.py` | `mpartition_rows` with real **PySpark** `Row` (imports `pyspark`; skipped if import fails). |
+| `tests/spark/test_pyspark_dataframe.py` | Optional **end-to-end** with `SparkSession` (`local[1]`) — **requires JVM**; marked `spark`, not in default `pytest` selection if you exclude the directory. |
+
+You get **full** `sre/spark` coverage from **unit** tests alone (mocks + `importorskip` PySpark for `mpartition_rows`); the `tests/spark/` file is for **real** Spark smoke runs in environments with Java.
