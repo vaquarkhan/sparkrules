@@ -38,6 +38,41 @@ class SimulationResponse(BaseModel):
     bound: dict[str, object] = {}
 
 
+class ShadowSimulationRequest(BaseModel):
+    primary_drl: str
+    shadow_drl: str
+    fact: dict[str, Any]
+    run_id: str = "shadow-local"
+
+
+class ShadowSimulationResponse(BaseModel):
+    primary_fired: bool
+    primary_action: dict[str, object] = {}
+    shadow_fired: bool
+    shadow_action: dict[str, object] = {}
+    drifted: bool
+    drift_fields: list[str] = []
+
+
+class CoverageSimulationRequest(BaseModel):
+    drl: str
+    facts: list[dict[str, Any]] = []
+
+
+class RuleCoverageItemResponse(BaseModel):
+    rule_name: str
+    fired_count: int
+    total: int
+    fire_rate: float
+
+
+class CoverageSimulationResponse(BaseModel):
+    total_facts: int
+    total_rules: int
+    covered_rules: int
+    items: list[RuleCoverageItemResponse] = []
+
+
 class ChainStepResponse(BaseModel):
     rule_name: str
     fired: bool
@@ -218,3 +253,30 @@ class AiExplainRuleRequest(BaseModel):
 
 class AiExplainRuleResponse(BaseModel):
     explanation: str
+
+
+class GraphEnrichRequest(BaseModel):
+    fact: dict[str, Any]
+    entity_field: str = "entity_id"
+    pii_reveal: bool = False
+
+
+class GraphEnrichResponse(BaseModel):
+    snapshot_id: str
+    fact: dict[str, Any]
+
+
+class ModelScoreRequest(BaseModel):
+    model_id: str
+    model_version: str | None = None
+    features: dict[str, Any] = {}
+    run_id: str = "run-local"
+    pin_current_version: bool = True
+
+
+class ModelScoreResponse(BaseModel):
+    model_id: str
+    model_version: str
+    provider: str
+    score: float
+    explanation: dict[str, Any]

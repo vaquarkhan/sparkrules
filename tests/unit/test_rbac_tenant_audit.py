@@ -83,3 +83,42 @@ def test_governance_non_admin_scoped_to_tenant() -> None:
     assert pins
     assert all(x["namespace"] == "tn1" for x in pins)
 
+
+def test_rules_list_and_groups_scoped_to_tenant() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    c.post("/rules", json={"rule_handle": "r1", "group": "g1", "namespace": "t1", "drl": _DRL})
+    c.post("/rules", json={"rule_handle": "r2", "group": "g2", "namespace": "t2", "drl": _DRL})
+    h1 = {"X-Roles": "rule_reader", "X-Tenant-Id": "t1"}
+    assert c.get("/rules", headers=h1).json() == ["r1"]
+    assert c.get("/rules/groups", headers=h1).json() == ["g1"]
+
+
+def test_export_and_diff_enforce_tenant_access() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    c.post("/rules", json={"rule_handle": "r1", "group": "g", "namespace": "t1", "drl": _DRL})
+    c.post("/rules", json={"rule_handle": "r2", "group": "g", "namespace": "t2", "drl": _DRL})
+    h1 = {"X-Roles": "rule_reader", "X-Tenant-Id": "t1"}
+    h2 = {"X-Roles": "rule_reader", "X-Tenant-Id": "t2"}
+    j1 = c.get("/rules/export", headers=h1).json()
+    assert all(x["namespace"] == "t1" for x in j1["rules"])
+    j2 = c.get("/rules/export", headers=h2).json()
+    assert all(x["namespace"] == "t2" for x in j2["rules"])
+    denied = c.get("/rules/diff", params={"handle": "r2", "version_a": 1, "version_b": 1}, headers=h1)
+    assert denied.status_code == 403
+    scoped = c.get("/rules/export", params={"namespace": "t1"}, headers=h1)
+    assert scoped.status_code == 200
+    assert all(x["namespace"] == "t1" for x in scoped.json()["rules"])
+
+
+def test_role_matrix_blocks_unknown_role_on_secured_endpoints() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    h = {"X-Roles": "guest", "X-Tenant-Id": "default"}
+    assert c.post("/simulations", json={"drl": _DRL, "fact": {"t": {}}}, headers=h).status_code == 403
+    assert c.post("/rules/validate", json={"drl": _DRL}, headers=h).status_code == 403
+    assert c.get("/system/deployment", headers=h).status_code == 403
+    assert c.get("/workbench/api/guided-fields", headers=h).status_code == 403
+    assert c.get("/governance/environments", headers=h).status_code == 403
+

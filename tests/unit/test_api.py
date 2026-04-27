@@ -124,3 +124,59 @@ end
     assert r.status_code == 200
     j = r.json()
     assert j["stop_reason"] == "stop_on_decline"
+
+
+def test_simulation_shadow() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/simulations/shadow",
+        json={
+            "primary_drl": "rule a when $t : T ( true ) then result.decision = \"approve\"; end",
+            "shadow_drl": "rule b when $t : T ( true ) then result.decision = \"decline\"; end",
+            "fact": {"t": {}},
+        },
+        headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
+    )
+    assert r.status_code == 200
+    j = r.json()
+    assert j["drifted"] is True
+    assert j["drift_fields"] == ["decision"]
+
+
+def test_simulation_coverage() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/simulations/coverage",
+        json={
+            "drl": """
+rule a
+when $t : T ( $t.x == 1 ) then
+result.ok = true;
+end
+rule b
+when $t : T ( $t.y > 10 ) then
+result.ok2 = true;
+end
+""",
+            "facts": [{"t": {"x": 1, "y": 0}}, {"t": {"x": 0, "y": 11}}],
+        },
+        headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
+    )
+    assert r.status_code == 200
+    j = r.json()
+    assert j["total_facts"] == 2
+    assert j["total_rules"] == 2
+    assert j["covered_rules"] == 2
+
+
+def test_simulation_coverage_bad_drl_400() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/simulations/coverage",
+        json={"drl": "not drl", "facts": []},
+        headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
+    )
+    assert r.status_code == 400

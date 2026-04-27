@@ -33,12 +33,21 @@ from sre.api.schemas import (
     SimulationChainResponse,
     SimulationRequest,
     SimulationResponse,
+    ShadowSimulationRequest,
+    ShadowSimulationResponse,
+    CoverageSimulationRequest,
+    CoverageSimulationResponse,
+    RuleCoverageItemResponse,
     AiSuggestRulesRequest,
     AiSuggestionResponse,
     AiMineDqRequest,
     AiAnalyzeDriftRequest,
     AiExplainRuleRequest,
     AiExplainRuleResponse,
+    GraphEnrichRequest,
+    GraphEnrichResponse,
+    ModelScoreRequest,
+    ModelScoreResponse,
 )
 from sre.ai import AiService, StubAiProvider
 from sre.api.security import (
@@ -59,6 +68,8 @@ from sre.model.rule_template import RuleTemplate
 from sre.parser import parse
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.lineage import InMemoryLineageSink, make_lineage_event
+from sre.runtime.graph import GraphEnricher, InMemoryGraphSource
+from sre.runtime.model import StubModelProvider, invoke_model
 from sre.runtime.iceberg_store import IcebergLikeTable
 from sre.sim import RuleSimulator
 from sre.store import (
@@ -123,6 +134,22 @@ class AppDeps:
         )
     )
     ai: AiService = field(default_factory=lambda: AiService(StubAiProvider()))
+    graph_source: InMemoryGraphSource = field(default_factory=InMemoryGraphSource)
+    model_provider: StubModelProvider = field(default_factory=StubModelProvider)
+    run_history: IcebergLikeTable = field(
+        default_factory=lambda: IcebergLikeTable(
+            "run_history",
+            {
+                "run_id": str,
+                "model_id": str,
+                "model_version": str,
+                "provider": str,
+                "features_json": str,
+                "score": float,
+            },
+        )
+    )
+    model_pin: dict[str, str] = field(default_factory=dict)
 
 
 def create_app(deps: AppDeps | None = None) -> Any:
@@ -203,9 +230,10 @@ def create_app(deps: AppDeps | None = None) -> Any:
             p,
             {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
-        return sorted(
-            {r.rule_handle for r in d.store.list(None)}
-        )
+        rows = d.store.list(None)
+        if "platform_admin" not in p.roles:
+            rows = [r for r in rows if r.namespace == p.tenant_id]
+        return sorted({r.rule_handle for r in rows})
 
     @app.post(
         "/rules", tags=["rules"], response_model=RuleResponse
@@ -255,7 +283,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         response_model=SimulationResponse,
         tags=["simulation"],
     )
-    def sim(s: SimulationRequest) -> SimulationResponse:
+    def sim(req: Request, s: SimulationRequest) -> SimulationResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         run_id = f"sim-{uuid.uuid4()}"
         _lineage_start(
             run_id,
@@ -277,13 +310,84 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
 
     @app.post(
+        "/simulations/shadow",
+        response_model=ShadowSimulationResponse,
+        tags=["simulation"],
+    )
+    def sim_shadow(req: Request, s: ShadowSimulationRequest) -> ShadowSimulationResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        _lineage_start(
+            s.run_id,
+            inputs={"fact": dict(s.fact)},
+            context={"mode": "SIMULATION_SHADOW", "endpoint": "/simulations/shadow"},
+        )
+        try:
+            out = d.sim.run_shadow(s.primary_drl, s.shadow_drl, dict(s.fact))
+        except Exception as e:  # noqa: BLE001
+            _lineage_fail(s.run_id, exc=e)
+            raise HTTPException(400, str(e)) from e
+        _lineage_complete(
+            s.run_id,
+            outputs={"drifted": out.drifted, "drift_fields": list(out.drift_fields)},
+            metrics={"facts_processed": 1, "primary_fired": 1 if out.primary.fired else 0},
+        )
+        return ShadowSimulationResponse(
+            primary_fired=out.primary.fired,
+            primary_action=out.primary.action,
+            shadow_fired=out.shadow.fired,
+            shadow_action=out.shadow.action,
+            drifted=out.drifted,
+            drift_fields=list(out.drift_fields),
+        )
+
+    @app.post(
+        "/simulations/coverage",
+        response_model=CoverageSimulationResponse,
+        tags=["simulation"],
+    )
+    def sim_coverage(req: Request, s: CoverageSimulationRequest) -> CoverageSimulationResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        try:
+            out = d.sim.analyze_coverage(s.drl, list(s.facts))
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, str(e)) from e
+        return CoverageSimulationResponse(
+            total_facts=out.total_facts,
+            total_rules=out.total_rules,
+            covered_rules=out.covered_rules,
+            items=[
+                RuleCoverageItemResponse(
+                    rule_name=i.rule_name,
+                    fired_count=i.fired_count,
+                    total=i.total,
+                    fire_rate=i.fire_rate,
+                )
+                for i in out.items
+            ],
+        )
+
+    @app.post(
         "/simulations/chain",
         response_model=SimulationChainResponse,
         tags=["simulation"],
     )
     def sim_chain(
+        req: Request,
         s: SimulationChainRequest,
     ) -> SimulationChainResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         run_id = f"sim-chain-{uuid.uuid4()}"
         _lineage_start(
             run_id,
@@ -454,14 +558,75 @@ def create_app(deps: AppDeps | None = None) -> Any:
             model_id=upd.model_id,
         )
 
+    @app.post("/graph/enrich", response_model=GraphEnrichResponse, tags=["graph"])
+    def graph_enrich(req: Request, b: GraphEnrichRequest) -> GraphEnrichResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_reader", "rule_author", "rule_admin", "pii_reveal", "platform_admin"})
+        ge = GraphEnricher(
+            source=d.graph_source,
+            entity_field=b.entity_field,
+            redacted_fields={"pii_node_id"},
+            pii_reveal=bool(b.pii_reveal and ("pii_reveal" in p.roles or "platform_admin" in p.roles)),
+        )
+        out = ge.enrich(dict(b.fact))
+        return GraphEnrichResponse(snapshot_id=out.snapshot_id, fact=out.enriched_fact)
+
+    @app.post("/models/score", response_model=ModelScoreResponse, tags=["model"])
+    def model_score(req: Request, b: ModelScoreRequest) -> ModelScoreResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"run_operator", "rule_admin", "platform_admin"})
+        mv = b.model_version
+        if b.pin_current_version:
+            if mv is None:
+                mv = d.model_pin.get(b.model_id, "v1")
+            d.model_pin[b.model_id] = mv
+        else:
+            mv = mv or "v1"
+        inv = invoke_model(
+            d.model_provider,
+            model_id=b.model_id,
+            model_version=mv,
+            features=dict(b.features),
+        )
+        d.run_history.append(
+            [
+                {
+                    "run_id": b.run_id,
+                    "model_id": inv.model_id,
+                    "model_version": inv.model_version,
+                    "provider": inv.provider,
+                    "features_json": json.dumps(inv.features, sort_keys=True, default=str),
+                    "score": float(inv.score),
+                }
+            ]
+        )
+        _lineage_complete(
+            b.run_id,
+            outputs={"model_id": inv.model_id, "model_version": inv.model_version},
+            metrics={"score": float(inv.score)},
+        )
+        return ModelScoreResponse(
+            model_id=inv.model_id,
+            model_version=inv.model_version,
+            provider=inv.provider,
+            score=inv.score,
+            explanation=inv.explanation,
+        )
+
     @app.get(
         "/rules/groups",
         tags=["workbench", "rules"],
     )
-    def list_rule_groups() -> list[str]:
-        return sorted(
-            {r.rule_group for r in d.store.list(None)},
+    def list_rule_groups(req: Request) -> list[str]:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
+        rows = d.store.list(None)
+        if "platform_admin" not in p.roles:
+            rows = [r for r in rows if r.namespace == p.tenant_id]
+        return sorted({r.rule_group for r in rows})
 
     @app.get(
         "/rules/assets",
@@ -558,15 +723,23 @@ def create_app(deps: AppDeps | None = None) -> Any:
         tags=["workbench", "rules"],
     )
     def rule_version_diff(
+        req: Request,
         handle: str = Query(..., min_length=1),
         version_a: int = Query(..., ge=1),
         version_b: int = Query(..., ge=1),
     ) -> RuleVersionDiffResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         try:
             ra = d.store.get(handle, version_a)
             rb = d.store.get(handle, version_b)
         except UnknownRuleError as e:  # noqa: BLE001
             raise HTTPException(404, str(e)) from e
+        require_tenant_match(p, ra.namespace)
+        require_tenant_match(p, rb.namespace)
         da = ra.rule_definition.source
         db = rb.rule_definition.source
         return RuleVersionDiffResponse(
@@ -582,8 +755,22 @@ def create_app(deps: AppDeps | None = None) -> Any:
         "/rules/export",
         tags=["workbench", "rules"],
     )
-    def export_rule_pack() -> dict[str, Any]:
-        rows = d.store.list(None)
+    def export_rule_pack(
+        req: Request,
+        namespace: str | None = Query(None, description="Optional filter by namespace"),
+    ) -> dict[str, Any]:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        if namespace:
+            require_tenant_match(p, namespace)
+            rows = d.store.list(RuleFilter(namespace=namespace))
+        elif "platform_admin" in p.roles:
+            rows = d.store.list(None)
+        else:
+            rows = d.store.list(RuleFilter(namespace=p.tenant_id))
         pack_rules = [
             {
                 "rule_handle": r.rule_handle,
@@ -648,7 +835,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         "/rules/validate",
         tags=["workbench", "rules"],
     )
-    def validate_drl(b: RuleValidateRequest) -> dict[str, object]:
+    def validate_drl(req: Request, b: RuleValidateRequest) -> dict[str, object]:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         try:
             parse(b.drl)
         except Exception as e:  # noqa: BLE001
@@ -690,7 +882,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         response_model=DeploymentStatusResponse,
         tags=["workbench", "system"],
     )
-    def deployment_status() -> DeploymentStatusResponse:
+    def deployment_status(req: Request) -> DeploymentStatusResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         return DeploymentStatusResponse(
             status="ok",
             engine_config=runtime_conf(EngineConfig()),
@@ -698,10 +895,16 @@ def create_app(deps: AppDeps | None = None) -> Any:
 
     @app.get("/workbench/api/guided-fields", tags=["workbench"])
     def workbench_guided_fields(
+        req: Request,
         pattern: str = (
             'rule {rule_name} when $t : T ( $t.x > {min_x} ) then end'
         ),
     ) -> dict[str, object]:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
         t = RuleTemplate.from_pattern("workbench", pattern)
         fields = guided_fields_from_template(t)
         return {
@@ -812,7 +1015,9 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
 
     @app.get("/governance/environments", tags=["governance"])
-    def governance_environments() -> list[str]:
+    def governance_environments(req: Request) -> list[str]:
+        p = principal_from_request(req)
+        require_any_role(p, {"rule_reader", "rule_author", "rule_admin", "platform_admin"})
         return list(STANDARD_ENVS)
 
     @app.get("/governance/namespaces", tags=["governance"])
