@@ -38,6 +38,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 sre = [
   "api/static/workbench/index.html",
+  "api/static/workbench/sparkrules-logo.png",
 ]
 
 [tool.pytest.ini_options]
