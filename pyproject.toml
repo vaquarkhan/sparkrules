@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Drools-equivalent business rule engine reference implementation"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = { file = "LICENSE" }
 dependencies = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -16,7 +16,7 @@ dependencies = [
   "openpyxl>=3.1",
   "prometheus-client>=0.20",
   "structlog>=24.1",
-  "httpx>=0.27",
+  "httpx>=0.27,<0.28",
   "pyyaml>=6.0",
 ]
 
@@ -34,6 +34,11 @@ sre-drl-smoke = "sre.tools.smoke_drl:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+sre = [
+  "api/static/workbench/index.html",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

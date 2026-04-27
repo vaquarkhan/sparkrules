@@ -35,8 +35,11 @@
 ## Service surfaces
 
 - FastAPI endpoints for health, rules, and simulation
+- Browser **Rules Workbench** at `/workbench/` (assets, DRL validate, simulation, deployment readout, template helper)
 - Python package APIs for parser, compiler, executor, store, and runtime modules
 - Data quality API endpoint for check evaluation and summarized violation outputs
+- Reference **Docker** image build and `docker compose` for local full-stack runs
+- **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
 
 ## Metadata lifecycle
 

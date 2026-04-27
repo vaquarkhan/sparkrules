@@ -1,0 +1,11 @@
+{
+  "input_source": "iceberg",
+  "output_source": "iceberg",
+  "result_sink_format": "parquet",
+  "spark_version": "3.5",
+  "platform": "glue",
+  "glue_dpu": 20,
+  "executor_cores": 4,
+  "executor_workers": 8,
+  "executor_memory_gb": 32
+}
