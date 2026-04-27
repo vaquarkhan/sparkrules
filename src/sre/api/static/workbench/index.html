@@ -126,7 +126,7 @@
             </select>
             <button class="btn" type="button" id="btn-apply-filters">Apply</button>
             <button class="btn" type="button" id="btn-refresh-assets">Refresh</button>
-            <a class="btn" id="link-export" href="/rules/export" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Download pack JSON</a>
+            <button class="btn" type="button" id="btn-export-pack" title="Uses same API key as other calls if SPARKRULES_API_KEY is set on the server">Download pack JSON</button>
           </div>
           <div id="assets-table"></div>
         </div>
@@ -318,6 +318,26 @@
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
+    async function downloadRulePack() {
+      setMessage("Preparing download…", "");
+      try {
+        const h = Object.assign({ "Accept": "application/json" }, apiKeyHeaders());
+        const r = await fetch("/rules/export", { method: "GET", headers: h });
+        if (!r.ok) { throw new Error((await r.text()) || r.status); }
+        const blob = await r.blob();
+        const u = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = u;
+        a.download = "sparkrules-rulepack.json";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(u);
+        setMessage("Download started.", "ok");
+      } catch (e) { setMessage(e.message, "err"); }
+    }
+    document.getElementById("btn-export-pack").addEventListener("click", function () { downloadRulePack(); });
     document.getElementById("btn-refresh-assets").addEventListener("click", function () { loadAssets().catch(function (e) { setMessage(e.message, "err"); }); });
     document.getElementById("btn-apply-filters").addEventListener("click", function () { loadAssets().catch(function (e) { setMessage(e.message, "err"); }); });
     document.getElementById("btn-compare").addEventListener("click", function () {
