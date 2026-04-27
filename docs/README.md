@@ -6,7 +6,7 @@ This documentation set is customer and developer focused.
 
 | Document | Purpose |
 |----------|---------|
-| [FEATURES.md](FEATURES.md) | Product capabilities and Drools-parity status |
+| [FEATURES.md](FEATURES.md) | Product capabilities, Workbench/Monaco, LSP, simulations, governance, coverage gate |
 | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | Architecture and execution flow |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Setup, run, test, and extension guidance |
 | [USE_CASES.md](USE_CASES.md) | Practical scenarios and implementation patterns |

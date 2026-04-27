@@ -19,6 +19,14 @@ pytest tests/ -q
 pytest tests/perf -m perf -q
 ```
 
+**`src/sre` line coverage (required for CI-style gate):**
+
+```bash
+pytest tests/unit/ -q --cov=src/sre
+```
+
+`pyproject.toml` sets `fail_under=100` for the `src/sre` tree when coverage is run as above.
+
 ## Local API
 
 **Windows:** run `scripts/dev_server.cmd` from the repo (it runs `pip install -e .` and starts Uvicorn on **127.0.0.1:8042** by default). Override with `set SPARKRULES_PORT=9000` before the script.
@@ -32,7 +40,7 @@ If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm t
 
 ## Rules Workbench (browser)
 
-After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port) for rule assets, DRL validate, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
+After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port) for rule assets, **Monaco** DRL editing, **Validate** (parse) plus **LSP** diagnostics, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
 
 **Workbench and API:** **Rule pack** in the left nav, **version diff**, filters, and Phase 4 **Governance**. If **`SPARKRULES_API_KEY`** is set, send the key on API calls; sensitive rule and governance **GET**s require it as well. See [README.md](../README.md#api-run).
 

@@ -38,6 +38,112 @@ class SimulationResponse(BaseModel):
     bound: dict[str, object] = {}
 
 
+class ShadowSimulationRequest(BaseModel):
+    primary_drl: str
+    shadow_drl: str
+    fact: dict[str, Any]
+    run_id: str = "shadow-local"
+
+
+class ShadowSimulationResponse(BaseModel):
+    primary_fired: bool
+    primary_action: dict[str, object] = {}
+    shadow_fired: bool
+    shadow_action: dict[str, object] = {}
+    drifted: bool
+    drift_fields: list[str] = []
+
+
+class CoverageSimulationRequest(BaseModel):
+    drl: str
+    facts: list[dict[str, Any]] = []
+
+
+class RuleCoverageItemResponse(BaseModel):
+    rule_name: str
+    fired_count: int
+    total: int
+    fire_rate: float
+
+
+class CoverageSimulationResponse(BaseModel):
+    total_facts: int
+    total_rules: int
+    covered_rules: int
+    items: list[RuleCoverageItemResponse] = []
+
+
+class TimeTravelCaptureRequest(BaseModel):
+    run_id: str
+    drl: str
+    fact: dict[str, Any]
+
+
+class TimeTravelCaptureResponse(BaseModel):
+    run_id: str
+    snapshot_id: int
+    fired: bool
+    action: dict[str, object] = {}
+    bound: dict[str, object] = {}
+
+
+class TimeTravelReplayRequest(BaseModel):
+    snapshot_id: int
+    run_id: str
+    fact_override: dict[str, Any] | None = None
+
+
+class TimeTravelReplayResponse(BaseModel):
+    run_id: str
+    snapshot_id: int
+    fired: bool
+    action: dict[str, object] = {}
+    bound: dict[str, object] = {}
+    used_fact_override: bool = False
+
+
+class CounterfactualSimulationRequest(BaseModel):
+    drl: str
+    baseline_fact: dict[str, Any]
+    candidate_fact: dict[str, Any]
+
+
+class CounterfactualSimulationResponse(BaseModel):
+    baseline_fired: bool
+    baseline_action: dict[str, object] = {}
+    candidate_fired: bool
+    candidate_action: dict[str, object] = {}
+    drifted: bool
+    drift_fields: list[str] = []
+
+
+class ChainStepResponse(BaseModel):
+    rule_name: str
+    fired: bool
+    skipped: bool
+    skip_reason: str | None = None
+    action_output: dict[str, object] = {}
+    stop_on_fire: bool = False
+
+
+class SimulationChainRequest(BaseModel):
+    """Multi-rule DRL (repeat `rule ... end` blocks). Phase 2k chain execution."""
+
+    drl: str
+    fact: dict[str, Any] = {}
+    stop_on_decline: bool | None = None
+    agenda_group_modes: dict[str, str] = {}
+
+
+class SimulationChainResponse(BaseModel):
+    any_fired: bool
+    last_fired: bool
+    final_action: dict[str, object] = {}
+    final_bound: dict[str, object] = {}
+    steps: list[ChainStepResponse] = []
+    stop_reason: str | None = None
+
+
 class DqCheckRequest(BaseModel):
     kind: str
     field: str
@@ -46,12 +152,19 @@ class DqCheckRequest(BaseModel):
     code: str | None = None
     min_value: float | None = None
     max_value: float | None = None
+    min_count: int | None = None
+    max_count: int | None = None
+    other_field: str | None = None
+    pattern: str | None = None
+    max_age_seconds: int | None = None
+    tolerance: float | None = None
     inclusive: bool = True
     allowed_values: list[Any] | None = None
 
 
 class DqEvaluateRequest(BaseModel):
     fact: dict[str, Any]
+    rows: list[dict[str, Any]] | None = None
     checks: list[DqCheckRequest]
     run_id: str = "run-local"
     fact_id: str = "fact-0"
@@ -71,11 +184,14 @@ class DqViolationResponse(BaseModel):
 class DqEvaluateResponse(BaseModel):
     ok: bool
     violations: list[DqViolationResponse]
+    info_count: int = 0
     warn_count: int = 0
     error_count: int = 0
+    critical_count: int = 0
     total: int = 0
     run_id: str = ""
     dq_snapshot_id: int | None = None
+    dq_quarantine_snapshot_id: int | None = None
 
 
 class RunSubmissionRequest(BaseModel):
@@ -142,3 +258,120 @@ class GovernancePromoteRequest(BaseModel):
     rule_handle: str = Field(..., min_length=1)
     from_env: str
     to_env: str
+
+
+class DeprecationProposeRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+    reason: str = Field(..., min_length=1)
+
+
+class DeprecationApproveRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = Field(..., min_length=1)
+
+
+class DeprecationRecordResponse(BaseModel):
+    namespace: str
+    rule_handle: str
+    requested_by: str
+    reason: str
+    status: str
+    requested_at: str
+    approved_by: str | None = None
+    approved_at: str | None = None
+
+
+class DeprecationEnforceRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str | None = None
+
+
+class DeprecationEnforceResponse(BaseModel):
+    namespace: str
+    enforced_rules: int
+    deactivated_versions: int
+    details: list[dict[str, object]] = []
+
+
+class AiSuggestRulesRequest(BaseModel):
+    namespace: str = "default"
+    rule_handle: str = "candidate"
+    facts: list[dict[str, Any]] = []
+
+
+class AiSuggestionResponse(BaseModel):
+    id: str
+    kind: str
+    namespace: str
+    rule_handle: str
+    drl: str
+    is_active: bool
+    source: str
+    status: str
+    simulator_result: dict[str, Any] | None = None
+    model_id: str
+
+
+class AiMineDqRequest(BaseModel):
+    field: str
+    namespace: str = "default"
+    facts: list[dict[str, Any]] = []
+
+
+class AiAnalyzeDriftRequest(BaseModel):
+    namespace: str = "default"
+    handle: str
+    history: list[float] = []
+
+
+class AiExplainRuleRequest(BaseModel):
+    drl: str
+
+
+class AiExplainRuleResponse(BaseModel):
+    explanation: str
+
+
+class GraphEnrichRequest(BaseModel):
+    fact: dict[str, Any]
+    entity_field: str = "entity_id"
+    pii_reveal: bool = False
+
+
+class GraphEnrichResponse(BaseModel):
+    snapshot_id: str
+    fact: dict[str, Any]
+
+
+class ModelScoreRequest(BaseModel):
+    model_id: str
+    model_version: str | None = None
+    features: dict[str, Any] = {}
+    run_id: str = "run-local"
+    pin_current_version: bool = True
+
+
+class ModelScoreResponse(BaseModel):
+    model_id: str
+    model_version: str
+    provider: str
+    score: float
+    explanation: dict[str, Any]
+
+
+class LspAnalyzeRequest(BaseModel):
+    drl: str
+    prefix: str = ""
+
+
+class LspDiagnosticResponse(BaseModel):
+    severity: str
+    message: str
+    line: int
+    col: int
+
+
+class LspAnalyzeResponse(BaseModel):
+    diagnostics: list[LspDiagnosticResponse] = []
+    completions: list[str] = []

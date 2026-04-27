@@ -31,6 +31,7 @@ test = [
 
 [project.scripts]
 sre-drl-smoke = "sre.tools.smoke_drl:main"
+sre-cli = "sre.tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
