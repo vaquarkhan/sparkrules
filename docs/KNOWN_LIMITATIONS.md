@@ -29,8 +29,32 @@ This document records **intentional honesty** about what is **not** production-c
 
 **SQL_JOIN, batch, and streaming**  
 - Multi-pattern and “join-style” behavior can be exercised in **local / pure-Python** execution (including list-binding expansion in the **local** executor path).  
-- **PySpark** is a dependency, but a **`SparkSession` is not created** on the default **HTTP simulation / workbench** evaluation path—so **distributed** scale is **not** demonstrated there. A live run can correctly show *no* active Spark session on that path.  
+- **PySpark** is often installed (e.g. as a test dependency), but a **`SparkSession` is not created** on the default **HTTP simulation / workbench** evaluation path—so **distributed** scale is **not** demonstrated there.  
 - **Reason:** wiring rules to a cluster DataFrame, broadcast packages, and executors is **deployment-specific**; the repo provides hooks and abstractions, not a hosted cluster.
+
+### Evidence: what a live run actually shows
+
+In the default API path (e.g. **`POST /simulations`**, Workbench **Simulate**, or in-process **`RuleExecutor.run()`** without a Spark integration):
+
+| Observation | Meaning |
+|-------------|---------|
+| `SparkSession.getActiveSession()` is **`None`** | **No** `SparkSession` was created by this evaluation. |
+| Single **uvicorn** (or similar) process | **Pure-Python**, **single-process** mode: no Spark executors, no distributed workers. |
+| **PySpark** present in the environment | A **library on the classpath**, not proof of use. The engine does not, on that path, create a session or ship work to the cluster. |
+| Throughput in the **~single-digit–10k evaluations/sec** range on one machine | Consistent with **interpreted** predicate / AST-style evaluation in CPython—not **Catalyst**-compiled Spark SQL. |
+
+Example back-of-thevelope: if effective throughput were on the order of **~10² facts/sec per core** in pure Python, reaching **10⁹** rows without parallelizing the **rule engine** across executors implies **unrealistic** wall-clock on a single core; **distributed** Spark (or another scale-out path) is required for billion-row **wall-clock** claims.
+
+### Product claims vs measured reality
+
+| Claim | Reality |
+|-------|---------|
+| **Drools-style rule engine** | **True** — predicates, `when`/`then`, salience, activation groups, version store behave as designed. |
+| **“Apache Spark … for … billions of transactions”** (marketing-style) | **Not demonstrated** on the default path. **PySpark** may be installed; **no** `SparkSession` is used for default evaluation. Optional tests under `tests/spark/` need a JVM and only cover **partition iterator** wiring—not a full **cluster** proof. |
+| **“Scales to billions of rows in seconds”** | **Not shown** in-repo. Throughput on the pure-Python path is **process-local**; seconds-at-billion-row scale requires **partitioned** execution on a real cluster (and measured evidence). |
+| **Rule evaluation over Iceberg snapshots** | **Partial** — the **Iceberg-like** in-memory snapshot model and APIs work for tests and modeling; **live** Iceberg catalog integration is **environment-specific** and not proven by the default single-process benchmark. |
+
+**Honest summary:** The **rule semantics** and **store** behavior are **legitimate** for a Python-first Drools-style engine. The **“Spark”** in the product name is **aspirational** until you **wire** evaluation to **`mapPartitions`** (or equivalent) over a **DataFrame**, **broadcast** the `CompiledRulePackage` (see `sre/transport/broadcaster.py`), and run on a **real** Spark cluster. Primitives exist (`sre/spark/dataframe.py`, broadcaster, Iceberg-like store); **nothing** in the default **`/simulations`** or unwrapped **`RuleExecutor.run()`** path **invokes** them automatically.
 
 ---
 
