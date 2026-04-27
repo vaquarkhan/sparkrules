@@ -218,6 +218,7 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 | Citation metadata | [CITATION.cff](CITATION.cff) |
 | Roadmap (Phase 3 / 4) | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Known limitations vs enterprise blueprint | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
+| **Using Spark (optional)** vs default Python | [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md) |
 | PyPI / release artifacts | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Governance (Phase 4) | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 
