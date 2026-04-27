@@ -6,6 +6,7 @@ This documentation set is customer and developer focused.
 
 | Document | Purpose |
 |----------|---------|
+| [**SPARK_INTEGRATION.md**](SPARK_INTEGRATION.md) | **Start here for “when is Spark used?”** — default API is Python; `apply_drl` for clusters |
 | [FEATURES.md](FEATURES.md) | Product capabilities, Workbench/Monaco, LSP, simulations, governance, coverage gate |
 | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | Architecture and execution flow |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Setup, run, test, and extension guidance |
