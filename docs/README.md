@@ -15,6 +15,7 @@ This documentation set is customer and developer focused.
 | [GOVERNANCE.md](GOVERNANCE.md) | Phase 4 namespaces, promotion pins, and API |
 | [PUBLISHING.md](PUBLISHING.md) | PyPI (incl. tag releases), GitHub Container Registry, CI |
 | [ROADMAP.md](ROADMAP.md) | Phases: workbench, governance, future scope |
+| [FEATURE_GAP_INVENTORY.md](FEATURE_GAP_INVENTORY.md) | Spec vs repo gaps, deliverables, suggested sequencing |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment notes |
 
 ## Notes
