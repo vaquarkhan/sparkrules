@@ -62,3 +62,4 @@
 
 - Full test suite with unit, property, and integration coverage
 - **100% line coverage** gate on `src/sre` (`pytest tests/unit/ --cov=src/sre`, `fail_under=100` in `pyproject.toml`)
+- Honest **scope boundary** vs external enterprise blueprints: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)

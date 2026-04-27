@@ -31,4 +31,5 @@ Focus: **enterprise workbench and packaging**.
 ## References
 
 - [FEATURES.md](FEATURES.md) for capability inventory.
+- [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for **blueprint gaps** (OIDC/SAML/mTLS reality, Spark path, Workbench UI tiers, bulk sim, run history, RBAC enumeration).
 - [deploy/README.md](../deploy/README.md) for cloud target notes.
