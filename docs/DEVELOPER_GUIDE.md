@@ -21,9 +21,14 @@ pytest tests/perf -m perf -q
 
 ## Local API
 
+**Windows:** run `scripts/dev_server.cmd` from the repo (it runs `pip install -e .` and starts Uvicorn on **127.0.0.1:8042** by default). Override with `set SPARKRULES_PORT=9000` before the script.
+
 ```bash
-uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
+python -m pip install -e "."
+python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
+
+If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm the terminal is still running, the URL uses the **same port** as the command (8042 unless you changed it), and you are using `http://` not `https://`.
 
 ## Rules Workbench (browser)
 
