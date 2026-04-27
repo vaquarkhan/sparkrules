@@ -6,7 +6,7 @@
 - Salience-based priority control
 - Agenda group and activation group execution controls
 - Explainable outputs with bound data and reason codes
-- Optional SQL-join execution path flag in executor for multi-pattern rules
+- Optional `SQL_JOIN` / multi-pattern path: for **list-valued** fact bindings, **local** execution can form a **Cartesian** product and take the first firing combination (not a distributed join unless wired with Spark)
 
 ## Authoring formats
 
@@ -34,15 +34,15 @@
 
 ## Service surfaces
 
-- FastAPI endpoints for health, rules, rule-pack import/export, version diff, governance, simulation, deployment config, DQ, Workbench helper routes
-- Browser **Rules Workbench** at `/workbench/`: **Overview** (stats, charts), **light/dark theme**, assets with filters, per-version **activate/deactivate** (see API), DRL validate, simulation, deployment readout, template helper, **Phase 3** pack + diff, **Phase 4** governance pane
+- FastAPI endpoints for health, rules, rule-pack import/export, version diff, governance (pins + **deprecations** with enforce), **LSP** (`/ide/lsp/analyze`), simulations (default, shadow, coverage, **counterfactual**, **chain**), time-travel **debug** capture/replay, deployment config, DQ, Workbench helper routes
+- Browser **Rules Workbench** at `/workbench/`: **Monaco** DRL editor, **validate** (parse) + **LSP** diagnostics, **Overview** (stats, charts), **light/dark theme** synced with editor, assets with filters, per-version **activate/deactivate** (see API), simulation, deployment readout, template helper, **Phase 3** pack + diff, **Phase 4** governance pane
 - Python package APIs for parser, compiler, executor, store, and runtime modules
 - Data quality API endpoint for check evaluation and summarized violation outputs
 - Optional **`SPARKRULES_API_KEY`**: also required for sensitive **GET**s on rules, deployment, and governance when set (public: `/health`, OpenAPI, `OPTIONS`, static `/workbench/…` shell)
 - **Docker** `Dockerfile` and `docker compose`; **CI** can push images to **GHCR** and publish **sdist/wheel** to **PyPI** (trusted publishing) — [PUBLISHING.md](PUBLISHING.md)
 - **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
 - **Phase 3:** rule pack, asset search, group/namespace filter, DRL version diff, API key (writes + sensitive reads)
-- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory) — [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist: [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
+- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory), **deprecation** records and **enforce** to deactivate live versions — [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist: [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
 - Release: [PUBLISHING.md](PUBLISHING.md) (local build, **PyPI on `v*` tags** or manual, **ghcr.io** images on branch/tag push)
 
 ## Metadata lifecycle
@@ -61,4 +61,4 @@
 ## Delivery quality
 
 - Full test suite with unit, property, and integration coverage
-- 100% line coverage gate on `src/sre`
+- **100% line coverage** gate on `src/sre` (`pytest tests/unit/ --cov=src/sre`, `fail_under=100` in `pyproject.toml`)

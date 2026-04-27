@@ -16,7 +16,7 @@
 - **Executor**: evaluates compiled logic against facts.
 - **Metadata store**: versions rules and resolves active sets.
 - **Runtime helpers**: replay, cache, streaming support primitives.
-- **API layer**: exposes operational endpoints.
+- **API layer**: exposes operational endpoints; Workbench (static), **LSP** analyze, **simulations** (including counterfactual and **chain**), time-travel **debug** rows, and governance (pins + **deprecations**).
 
 ## Execution controls
 
