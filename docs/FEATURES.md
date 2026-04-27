@@ -40,6 +40,7 @@
 - Data quality API endpoint for check evaluation and summarized violation outputs
 - Reference **Docker** image build and `docker compose` for local full-stack runs
 - **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
+- **Phase 3 (started):** rule pack import/export, asset search, group filter, DRL version diff API and workbench panes
 
 ## Metadata lifecycle
 

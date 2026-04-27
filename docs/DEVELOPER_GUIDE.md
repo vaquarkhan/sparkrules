@@ -29,6 +29,8 @@ uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
 
 After starting the API, open [http://127.0.0.1:8000/workbench/](http://127.0.0.1:8000/workbench/) for rule assets, DRL validate, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
 
+**Phase 3 (started):** use **Rule pack** in the left nav for export/import JSON and **version diff** (two versions of the same `rule_handle`). API: `/rules/groups`, `/rules/assets?q=&group=`, `/rules/diff`, `/rules/export`, `/rules/import`. See [ROADMAP.md](ROADMAP.md).
+
 ## Docker
 
 ```bash
