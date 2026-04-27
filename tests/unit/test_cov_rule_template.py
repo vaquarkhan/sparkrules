@@ -46,3 +46,9 @@ def test_ast_from_template_injected_parser() -> None:
     )
     ast_from_template(t, {}, _parser=p)
     p.parse.assert_called_once()
+
+
+def test_ast_from_template_default_drl_parser() -> None:
+    t = RuleTemplate.from_pattern("n", "rule {name} when $t : T ( true ) then end")
+    a = ast_from_template(t, {"name": "x9"})
+    assert a.name == "x9"
