@@ -8,6 +8,7 @@ This folder is the **documentation hub** for the [sparkrules](https://github.com
 |----------|----------------|
 | [**REQUIREMENTS.md**](REQUIREMENTS.md) | Full **requirements** (Introduction, Glossary, Architecture mermaid diagrams, **Requirement 1–42** with acceptance criteria). This is the canonical product/spec text for the Phase 1 reference build. |
 | [**CURSOR_DOCS_MCP.md**](CURSOR_DOCS_MCP.md) | Editable install (`import sre`), where IDE/MCP fit, and how to attach files in Cursor. |
+| [**PHASE1_STATUS.md**](PHASE1_STATUS.md) | One-page **done vs out-of-scope** for the blueprint (Phase 1 “full or nothing” checklist). |
 | [Building & coverage](../BUILD_STATUS.md) | Current **pytest** counts, **100%** `sre` line coverage gate, and last-updated date. |
 | [Examples](../examples/README.md) | **DRL** samples, **decision table JSON**, Python evaluation scripts. |
 | [Roadmap & agent process](../idea-brainstrom.txt) | Phases, property ladder, and exit criteria (`idea-brainstrom.md` is the same content in Markdown). |
