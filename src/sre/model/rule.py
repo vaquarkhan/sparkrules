@@ -60,6 +60,7 @@ class Rule:
     group_by_keys: tuple[str, ...] = ()
     source_file_hash: str | None = None
     author_principal: str = "system"
+    namespace: str = "default"
     created_at: datetime = field(default_factory=now_utc)
 
     def with_updates(self, **kwargs: Any) -> Rule:

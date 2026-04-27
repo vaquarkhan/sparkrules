@@ -46,5 +46,13 @@ def parse_import_body(raw: str) -> list[dict[str, Any]]:
         if not h or not drl:
             raise ValueError(f"item {i} needs rule_handle and drl")
         g = it.get("group", it.get("rule_group", "default"))
-        out.append({"rule_handle": str(h), "group": str(g), "drl": str(drl)})
+        ns = it.get("namespace", "default")
+        out.append(
+            {
+                "rule_handle": str(h),
+                "group": str(g),
+                "namespace": str(ns),
+                "drl": str(drl),
+            }
+        )
     return out

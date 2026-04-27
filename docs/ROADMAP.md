@@ -11,11 +11,11 @@ Focus: **enterprise workbench and packaging**.
 - [x] Optional: **API key** for mutating API calls when `SPARKRULES_API_KEY` is set (Workbench sends `X-API-Key`; OIDC for shared environments is future work). See [README.md](../README.md#api-run).
 - [x] **PyPI / container** release path documented ([PUBLISHING.md](PUBLISHING.md)); trusted publishing and registry push are org-specific. CI **Release build** workflow produces sdist and wheel artifacts.
 
-## Phase 4 (future)
+## Phase 4 (complete)
 
-- Multi-project **governance** (namespaces, promotion workflow dev → stage → prod).
-- **Benchmarks** in your lakehouse (documented in [BENCHMARKS.md](BENCHMARKS.md) as methodology; numbers come from your runs).
-- **Deeper** Drools-style features (CEP, TMS, DMN) only if product scope requires them.
+- [x] Multi-project **governance**: rule **`namespace`**, in-memory **environment pins** (`dev` / `stage` / `prod`), **sync dev** and **adjacent promote** API + Workbench. See [GOVERNANCE.md](GOVERNANCE.md).
+- [x] **Lakehouse benchmarks** — end-to-end checklist and methodology in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks). Numbers remain cluster-specific; the repo provides harnesses and documentation.
+- [x] **CEP, TMS, DMN** (deeper Drools-style features) — **deferred**; not required for the SparkRules product scope today. Revisit if you add CEP or DMN to the road map.
 
 ## References
 

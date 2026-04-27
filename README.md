@@ -166,7 +166,7 @@ Drools Workbench–style **authoring and operations shell** (rule asset list, DR
 
 The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
 
-**Phase 3:** search and filter assets, download or import a **rule pack** JSON, and **compare two versions** of the same rule handle. See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Phase 3–4:** search/filter assets, rule pack import/export, version diff, optional API key, **namespace** and **dev→stage→prod** promotion pins (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Docker
 
@@ -194,6 +194,7 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 | Citation metadata | [CITATION.cff](CITATION.cff) |
 | Roadmap (Phase 3 / 4) | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | PyPI / release artifacts | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
+| Governance (Phase 4) | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 
 ## License
 

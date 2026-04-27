@@ -111,6 +111,7 @@
       <button type="button" data-view="deploy">Deployment</button>
       <button type="button" data-view="template">Template helper</button>
       <button type="button" data-view="pack">Rule pack (Phase 3)</button>
+      <button type="button" data-view="governance">Governance (Phase 4)</button>
     </nav>
     <main>
       <p id="message"></p>
@@ -119,6 +120,7 @@
           <h2>Registered rules</h2>
           <div class="row">
             <input type="search" id="filter-q" placeholder="Search handle or DRL…" style="max-width:240px" />
+            <input type="text" id="filter-ns" placeholder="namespace" style="max-width:120px" title="Filter by exact namespace" />
             <select id="filter-group" style="max-width:180px">
               <option value="">All groups</option>
             </select>
@@ -135,6 +137,7 @@
           <div class="row">
             <input type="text" id="in-handle" placeholder="rule_handle" style="max-width:200px" />
             <input type="text" id="in-group" placeholder="group (default)" value="default" style="max-width:160px" />
+            <input type="text" id="in-namespace" placeholder="namespace" value="default" style="max-width:140px" title="Project / org scope for governance" />
           </div>
           <textarea id="drl-new" placeholder="DRL text"></textarea>
           <div class="row">
@@ -185,6 +188,21 @@
           <pre id="diff-out" class="mono" style="white-space:pre-wrap;max-height:360px;overflow:auto"></pre>
         </div>
       </section>
+      <section id="view-governance" class="view hidden">
+        <div class="panel">
+          <h2>Promotion (dev → stage → prod)</h2>
+          <p style="color:var(--muted);font-size:0.9rem">Pins record which <strong>version</strong> is in each environment. <strong>Sync dev</strong> from the time-active rule, then <strong>promote</strong> only forward along <span class="mono">dev → stage</span> and <span class="mono">stage → prod</span>. Runtime deployment wiring stays in your platform.</p>
+          <div class="row">
+            <input type="text" id="gov-ns" value="default" style="max-width:140px" title="namespace" />
+            <input type="text" id="gov-handle" placeholder="rule_handle" style="max-width:200px" />
+            <button class="btn" type="button" id="btn-gov-sync">Sync dev from active</button>
+            <button class="btn" type="button" id="btn-gov-to-stage">Promote dev → stage</button>
+            <button class="btn" type="button" id="btn-gov-to-prod">Promote stage → prod</button>
+            <button class="btn" type="button" id="btn-gov-refresh">Refresh pins</button>
+          </div>
+          <div id="gov-pins" class="mono" style="margin-top:0.75rem"></div>
+        </div>
+      </section>
       <section id="view-template" class="view hidden">
         <div class="panel">
           <h2>Guided template</h2>
@@ -211,6 +229,9 @@
       document.querySelectorAll("nav button").forEach(function (b) {
         b.classList.toggle("active", b.getAttribute("data-view") === name);
       });
+      if (name === "governance" && typeof loadGovernancePins === "function") {
+        loadGovernancePins();
+      }
     }
     document.querySelectorAll("nav button").forEach(function (b) {
       b.addEventListener("click", function () { showView(b.getAttribute("data-view")); });
@@ -258,9 +279,11 @@
     function assetQuery() {
       const q = document.getElementById("filter-q");
       const g = document.getElementById("filter-group");
+      const n = document.getElementById("filter-ns");
       const qs = new URLSearchParams();
       if (q && q.value) qs.set("q", q.value);
       if (g && g.value) qs.set("group", g.value);
+      if (n && n.value && n.value.trim()) qs.set("namespace", n.value.trim());
       const s = qs.toString();
       return s ? ("/rules/assets?" + s) : "/rules/assets";
     }
@@ -282,10 +305,11 @@
       const data = await getJson(assetQuery());
       const host = document.getElementById("assets-table");
       if (!data.length) { host.innerHTML = "<p style='color:var(--muted)'>No rules yet.</p>"; setMessage("No rules in store.", "warn"); return; }
-      let h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Active</th><th>DRL (preview)</th></tr>";
+      let h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Namespace</th><th>Active</th><th>DRL (preview)</th></tr>";
       data.forEach(function (a) {
         const prev = a.drl.length > 200 ? a.drl.slice(0, 200) + "…" : a.drl;
-        h += "<tr><td class='mono'>" + escapeHtml(a.rule_handle) + "</td><td>" + a.version + "</td><td>" + escapeHtml(a.rule_group) + "</td><td>" + a.is_active + "</td><td class='mono'>" + escapeHtml(prev) + "</td></tr>";
+        const ns = a.namespace != null ? a.namespace : "default";
+        h += "<tr><td class='mono'>" + escapeHtml(a.rule_handle) + "</td><td>" + a.version + "</td><td>" + escapeHtml(a.rule_group) + "</td><td class='mono'>" + escapeHtml(ns) + "</td><td>" + a.is_active + "</td><td class='mono'>" + escapeHtml(prev) + "</td></tr>";
       });
       h += "</table>";
       host.innerHTML = h;
@@ -313,7 +337,12 @@
       var arr = d.items || d.rules;
       if (!arr || !arr.length) { setMessage("No items or rules in JSON.", "err"); return; }
       var items = arr.map(function (x) {
-        return { rule_handle: x.rule_handle, group: x.group || x.rule_group || "default", drl: x.drl };
+        return {
+          rule_handle: x.rule_handle,
+          group: x.group || x.rule_group || "default",
+          namespace: x.namespace != null ? x.namespace : "default",
+          drl: x.drl
+        };
       });
       postJson("/rules/import", { items: items }).then(function (j) {
         setMessage("Imported " + j.count + " rule(s).", "ok");
@@ -324,12 +353,58 @@
       var drl = document.getElementById("drl-new").value;
       postJson("/rules/validate", { drl: drl }).then(function () { setMessage("Parse OK.", "ok"); }).catch(function (e) { setMessage(e.message, "err"); });
     });
+    function loadGovernancePins() {
+      var ns = (document.getElementById("gov-ns") && document.getElementById("gov-ns").value) || "default";
+      var u = "/governance/pins?namespace=" + encodeURIComponent(ns);
+      getJson(u).then(function (rows) {
+        var el = document.getElementById("gov-pins");
+        if (!el) return;
+        if (!rows.length) { el.innerHTML = "<span style='color:var(--muted)'>No pins for this namespace.</span>"; return; }
+        var t = "<table><tr><th>Namespace</th><th>Handle</th><th>Env</th><th>Version</th></tr>";
+        rows.forEach(function (r) {
+          t += "<tr><td class='mono'>" + escapeHtml(r.namespace) + "</td><td class='mono'>" + escapeHtml(r.rule_handle) + "</td><td>" + escapeHtml(r.environment) + "</td><td>" + r.version + "</td></tr>";
+        });
+        t += "</table>";
+        el.innerHTML = t;
+        setMessage("Loaded " + rows.length + " pin(s).", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    }
+    document.getElementById("btn-gov-refresh").addEventListener("click", loadGovernancePins);
+    document.getElementById("btn-gov-sync").addEventListener("click", function () {
+      var ns = (document.getElementById("gov-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("gov-handle").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/governance/sync-dev", { namespace: ns, rule_handle: h }).then(function (j) {
+        setMessage("Dev pin set to v" + j.version + ".", "ok");
+        loadGovernancePins();
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-gov-to-stage").addEventListener("click", function () {
+      var ns = (document.getElementById("gov-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("gov-handle").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/governance/promote", { namespace: ns, rule_handle: h, from_env: "dev", to_env: "stage" }).then(function (j) {
+        setMessage("Stage pin set to v" + j.version + ".", "ok");
+        loadGovernancePins();
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-gov-to-prod").addEventListener("click", function () {
+      var ns = (document.getElementById("gov-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("gov-handle").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/governance/promote", { namespace: ns, rule_handle: h, from_env: "stage", to_env: "prod" }).then(function (j) {
+        setMessage("Prod pin set to v" + j.version + ".", "ok");
+        loadGovernancePins();
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
     document.getElementById("btn-create").addEventListener("click", function () {
       var h = document.getElementById("in-handle").value.trim();
       var g = document.getElementById("in-group").value.trim() || "default";
+      var ns0 = document.getElementById("in-namespace");
+      var ns = ns0 ? (ns0.value.trim() || "default") : "default";
       var drl = document.getElementById("drl-new").value;
       if (!h) { setMessage("rule_handle required.", "err"); return; }
-      postJson("/rules", { rule_handle: h, group: g, drl: drl }).then(function (j) {
+      postJson("/rules", { rule_handle: h, group: g, namespace: ns, drl: drl }).then(function (j) {
         setMessage("Saved " + j.rule_handle + " v" + j.version, "ok");
         loadAssets();
       }).catch(function (e) { setMessage(e.message, "err"); });
