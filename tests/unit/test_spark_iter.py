@@ -26,3 +26,14 @@ def test_iter_rule_rows_dict_rows() -> None:
     )
     assert t[0][0] == "1" and t[0][1] is True
     assert t[1][1] is False
+
+
+def test_iter_rule_rows_row_with_asdict() -> None:
+    """Spark Row-like objects expose asDict() — same path as PySpark DataFrame rows."""
+
+    class RowLike:
+        def asDict(self) -> dict:
+            return {"id": "9", "z": {"n": 1}}
+
+    t = list(iter_rule_rows(iter([RowLike()]), _DRL))
+    assert len(t) == 1 and t[0][0] == "9" and t[0][1] is True

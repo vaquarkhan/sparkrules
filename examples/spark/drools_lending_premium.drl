@@ -1,0 +1,23 @@
+// Prime-rate lending tier: underwriter-style criteria on a single application fact.
+// One rule per DRL (Spark `apply_drl` path). Metadata mirrors Drools for familiarity.
+
+rule LendingPrimeRate2026
+salience 80
+agenda_group "underwriting"
+activation_group "retail_2026"
+reason_codes [ "CREDIT", "CAPACITY", "COMPLIANCE" ]
+stop_on_fire true
+when
+$a : App (
+    $a.fico_score >= 720
+    and $a.dti <= 0.36
+    and $a.annual_income >= 80000
+    and $a.delinq_90d_12m == 0
+    and ( $a.product in [ "PERSONAL_LOAN", "AUTO_REFI" ] )
+    and ( $a.state not in [ "MS", "NV" ] )
+)
+then
+result.tier = "PRIME_PREFERRED";
+result.rate_class = 1;
+result.program_id = "LND-2026-PR1";
+end

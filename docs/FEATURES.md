@@ -18,7 +18,7 @@
 ## Execution and runtime
 
 - Single-fact and batch-style execution paths
-- Spark dataframe helper paths for partition processing
+- Spark dataframe helper paths for partition processing — **optional**; default API path is pure Python ([SPARK_INTEGRATION.md](SPARK_INTEGRATION.md))
 - Replay metadata model for deterministic re-runs
 - Spark version targeting for Spark 3.x runtimes with normalization (`3`, `3.5`, `3.5.1`)
 - Config-only platform switching across Glue/Databricks/GCP Dataproc/Azure Synapse/local
@@ -62,3 +62,4 @@
 
 - Full test suite with unit, property, and integration coverage
 - **100% line coverage** gate on `src/sre` (`pytest tests/unit/ --cov=src/sre`, `fail_under=100` in `pyproject.toml`)
+- Honest **scope boundary** vs external enterprise blueprints: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)

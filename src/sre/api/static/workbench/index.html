@@ -446,7 +446,7 @@
             Every rule fired at the rate expected from the synthetic distribution, validating predicate execution correctness.
           </p>
           <div class="spark-callout" id="spark-callout">
-            Spark execution check: default Workbench simulations run in pure Python mode unless explicitly wired to a Spark DataFrame execution path.
+            Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package — see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
           </div>
           <div class="analysis-block" id="claims-summary"></div>
         </div>
@@ -584,10 +584,10 @@
       { rule: "uw_fico_prime", fired: 893, pct: 17.9 }
     ];
     var claimRealityRows = [
-      { claim: "Drools-style rule engine", reality: "True: predicates, when/then, salience, activation groups, and version store are working." },
-      { claim: "Spark 4 for billion-scale evaluation", reality: "Not demonstrated in default path. pyspark is installed, but /simulations runs pure Python evaluation." },
-      { claim: "Scales to billions in seconds", reality: "Not shown by current single-process benchmark; requires real distributed Spark execution." },
-      { claim: "Rule evaluation over Iceberg snapshots", reality: "Iceberg-like in-memory snapshots work; live external catalog path is not benchmark-proven here." }
+      { claim: "Drools-style rule engine", reality: "True — predicates, when/then, salience, activation groups, version store work as designed." },
+      { claim: "Apache Spark for evaluating many rules / huge fact volumes (default API path)", reality: "Not demonstrated here. PySpark may be installed, but default /simulations does not create SparkSession or use executors — single-process Python." },
+      { claim: "Scales to billions of rows in seconds", reality: "Not shown on this path; would need distributed DataFrame evaluation and measured cluster runs." },
+      { claim: "Rule evaluation over Iceberg snapshots", reality: "Iceberg-like in-memory model works; live Iceberg catalog + cluster evidence is deployment-specific." }
     ];
     function setMessage(text, type) {
       const el = document.getElementById("message");
@@ -912,7 +912,7 @@
       host.innerHTML = h;
       var sc = document.getElementById("spark-callout");
       if (sc) {
-        sc.innerHTML = "<strong>The important answer to your Spark question: NO</strong><br/>SparkSession.getActiveSession() = None. This run was pure-Python, single-process mode (no SparkSession, no executors, no distributed workers).";
+        sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None — no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
       }
       var cs = document.getElementById("claims-summary");
       if (cs) {
@@ -922,7 +922,7 @@
           t += "<tr><td>" + escapeHtml(r.claim) + "</td><td>" + escapeHtml(r.reality) + "</td></tr>";
         });
         t += "</table>";
-        t += "<p><span class='k'>Honest summary:</span> rule semantics are correct, but Spark-scale claims need explicit DataFrame/mapPartitions + broadcast package execution on a real cluster.</p>";
+        t += "<p><span class='k'>Honest summary:</span> the engine is a legitimate Python-first Drools-style core. “Spark” in the name is aspirational until you wire mapPartitions, broadcast CompiledRulePackage (see <span class='mono'>broadcaster.py</span>), and run on a real cluster — see <span class='mono'>docs/KNOWN_LIMITATIONS.md</span>.</p>";
         cs.innerHTML = t;
       }
     }
