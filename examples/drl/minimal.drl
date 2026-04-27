@@ -1,0 +1,6 @@
+rule r1
+when
+$t : T ( $t.x == 1 )
+then
+result.out = 1;
+end

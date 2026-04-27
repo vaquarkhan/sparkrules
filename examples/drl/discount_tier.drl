@@ -1,0 +1,7 @@
+rule apply_tier
+    salience 10
+when
+$txn : Transaction ( $txn.amount > 100 and $txn.region == "US" )
+then
+result.discount_percent = 5;
+end
