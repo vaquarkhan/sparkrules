@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Complex Drools-style DRL + PySpark: load CSV (or synthetic rows), nested fact `t`, apply_drl.
+"""Drools-style DRL + PySpark: load lending CSV (or synthetic rows), nested fact `a`, apply_drl.
 
 Demonstrates:
   - broadcast DRL + mapPartitions (through apply_drl)
@@ -9,8 +9,8 @@ Demonstrates:
 Prerequisites: Java, pip install -e ".[test]"
 
 Examples:
-  python examples/spark/campaign_e2e.py
-  python examples/spark/campaign_e2e.py --synthetic 50000 --partitions 32
+  python examples/spark/lending_e2e.py
+  python examples/spark/lending_e2e.py --synthetic 50000 --partitions 32
 """
 
 from __future__ import annotations
@@ -33,19 +33,19 @@ def main() -> int:
         print("Install: pip install -e \".[test]\"", file=sys.stderr)
         return 1
 
-    p = argparse.ArgumentParser(description="Campaign DRL + Spark DataFrame E2E")
+    p = argparse.ArgumentParser(description="Lending DRL + Spark DataFrame E2E")
     p.add_argument(
         "--csv",
         type=Path,
-        default=_spark_dir() / "data" / "campaign_facts.csv",
-        help="CSV with id,amount,risk_score,region,segment",
+        default=_spark_dir() / "data" / "lending_portfolio_sample.csv",
+        help="CSV: id,annual_income,fico_score,dti,state,product,delinq_90d_12m",
     )
     p.add_argument(
         "--synthetic",
         type=int,
         default=0,
         metavar="N",
-        help="If >0, ignore CSV and generate N rows (deterministic mix of regions/amounts)",
+        help="If >0, ignore CSV and generate N deterministic lending-like rows",
     )
     p.add_argument("--partitions", type=int, default=8, help="Target RDD partitions after load")
     args = p.parse_args()
@@ -53,7 +53,7 @@ def main() -> int:
     try:
         spark = (
             SparkSession.builder.master("local[*]")
-            .appName("sparkrules-campaign-e2e")
+            .appName("sparkrules-lending-e2e")
             .getOrCreate()
         )
     except Exception as e:  # noqa: BLE001
@@ -63,19 +63,35 @@ def main() -> int:
     try:
         from sre.spark import apply_drl
 
-        drl = (_spark_dir() / "drools_campaign.drl").read_text(encoding="utf-8")
+        drl = (_spark_dir() / "drools_lending_premium.drl").read_text(encoding="utf-8")
 
         if args.synthetic > 0:
             n = args.synthetic
+            sid = F.col("id")
+            us = [
+                "CA", "TX", "FL", "NY", "IL", "PA", "WA", "CO", "MA", "OR",
+                "UT", "CT", "NJ", "MS", "NV", "OH", "GA", "AZ", "TN", "SC",
+            ]
+            st = F.element_at(
+                F.array(*[F.lit(s) for s in us]),
+                (sid % F.lit(len(us))).cast("int") + 1,
+            )
+            prods = ["PERSONAL_LOAN", "AUTO_REFI", "CREDIT_CARD", "HOME_EQUITY"]
+            pr = F.element_at(
+                F.array(*[F.lit(p) for p in prods]), (sid % F.lit(4)).cast("int") + 1
+            )
             base = spark.range(0, n).select(
-                F.concat(F.lit("g-"), F.col("id").cast("string")).alias("id"),
-                (F.lit(400.0) + (F.col("id") % F.lit(900)).cast("double")).alias("amount"),
-                (F.col("id") % F.lit(101)).cast("int").alias("risk_score"),
-                F.when((F.col("id") % F.lit(5)) < F.lit(2), F.lit("US"))
-                .when((F.col("id") % F.lit(5)) == F.lit(2), F.lit("EU"))
-                .otherwise(F.lit("APAC"))
-                .alias("region"),
-                F.lit("retail").alias("segment"),
+                F.concat(F.lit("s-"), F.col("id").cast("string")).alias("id"),
+                (F.lit(50_000) + (F.col("id") % F.lit(200_000)).cast("long")).alias(
+                    "annual_income"
+                ),
+                (F.lit(600) + (F.col("id") % F.lit(200)).cast("int")).alias("fico_score"),
+                (F.lit(0.22) + (F.col("id") % F.lit(30)).cast("double") * F.lit(0.01)).alias(
+                    "dti"
+                ),
+                st.alias("state"),
+                pr.alias("product"),
+                (F.col("id") % F.lit(3)).cast("int").alias("delinq_90d_12m"),
             )
         else:
             if not args.csv.is_file():
@@ -86,20 +102,24 @@ def main() -> int:
             )
             base = base.select(
                 F.col("id").cast("string"),
-                F.col("amount").cast("double"),
-                F.col("risk_score").cast("int"),
-                F.col("region").cast("string"),
-                F.col("segment").cast("string"),
+                F.col("annual_income").cast("long"),
+                F.col("fico_score").cast("int"),
+                F.col("dti").cast("double"),
+                F.col("state").cast("string"),
+                F.col("product").cast("string"),
+                F.col("delinq_90d_12m").cast("int"),
             )
 
         df_in = base.select(
             "id",
             F.struct(
-                F.col("amount"),
-                F.col("risk_score"),
-                F.col("region"),
-                F.col("segment"),
-            ).alias("t"),
+                F.col("annual_income"),
+                F.col("fico_score"),
+                F.col("dti"),
+                F.col("state"),
+                F.col("product"),
+                F.col("delinq_90d_12m"),
+            ).alias("a"),
         ).repartition(max(2, args.partitions))
 
         t0 = time.perf_counter()

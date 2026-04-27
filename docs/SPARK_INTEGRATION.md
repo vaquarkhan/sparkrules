@@ -64,7 +64,7 @@ For **claim-level** honesty about default paths and throughput, see [KNOWN_LIMIT
 |-----------|------|
 | DataFrame DRL application | `sre/spark/dataframe.py` — `apply_drl`, `iter_rule_rows`, `rows_from_session` |
 | Broadcast bytes | `sre/transport/broadcaster.py` |
-| **Runnable E2E samples** | [`examples/spark/`](../examples/spark/README.md) — **campaign** (`validate_campaign_csv.py` → `campaign_e2e.py` + CSV), minimal `apply_drl_local.py`, `iter_rule_rows_no_jvm.py` |
+| **Runnable E2E samples** | [`examples/spark/`](../examples/spark/README.md) — **lending** (`validate_lending_csv.py` → `lending_e2e.py` + CSV), minimal `apply_drl_local.py`, `iter_rule_rows_no_jvm.py` |
 | Spark iterator tests (need JVM) | `tests/spark/`, `tests/unit/test_spark_iter.py` |
 
 If you are unsure, start with **pure Python** simulations; add **Spark** when you have a real **DataFrame** and a **cluster** to run on.

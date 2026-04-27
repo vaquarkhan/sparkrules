@@ -6,23 +6,23 @@ Read first: [docs/SPARK_INTEGRATION.md](../../docs/SPARK_INTEGRATION.md).
 
 ---
 
-## Complex campaign (Drools-style DRL + CSV + scale)
+## Lending portfolio (Drools-style DRL + CSV + scale)
 
-Use this track to see **salience, agenda/activation, reason_codes, stop_on_fire**, and a **non-trivial `when`**, on **tabular data** (same DRL style as Drools, evaluated in Spark with **broadcast + `mapPartitions`**).
+Use this track to see **salience, agenda/activation, reason_codes, stop_on_fire**, and a **non-trivial `when`** (credit, capacity, state/product restrictions), on **tabular data** (same DRL style as Drools, evaluated in Spark with **broadcast + `mapPartitions`**).
 
 | Path | Role |
 |------|------|
-| [**drools_campaign.drl**](drools_campaign.drl) | One rich DRL file (Drools-like metadata + conditions + multiple `result.*` fields). |
-| [**data/campaign_facts.csv**](data/campaign_facts.csv) | 20 fact rows: `id`, `amount`, `risk_score`, `region`, `segment`. |
-| [**validate_campaign_csv.py**](validate_campaign_csv.py) | **No Java / no Spark** — loads CSV, builds nested fact `t`, runs **`iter_rule_rows`**. Run this first to validate the DRL and data **everywhere** (`python examples/spark/validate_campaign_csv.py`). |
-| [**campaign_e2e.py**](campaign_e2e.py) | **Full PySpark** — reads the same CSV (or **`--synthetic N`** for large deterministic datasets), builds a **`struct` `t`**, **`apply_drl`**, reports **rows/sec** smoke. **Requires Java** + PySpark. |
+| [**drools_lending_premium.drl**](drools_lending_premium.drl) | One rich DRL file: prime preferred tier (FICO, DTI, income, delinquency, product, restricted states). |
+| [**data/lending_portfolio_sample.csv**](data/lending_portfolio_sample.csv) | 90 application rows: `id`, `annual_income`, `fico_score`, `dti`, `state`, `product`, `delinq_90d_12m`. |
+| [**validate_lending_csv.py**](validate_lending_csv.py) | **No Java / no Spark** — loads CSV, builds nested fact `a`, runs **`iter_rule_rows`**. Run this first to validate the DRL and data **everywhere** (`python examples/spark/validate_lending_csv.py`). |
+| [**lending_e2e.py**](lending_e2e.py) | **Full PySpark** — reads the same CSV (or **`--synthetic N`** for large deterministic rows), builds a **`struct` `a`**, **`apply_drl`**, reports **rows/sec** smoke. **Requires Java** + PySpark. |
 | [**DROOLS_FEATURES.md**](DROOLS_FEATURES.md) | What from Drools is **in the file** vs what needs **chain / agenda** APIs. |
 
 **Suggested order**
 
-1. `python examples/spark/validate_campaign_csv.py` — must print `rules_fired=10` for the stock CSV.
-2. `python examples/spark/campaign_e2e.py` — CSV path.
-3. `python examples/spark/campaign_e2e.py --synthetic 100000 --partitions 32` — throughput smoke (on a machine with working Spark).
+1. `python examples/spark/validate_lending_csv.py` — stock CSV should print `rules_fired=22` (matches vary if you regenerate the sample).
+2. `python examples/spark/lending_e2e.py` — same CSV on Spark.
+3. `python examples/spark/lending_e2e.py --synthetic 100000 --partitions 32` — throughput smoke (on a machine with working Spark).
 
 **Performance:** huge data and cluster sizing are about **Spark partitions + executors** in **your** job; see [Performance on Spark…](#performance-on-spark-and-where-glue--workers--dpu-are-defined) below and [DROOLS_FEATURES.md](DROOLS_FEATURES.md).
 
@@ -48,21 +48,21 @@ Use this track to see **salience, agenda/activation, reason_codes, stop_on_fire*
 |------|--------------|
 | [**apply_drl_local.py**](apply_drl_local.py) | **Minimal E2E:** `SparkSession` → `rows_from_session` → **`apply_drl`** on [../drl/minimal.drl](../drl/minimal.drl). |
 | [**iter_rule_rows_no_jvm.py**](iter_rule_rows_no_jvm.py) | **No JVM:** [minimal.drl](../drl/minimal.drl) through **`iter_rule_rows`**. |
-| [**campaign_e2e.py**](campaign_e2e.py) | **Complex:** [drools_campaign.drl](drools_campaign.drl) + CSV or **synthetic** rows. |
-| [**validate_campaign_csv.py**](validate_campaign_csv.py) | **No Spark:** validate campaign DRL + **data/campaign_facts.csv**. |
+| [**lending_e2e.py**](lending_e2e.py) | **Lending sample:** [drools_lending_premium.drl](drools_lending_premium.drl) + CSV or **synthetic** rows. |
+| [**validate_lending_csv.py**](validate_lending_csv.py) | **No Spark:** validate lending DRL + **data/lending_portfolio_sample.csv**. |
 
 ## Run (quick)
 
 From the **repository root**:
 
 ```bash
-python examples/spark/validate_campaign_csv.py
+python examples/spark/validate_lending_csv.py
 python examples/spark/iter_rule_rows_no_jvm.py
 python examples/spark/apply_drl_local.py
-python examples/spark/campaign_e2e.py
+python examples/spark/lending_e2e.py
 ```
 
-If Spark startup fails, fix Java / `JAVA_HOME`, or rely on **`validate_campaign_csv.py`** for a full rule+data check without Spark.
+If Spark startup fails, fix Java / `JAVA_HOME`, or rely on **`validate_lending_csv.py`** for a full rule+data check without Spark.
 
 ---
 
