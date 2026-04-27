@@ -211,6 +211,7 @@ def test_print_ast_empty_constraint_pattern() -> None:
         None,
         (),
         (),
+        False,
         (FactPattern("b", "F", None),),
         (Action("result.x", Literal(1)),),
     )
@@ -227,6 +228,7 @@ def test_printer_fieldaccess_fallback_and_drl_printer() -> None:
         None,
         (),
         (),
+        False,
         (FactPattern("t", "T", FieldAccess("x", "y")),),
         (),
     )

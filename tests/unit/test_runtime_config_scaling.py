@@ -19,6 +19,7 @@ def test_runtime_conf_platform_switching() -> None:
     c = runtime_conf(base)
     assert c["spark.version.target"].startswith("3.")
     assert c["sre.platform"] == "local"
+    assert c["sre.execution.stop_on_decline"] == "false"
 
     glue = runtime_conf(EngineConfig(platform="glue", glue_dpu=20))
     assert glue["spark.glue.dpu"] == "20"
@@ -31,6 +32,9 @@ def test_runtime_conf_platform_switching() -> None:
 
     az = runtime_conf(EngineConfig(platform="azure-synapse"))
     assert az["spark.synapse.optimizeWrite"] == "true"
+
+    ff = runtime_conf(EngineConfig(stop_on_decline=True))
+    assert ff["sre.execution.stop_on_decline"] == "true"
 
 
 def test_config_validation_errors() -> None:

@@ -96,6 +96,7 @@ class RuleAst:
     pass_name: str | None
     group_by: tuple[str, ...]
     reason_codes: tuple[str, ...]
+    stop_on_fire: bool
     when: tuple[FactPattern, ...]
     then: tuple[Action, ...]
 

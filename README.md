@@ -1,6 +1,14 @@
 ﻿# sparkrules
 
 <p align="center">
+  <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
+  <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI downloads" src="https://img.shields.io/pypi/dm/sparkrules"></a>
+  <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/pypi-release.yml"><img alt="PyPI Release workflow" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/pypi-release.yml/badge.svg"></a>
+  <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml"><img alt="Docker publish workflow" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml/badge.svg"></a>
+  <a href="https://github.com/vaquarkhan/sparkrules/pkgs/container/sparkrules"><img alt="GHCR package" src="https://img.shields.io/badge/ghcr.io-vaquarkhan%2Fsparkrules-1f6feb"></a>
+</p>
+
+<p align="center">
   <a href="docs/images/sparkrules-logo.png">
     <img src="docs/images/sparkrules-logo.png" alt="SparkRules logo" width="520">
   </a>
