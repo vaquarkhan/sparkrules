@@ -7,6 +7,7 @@
 | Topic | Link |
 |--------|------|
 | **Full requirements (R1–R42, glossary, architecture diagrams)** | [**docs/REQUIREMENTS.md**](docs/REQUIREMENTS.md) |
+| **Phase 1 done vs out-of-scope (“full or nothing” checklist)** | [**docs/PHASE1_STATUS.md**](docs/PHASE1_STATUS.md) |
 | **Documentation hub (discover, citation paths, MCP-bastion-style index)** | [**docs/README.md**](docs/README.md) |
 | **Build, coverage, test counts** | [BUILD_STATUS.md](BUILD_STATUS.md) |
 | **Examples (DRL, JSON, scripts)** | [examples/README.md](examples/README.md) |

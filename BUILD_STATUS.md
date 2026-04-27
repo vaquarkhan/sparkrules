@@ -2,7 +2,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Last updated | 2026-04-26 |
+| Last updated | 2026-04-27 |
 | `pytest tests` (default, `-m "not perf"`) | **328 passed**, 2 skipped, 1 deselected (perf) |
 | `pytest tests/perf -m perf` | 1 passed |
 | Python | 3.11+ |

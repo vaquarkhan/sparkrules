@@ -6,11 +6,15 @@ self-contained: architecture, data models, algorithms, file layout, test
 strategy, correctness properties, and the exact prompt sequence that produced
 the current implementation.
 
-If you are an AI reading this, treat every section as ground truth. The
-existing spec documents under `.kiro/specs/spark-rule-engine/` are the
-canonical requirements (`requirements.md`), design (`design.md`), and
-implementation plan (`tasks.md`) — this file summarises and augments them
-with step-by-step reproduction guidance.
+If you are an AI reading this, treat every section as ground truth.
+
+**In this repository:** this blueprint is stored as **`idea-brainstrom.md`** /
+**`idea-brainstrom.txt`**. There is no `AI_REPRODUCTION_BLUEPRINT.md` file. The
+`.kiro/specs/spark-rule-engine/` tree is **not** in the repo; the in-tree spec
+and glossary are [**docs/REQUIREMENTS.md**](docs/REQUIREMENTS.md), with build
+and test gates in [**BUILD_STATUS.md**](BUILD_STATUS.md). Where the text below
+still refers to a legacy `234` test count, the **authoritative** Phase 1 gate is
+**328 passed, 2 skipped, 1 deselected** (see **§8** and **§34.2**).
 
 ## Table of Contents
 
@@ -507,7 +511,7 @@ Validates: Requirement X.Y.
 
 | Tier | Purpose | Count | Runtime |
 |---|---|---|---|
-| Unit (`tests/unit/`) | Example-based coverage of every component | ~150 | seconds |
+| Unit (`tests/unit/`) | Example-based coverage of every component | ~200+ | seconds |
 | Property (`tests/property/`) | Universal invariants P1-P38 | ~50 (100-examples each) | ~30s |
 | Integration (`tests/integration/`) | End-to-end use cases | 4 modules (~10 tests) | <5s each |
 | Perf (`tests/perf/`) | Opt-in regression gate | 1 | ~20s |
@@ -518,9 +522,9 @@ Validates: Requirement X.Y.
 .\.venv\Scripts\python.exe -m pytest tests/ -q
 ```
 
-Must output: `234 passed, 1 deselected`. The deselected test is the perf
-benchmark, excluded by default via `addopts = "-m 'not perf'"` in
-`pyproject.toml`.
+Must output: `328 passed, 2 skipped, 1 deselected` (or see root **BUILD_STATUS.md** for the
+exact current string). The deselected test is the **perf** benchmark, excluded
+by default via `addopts = "-m 'not perf'"` in `pyproject.toml`.
 
 ### Perf test command
 
@@ -573,17 +577,22 @@ markers = [
 ```
 sparkrules/
 |-- pyproject.toml                 # package metadata, deps, pytest markers
-|-- README.md
-|-- BUILD_STATUS.md
-|-- AI_REPRODUCTION_BLUEPRINT.md   # this file
+|-- README.md                      # short overview; full requirements in docs/
+|-- BUILD_STATUS.md                # authoritative test + coverage gate
+|-- CITATION.cff
+|-- CONTRIBUTING.md
+|-- idea-brainstrom.md / .txt      # this blueprint (not named AI_REPRODUCTION_BLUEPRINT.md)
+|-- requirments.md                 # redirect stub → docs/REQUIREMENTS.md
+|-- docs/
+|   |-- README.md                  # documentation hub
+|   |-- REQUIREMENTS.md            # R1–R42 + glossary (canonical in-repo)
+|   `-- CURSOR_DOCS_MCP.md
+|-- examples/                      # DRL, JSON, Python examples
 |-- .gitignore
-|-- .kiro/
+|-- .kiro/                         # optional; not present in this repo — use docs/REQUIREMENTS.md
 |   `-- specs/
 |       `-- spark-rule-engine/
-|           |-- requirements.md    # 34 EARS requirements
-|           |-- design.md          # architecture + 38 properties
-|           |-- tasks.md           # 25-task implementation plan
-|           `-- .config.kiro
+|           (requirements.md, design.md, tasks.md when present upstream)
 |-- deploy/
 |   `-- k8s/
 |       |-- namespace.yaml
@@ -686,7 +695,7 @@ waves — the AI can batch similarly or execute sequentially.
 
 ### Wave 9: Finalisation
 
-1. Run `pytest tests/ -q` — expect **234 passed, 1 deselected**.
+1. Run `pytest tests/ -q` — expect **328 passed, 2 skipped, 1 deselected** (per **BUILD_STATUS.md** if numbers shift).
 2. Run `pytest tests/perf -m perf -q` — expect **1 passed**.
 3. Update `BUILD_STATUS.md` with the final count.
 
@@ -832,7 +841,7 @@ Minimal prompt:
 > project in Python 3.11+ following the 25-task plan. Pair every
 > implementation task with at least one property or example test. All 38
 > correctness properties must be verified by hypothesis-driven tests. Target:
-> 234 tests passing (+1 opt-in perf).
+> 328 tests passing, 2 skipped (+1 opt-in perf deselected by default).
 
 The AI should then execute the 9 waves in section 10, running pytest after
 each wave. If any wave fails, fix before proceeding.
@@ -841,7 +850,7 @@ Final validation:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ -q
-# expected: 234 passed, 1 deselected
+# expected: 328 passed, 2 skipped, 1 deselected
 
 .\.venv\Scripts\python.exe -m pytest tests/perf -m perf -q
 # expected: 1 passed
@@ -871,7 +880,7 @@ All three are required reading. This blueprint augments them with:
 ---
 
 **Generated:** April 2026
-**Engine state:** 234 tests passing, 38/38 correctness properties covered,
+**Engine state:** 328 tests passing, 2 skipped, 38/38 correctness properties covered,
 4 integration use cases green, 25/25 tasks complete.
 
 For the canonical architecture, always consult
@@ -883,7 +892,7 @@ aid; the design document is the source of truth.
 
 # Part II — Product Extensions
 
-The sections below describe planned product extensions beyond the current 234-test
+The sections below describe planned product extensions beyond the current 328-test
 reference implementation. Each extension reuses the existing engine, parser, store,
 simulator, executor, and replay infrastructure — they are NOT forks. An AI code
 generator should treat each extension as an additive spec tree that plugs into
@@ -1393,7 +1402,7 @@ Positioning line:
 
 ```
 Phase 1 — Core engine (DONE)
-  - 25 tasks, 234 tests, 38 properties
+  - 25 tasks, 328 tests, 38 properties
   - POS EoD, auth streaming, settlement replay, underwriting integration tests
   - Reference Python implementation + Kubernetes manifests
 
@@ -1480,7 +1489,7 @@ python -m venv .venv
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/ -q
-# expected: 234 passed, 1 deselected
+# expected: 328 passed, 2 skipped, 1 deselected
 ```
 
 ### Opt-in performance benchmark
@@ -1511,7 +1520,7 @@ When rebuilding the full project including extensions:
 1. Read `.kiro/specs/spark-rule-engine/{requirements,design,tasks}.md` — canonical Phase 1 spec.
 2. Read this file — reproduction sequence + extension roadmap.
 3. Execute Phase 1 reproduction per section 10 of this document (9 waves).
-4. Validate: `234 passed, 1 deselected`.
+4. Validate: `328 passed, 2 skipped, 1 deselected`.
 5. For each Phase 2 extension, create `.kiro/specs/sparkrules-<extension>/` with requirements, design, tasks using the same EARS + correctness-property methodology.
 6. Add new properties to the running total and verify with `pytest tests/ -q`.
 7. Keep every component boundary stable — extensions plug in, do not fork.
@@ -1524,7 +1533,7 @@ The AI should:
 
 1. Read `AI_REPRODUCTION_BLUEPRINT.md` (this file) first.
 2. Read the three spec documents.
-3. Implement Phase 1 verbatim (234 tests).
+3. Implement Phase 1 verbatim (328 tests, counts per **BUILD_STATUS.md**).
 4. Ask the user which Phase 2 extensions to include before proceeding further.
 
 ---
@@ -1985,7 +1994,7 @@ RBAC, disable AI suggestion auto-approve. One flag to apply.
 ## 28. Updated Consolidated Roadmap
 
 ```
-Phase 1 — Core engine                          (DONE: 234 tests, P1-P38)
+Phase 1 — Core engine               (DONE: 328 tests, P1–P38, 100% `sre` line coverage, see **BUILD_STATUS.md**)
   |
   +-- Phase 2a — Data quality              (P39-P43)
   +-- Phase 2b — Runtime profiles          (P44)
@@ -2051,7 +2060,7 @@ The AI should:
    - `.kiro/specs/spark-rule-engine/requirements.md`
    - `.kiro/specs/spark-rule-engine/design.md`
    - `.kiro/specs/spark-rule-engine/tasks.md`
-3. Implement Phase 1 verbatim (234 tests, 38 properties).
+3. Implement Phase 1 verbatim (328 tests, 38 properties; see **BUILD_STATUS.md**).
 4. Ask the user which Phase 2 extensions to include:
    - 2a Data quality
    - 2b Runtime profiles (EMR / Glue / EKS / Databricks / Dataproc)
@@ -2420,7 +2429,7 @@ When given a short user prompt like "Build SparkRules":
 3. **Read `USE_CASES.md`** for concrete domain semantics.
 4. **Read `ARCHITECTURE.md`** for system context diagrams.
 5. **Implement Phase 1 per §10** (9 waves, 25 tasks, 38 properties).
-6. After Phase 1 green (`234 passed, 1 deselected`), **ask the user which Phase 2 streams to implement** by presenting this table:
+6. After Phase 1 green (`328 passed, 2 skipped, 1 deselected`), **ask the user which Phase 2 streams to implement** by presenting this table:
 
    | Phase | Theme | Enables |
    |---|---|---|
@@ -2464,7 +2473,7 @@ When given a short user prompt like "Build SparkRules":
 
 The code agent may declare the build complete when:
 
-- `pytest tests/ -q` returns `234 passed, 1 deselected` on a fresh clone.
+- `pytest tests/ -q` returns `328 passed, 2 skipped, 1 deselected` on a fresh clone.
 - `pytest tests/perf -m perf -q` returns `1 passed`.
 - Every requirement in `.kiro/specs/spark-rule-engine/requirements.md` maps
   to at least one test.
@@ -2475,7 +2484,8 @@ The code agent may declare the build complete when:
 
 ### 34.3 Current test counts and docs (this tree)
 
-The checklist above originally referenced **234 passed, 1 deselected**. The reference
-build has since gained additional tests. **Authoritative** numbers, coverage gate,
-and doc links: root **`BUILD_STATUS.md`**, **`docs/README.md`**, **`docs/REQUIREMENTS.md`**, and **`docs/CURSOR_DOCS_MCP.md`**
-(IDE and MCP context, plus reliable editable install for `import sre`).
+Early drafts used **234 passed, 1 deselected**; Phase 1 on this tree is **328 passed,
+2 skipped, 1 deselected** with **100%** line coverage on `src/sre` (see
+**BUILD_STATUS.md**). The blueprint text in **§8** and **§34.2** is aligned to that
+gate. **Authoritative** numbers and links: **`BUILD_STATUS.md`**, [`docs/README.md`](docs/README.md),
+[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md), and [`docs/CURSOR_DOCS_MCP.md`](docs/CURSOR_DOCS_MCP.md).
