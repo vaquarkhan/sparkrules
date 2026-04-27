@@ -176,11 +176,15 @@ The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, 
 
 ## Docker
 
+**Local (build from this repo):**
+
 ```bash
 docker compose up --build
 ```
 
-Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (Dockerfile uses internal 8000; host port is whatever you map, e.g. `-p 8042:8000` then use **8042** in the browser.)
+Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (compose maps **8042 → 8000**; the Dockerfile exposes **8000** internally.)
+
+**CI images:** pushes to `main` / `master` / `phase-2` and tags `v*` run **GitHub Actions** and publish to **GitHub Container Registry** (`ghcr.io/<user>/sparkrules`). See [docs/PUBLISHING.md](docs/PUBLISHING.md#docker-github-container-registry).
 
 ## Cloud deploy notes
 

@@ -1,11 +1,12 @@
-# Verifies a source distribution and wheel can be built. Optional PyPI upload via trusted publishing (see docs/PUBLISHING.md).
+# Build sdist + wheel. Publish to PyPI on: (1) manual workflow with checkbox, or (2) push of tag v* (e.g. v0.2.0).
+# See docs/PUBLISHING.md for trusted publishing and the `pypi` GitHub environment.
 name: Release build
 
 on:
   workflow_dispatch:
     inputs:
       publish_to_pypi:
-        description: "Upload dist/ to PyPI (configure GitHub environment + trusted publishing first)"
+        description: "Upload dist/ to PyPI (trusted publishing; requires pypi environment)"
         required: false
         type: boolean
         default: false
@@ -31,7 +32,9 @@ jobs:
           path: dist/
 
   publish:
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi) ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
     needs: [build]
     runs-on: ubuntu-latest
     environment: pypi
