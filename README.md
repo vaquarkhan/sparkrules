@@ -40,14 +40,14 @@ Repository: https://github.com/vaquarkhan/sparkrules
 
 ### Compiler and runtime primitives
 
-- Rule strategy classification
+- Rule strategy classification (including `SQL_JOIN` for multi-pattern rules; **local** execution can expand list-valued **bindings** in a **Cartesian** join and pick a single fire; distributed Spark path remains configuration-dependent)
 - Rule batching support
 - Discrimination network structures
 - Batch and two-pass runtime helper modules
 - Streaming helper primitives (refresh and TTL checks)
 - Streaming orchestration helper for micro-batch rule refresh
 - Derived-column cache utility
-- Iceberg-like snapshot store for deterministic replay/testing workflows
+- Iceberg-like snapshot store for deterministic replay/testing workflows; **append-only** option for certain internal tables
 - Export service with manifest and SHA-256 integrity hash
 - Output sink abstraction with format targets: `iceberg`, `delta`, `hudi`, `parquet`
 - Input source contract validation for batch/stream profiles
@@ -71,8 +71,12 @@ Repository: https://github.com/vaquarkhan/sparkrules
 
 ### Simulation and experimentation
 
-- Rule simulator for pre-deployment checks
-- Replay helper module
+- Rule simulator for pre-deployment checks (`/simulations`)
+- **Shadow** and **coverage** simulation modes (`/simulations/shadow`, `/simulations/coverage`)
+- **Counterfactual** checks (`/simulations/counterfactual`)
+- **Rule chain** dry-run: ordered DRLs with `stop_on_fire`, agenda, activation groups (`/simulations/chain`)
+- **Time-travel debug** capture and replay of run snapshots (`/debug/time-travel/capture`, `/debug/time-travel/replay`); `debug_runs` table with append-only semantics in the in-process store
+- Replay helper module (service-level version check)
 - A/B assignment primitives
 
 ### Spark and data-plane integration
@@ -86,12 +90,12 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - FastAPI app factory, OpenAPI at `/docs`
 - Health endpoint
 - **Rules:** create, list handles, **assets** (search, group, namespace filters), **rule pack** export/import, two-version **diff**, **`PATCH` per-version active/inactive**
-- **Governance (Phase 4):** dev/stage/prod **pins** (sync, promote) — [GOVERNANCE.md](docs/GOVERNANCE.md)
+- **Governance (Phase 4):** dev/stage/prod **pins** (sync, promote); **deprecation** workflow: propose, approve, list, and **enforce** to deactivate active rule versions — [GOVERNANCE.md](docs/GOVERNANCE.md)
 - **Workbench** (`/workbench`): static UI with a **Monaco** DRL editor; **Validate** calls `/rules/validate` then `/ide/lsp/analyze` (diagnostics in the editor), **LSP analyze** and Ctrl+Space completions use the same LSP API
 - Simulation endpoint, engine **deployment** readout, **template / guided fields** for Workbench
 - Data-quality evaluation endpoint (`/dq/evaluate`)
 - Optional **`SPARKRULES_API_KEY`**: mutating methods + **sensitive rule/governance `GET`s** (see [API run](#api-run))
-- Lightweight client SDK, in-process connect server dispatch module
+- Lightweight **Python** client (`SreClient`): validate, simulate, counterfactual, time-travel capture/replay, governance deprecation **enforce**; **`sre-cli`**: `validate`, `simulate`, `lsp-check`, `counterfactual-check`, `chaos-check`, `health` — in-process connect server dispatch module
 
 ### Data quality
 
@@ -116,7 +120,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - Property tests
 - Integration tests
 - Optional perf tests
-- 100% line coverage gate on `src/sre`
+- **100% line coverage** on `src/sre` (enforced with `pytest tests/unit/ --cov=src/sre` and `fail_under=100` in `pyproject.toml`)
 
 ## How it works
 
@@ -176,13 +180,13 @@ Open http://127.0.0.1:8042/docs
 
 ## Rules Workbench (browser UI)
 
-Drools Workbench–style **authoring and operations shell** (rule asset list, DRL validate, simulation, engine/deployment readout, template helper):
+Drools Workbench–style **authoring and operations shell** (rule asset list, DRL **Monaco** editor, validate + **LSP** diagnostics, simulation, engine/deployment readout, template helper):
 
 - http://127.0.0.1:8042/workbench/ (or the port you set in `SPARKRULES_PORT`)
 
-The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
+The UI calls the same REST API (`/rules`, `/rules/validate`, `/ide/lsp/analyze`, `/simulations`, `/system/deployment`, etc.).
 
-**Phase 3–4:** search/filter assets, **Overview** (stats + bar charts), light/dark **theme**, per-version **Activate / Deactivate** (`PATCH` API), rule pack, diff, optional API key, **namespace** and **dev→stage→prod** promotion pins (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Phase 3–4:** search/filter assets, **Overview** (stats + bar charts), light/dark **theme**, per-version **Activate / Deactivate** (`PATCH` API), rule pack, diff, optional API key, **namespace** and **dev→stage→prod** promotion pins, **governance** deprecations in the API (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Docker
 

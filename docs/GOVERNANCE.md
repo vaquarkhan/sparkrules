@@ -13,7 +13,16 @@ The API uses three fixed **environments**: `dev` → `stage` → `prod`. The **i
 
 Runtime engines do **not** read these pins automatically; connect them in your deployment pipeline (e.g. only load `prod` pins in production).
 
-## API
+## Deprecations
+
+The **in-memory** `DeprecationRegistry` (per API process) supports a workflow to retire rules:
+
+- **Propose** — record intent to deprecate a rule handle in a **namespace** (`POST /governance/deprecations/propose`)
+- **Approve** — mark the proposal approved (`POST /governance/deprecations/approve`)
+- **List** — list deprecation records (`GET /governance/deprecations?namespace=…`)
+- **Enforce** — set matching **active** rule versions in the store to **inactive** (`POST /governance/deprecations/enforce`) — use with RBAC/audit in production
+
+## API (pins and governance)
 
 | Method | Path | Summary |
 |--------|------|---------|
@@ -22,6 +31,10 @@ Runtime engines do **not** read these pins automatically; connect them in your d
 | GET | `/governance/pins` | Optional `?namespace=` filter |
 | POST | `/governance/sync-dev` | Body: `namespace`, `rule_handle` |
 | POST | `/governance/promote` | Body: `namespace`, `rule_handle`, `from_env`, `to_env` |
+| POST | `/governance/deprecations/propose` | Propose a deprecation (body includes `namespace`, `rule_handle`, …) |
+| POST | `/governance/deprecations/approve` | Approve a pending deprecation |
+| GET | `/governance/deprecations` | List deprecations, optional `?namespace=` |
+| POST | `/governance/deprecations/enforce` | Deactivate active versions per approved deprecation in namespace |
 
 ## Workbench
 
