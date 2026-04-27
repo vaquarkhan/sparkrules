@@ -14,7 +14,16 @@ Artifacts appear under `dist/`.
 ## PyPI (org-specific)
 
 - Configure **[trusted publishing](https://docs.pypi.org/trusted-publishers/)** in your PyPI org for this repository, or use API tokens in a private release job.
-- The repository workflow does **not** auto-upload to the index; it only verifies the build and archives artifacts. Add an upload step in your fork or org’s pipeline when you are ready to publish a package name you control.
+
+### Optional: publish from GitHub Actions
+
+The **Release build** workflow (`.github/workflows/release-sdist.yml`) can upload to PyPI **only** when you run it manually (**Actions → Release build → Run workflow**) and enable the input **“Upload dist/ to PyPI”**. Requirements:
+
+1. In PyPI, add this repo as a **trusted publisher** for your package.
+2. In GitHub, create an **environment** named **`pypi`** (the workflow uses `environment: pypi` for the publish job). Add any protection rules you need.
+3. The publish job uses **OIDC** (`id-token: write`); it does not use a long‑lived PyPI password in the workflow.
+
+The default `push` to tags `v*` only **builds** and uploads the **artifact**; it does **not** publish to PyPI unless you use `workflow_dispatch` with the checkbox set.
 
 ## Docker image
 

@@ -154,9 +154,15 @@ python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 
 Open http://127.0.0.1:8042/docs
 
-If the browser shows **connection refused**, the server is not running: keep the terminal open, use the **same port** in the URL, and use `http://` not `https://` unless you use a proxy. If it still fails, run **`scripts\check_env.cmd`** (tests import + prints which `python` is used). Multiple Pythons (Anaconda, Store, etc.): use the same interpreter for `pip install` and `dev_server` — the server prints **`Python: ...`** at startup; that path must be the one you installed into.
+#### If the browser shows ERR_CONNECTION_REFUSED
 
-**Shared or production exposure:** if you set the environment variable **`SPARKRULES_API_KEY`**, the API requires the same value in the **`X-API-Key`** header (or `Authorization: Bearer …`) for `POST`/`PUT`/`PATCH`/`DELETE` requests. The Workbench can store the key in the browser (field in the header bar). `GET`/`HEAD`/`OPTIONS` stay open so health checks and read-only use stay simple; tighten network access separately if you need read protection.
+1. **Start the server** and leave the terminal open (`scripts\dev_server.cmd` on Windows, or `uvicorn` as above).
+2. **Match the port** in the URL to the port the process prints (default **8042** unless you set `SPARKRULES_PORT` or a different `--port`).
+3. Use **`http://`**, not `https://`, for local dev unless you use a reverse proxy.
+4. Run **`scripts\check_env.cmd`** from the repo: it runs `import sre` and prints `sys.executable` so you can confirm the same Python you use for **`python -m pip install -e .`**. If that import fails, install into that interpreter; if it passes but the server still fails, you are almost certainly using a **different** `python` to start Uvicorn than the one you installed into.
+5. **Docker:** use the **host** port you mapped (e.g. `8042` with `-p 8042:8000`), not the container’s internal 8000, in the browser.
+
+**API key (`SPARKRULES_API_KEY`):** when set, the same key must be sent as **`X-API-Key`** or **`Authorization: Bearer …`** for **`POST`/`PUT`/`PATCH`/`DELETE`**, and for **sensitive `GET`/`HEAD`** routes: `/rules` and under `/rules/…` (list, assets, diff, export, etc.), `/system/deployment`, and `/governance/…`. **Public without key:** `GET /health`, OpenAPI static routes (`/docs`, `/openapi.json`, …), `OPTIONS` (CORS preflight), and the Workbench static shell under `/workbench/…` (the UI still uses your key for API `fetch` calls). **OIDC** for browser SSO is not implemented; use a reverse proxy or network policy if you need that. The Workbench can store the API key in the browser (header bar) for both reads and writes.
 
 ## Rules Workbench (browser UI)
 

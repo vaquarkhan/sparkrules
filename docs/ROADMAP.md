@@ -8,7 +8,7 @@ Focus: **enterprise workbench and packaging**.
 - [x] **Version diff** (unified) for two versions of the same `rule_handle` (`/rules/diff`).
 - [x] **Rule pack** export (`/rules/export`) and bulk import (`/rules/import`), format `sparkrules-rulepack-1`.
 - [x] Workbench UI: filters, pack download, import, compare.
-- [x] Optional: **API key** for mutating API calls when `SPARKRULES_API_KEY` is set (Workbench sends `X-API-Key`; OIDC for shared environments is future work). See [README.md](../README.md#api-run).
+- [x] Optional: **API key** when `SPARKRULES_API_KEY` is set: mutating methods plus **sensitive GET**s (`/rules/…` data, `/system/deployment`, `/governance/…`); public `GET /health`, OpenAPI, `OPTIONS`, and static `/workbench/…`. **OIDC** / browser SSO is not in-repo (use a reverse proxy or network policy). See [README.md](../README.md#api-run).
 - [x] **PyPI / container** release path documented ([PUBLISHING.md](PUBLISHING.md)); trusted publishing and registry push are org-specific. CI **Release build** workflow produces sdist and wheel artifacts.
 
 ## Phase 4 (complete)

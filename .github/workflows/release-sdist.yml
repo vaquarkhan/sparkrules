@@ -1,8 +1,14 @@
-# Verifies a source distribution and wheel can be built. Upload to PyPI is manual or via trusted publishing in your org.
+# Verifies a source distribution and wheel can be built. Optional PyPI upload via trusted publishing (see docs/PUBLISHING.md).
 name: Release build
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_pypi:
+        description: "Upload dist/ to PyPI (configure GitHub environment + trusted publishing first)"
+        required: false
+        type: boolean
+        default: false
   push:
     tags: [ "v*" ]
 
@@ -23,3 +29,21 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
