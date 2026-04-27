@@ -172,7 +172,7 @@ Drools Workbench–style **authoring and operations shell** (rule asset list, DR
 
 The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
 
-**Phase 3–4:** search/filter assets, rule pack import/export, version diff, optional API key, **namespace** and **dev→stage→prod** promotion pins (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
+**Phase 3–4:** search/filter assets, **Overview** (stats + bar charts), light/dark **theme**, per-version **Activate / Deactivate** (`PATCH` API), rule pack, diff, optional API key, **namespace** and **dev→stage→prod** promotion pins (see [docs/GOVERNANCE.md](docs/GOVERNANCE.md)). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Docker
 

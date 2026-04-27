@@ -17,6 +17,16 @@ class RuleResponse(BaseModel):
     version: int
 
 
+class RuleVersionActivePatchRequest(BaseModel):
+    is_active: bool
+
+
+class RuleVersionActiveResponse(BaseModel):
+    rule_handle: str
+    version: int
+    is_active: bool
+
+
 class SimulationRequest(BaseModel):
     drl: str
     fact: dict[str, Any]
