@@ -19,7 +19,13 @@ def test_unified_diff_different() -> None:
 
 def test_build_and_parse_roundtrip() -> None:
     rules = [
-        {"rule_handle": "h1", "version": 1, "rule_group": "g", "drl": "rule x when $t: T (true) then end"},
+        {
+            "rule_handle": "h1",
+            "version": 1,
+            "rule_group": "g",
+            "namespace": "acme",
+            "drl": "rule x when $t: T (true) then end",
+        },
     ]
     s = build_export_payload(rules)
     d = json.loads(s)
@@ -28,6 +34,7 @@ def test_build_and_parse_roundtrip() -> None:
     assert len(back) == 1
     assert back[0]["rule_handle"] == "h1"
     assert back[0]["group"] == "g"
+    assert back[0]["namespace"] == "acme"
     assert "T (true)" in back[0]["drl"]
 
 

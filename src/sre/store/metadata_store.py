@@ -13,6 +13,7 @@ from sre.model.rule import Rule, new_rule_id, now_utc
 class RuleFilter:
     rule_handle: str | None = None
     rule_group: str | None = None
+    namespace: str | None = None
     is_active: bool | None = None
     at_time: datetime | None = None
 
@@ -103,6 +104,7 @@ class InMemoryRuleMetadataStore:
                     group_by_keys=patch.group_by_keys,
                     source_file_hash=patch.source_file_hash,
                     author_principal=patch.author_principal,
+                    namespace=patch.namespace,
                 )
                 arr[i] = new
                 self._by_id[new.rule_id] = new
@@ -154,6 +156,8 @@ class InMemoryRuleMetadataStore:
                 continue
             for r in arr:
                 if f and f.rule_group and r.rule_group != f.rule_group:
+                    continue
+                if f and f.namespace and r.namespace != f.namespace:
                     continue
                 if f and f.is_active is not None and r.is_active != f.is_active:
                     continue

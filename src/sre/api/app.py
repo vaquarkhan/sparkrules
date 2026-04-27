@@ -15,6 +15,8 @@ from sre.api.schemas import (
     DqEvaluateRequest,
     DqEvaluateResponse,
     DqViolationResponse,
+    GovernancePromoteRequest,
+    GovernanceSyncRequest,
     GuidedFieldItem,
     RuleAssetResponse,
     RuleCreateRequest,
@@ -27,6 +29,11 @@ from sre.api.schemas import (
 )
 from sre.api.security import install_optional_api_key_middleware
 from sre.dq import DataQualityEngine
+from sre.governance import PromotionRegistry, STANDARD_ENVS
+from sre.governance.promote_ops import (
+    sync_dev_from_active,
+    validate_version_namespace,
+)
 from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.model.rule_template import RuleTemplate
@@ -34,7 +41,7 @@ from sre.parser import parse
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.iceberg_store import IcebergLikeTable
 from sre.sim import RuleSimulator
-from sre.store import InMemoryRuleMetadataStore, UnknownRuleError
+from sre.store import InMemoryRuleMetadataStore, RuleFilter, UnknownRuleError
 
 
 @dataclass
@@ -60,6 +67,7 @@ class AppDeps:
             },
         )
     )
+    promotion: PromotionRegistry = field(default_factory=PromotionRegistry)
 
 
 def create_app(deps: AppDeps | None = None) -> Any:
@@ -100,6 +108,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 b.drl, RuleFormat.DRL
             ),
             activation_group=None,
+            namespace=b.namespace,
         )
         ins = d.store.insert(r0)
         return RuleResponse(
@@ -136,13 +145,20 @@ def create_app(deps: AppDeps | None = None) -> Any:
         group: str | None = Query(
             None, description="Filter: exact rule_group"
         ),
+        namespace: str | None = Query(
+            None, description="Filter: exact namespace (Phase 4 governance)"
+        ),
     ) -> list[RuleAssetResponse]:
-        rows = d.store.list(None)
+        f: RuleFilter | None = None
+        if namespace is not None and namespace != "":
+            f = RuleFilter(namespace=namespace)
+        rows = d.store.list(f)
         out = [
             RuleAssetResponse(
                 rule_handle=r.rule_handle,
                 version=r.version,
                 rule_group=r.rule_group,
+                namespace=r.namespace,
                 salience=r.salience,
                 is_active=r.is_active,
                 drl=r.rule_definition.source,
@@ -197,6 +213,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 "rule_handle": r.rule_handle,
                 "version": r.version,
                 "rule_group": r.rule_group,
+                "namespace": r.namespace,
                 "drl": r.rule_definition.source,
             }
             for r in rows
@@ -229,6 +246,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                     it.drl, RuleFormat.DRL
                 ),
                 activation_group=None,
+                namespace=it.namespace,
             )
             ins = d.store.insert(r0)
             out.append(
@@ -324,6 +342,76 @@ def create_app(deps: AppDeps | None = None) -> Any:
             run_id=req.run_id,
             dq_snapshot_id=dq_snapshot_id,
         )
+
+    @app.get("/governance/environments", tags=["governance"])
+    def governance_environments() -> list[str]:
+        return list(STANDARD_ENVS)
+
+    @app.get("/governance/namespaces", tags=["governance"])
+    def governance_namespaces() -> list[str]:
+        return sorted({r.namespace for r in d.store.list(None)})
+
+    @app.get(
+        "/governance/pins",
+        tags=["governance"],
+    )
+    def governance_pins(
+        namespace: str | None = Query(
+            None, description="Optional filter by namespace"
+        ),
+    ) -> list[dict[str, object]]:
+        return d.promotion.all_pins(namespace)
+
+    @app.post(
+        "/governance/sync-dev",
+        tags=["governance"],
+    )
+    def governance_sync_dev(
+        b: GovernanceSyncRequest,
+    ) -> dict[str, object]:
+        try:
+            v = sync_dev_from_active(
+                d.store, d.promotion, b.namespace, b.rule_handle
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        return {
+            "ok": True,
+            "version": v,
+            "environment": "dev",
+        }
+
+    @app.post(
+        "/governance/promote",
+        tags=["governance"],
+    )
+    def governance_promote(
+        b: GovernancePromoteRequest,
+    ) -> dict[str, object]:
+        v0 = d.promotion.get_pin(
+            b.namespace, b.rule_handle, b.from_env
+        )
+        if v0 is None:
+            raise HTTPException(
+                400, "source pin is not set; sync dev first"
+            )
+        try:
+            validate_version_namespace(
+                d.store, b.namespace, b.rule_handle, v0
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        try:
+            v1 = d.promotion.promote(
+                b.namespace, b.rule_handle, b.from_env, b.to_env
+            )
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        return {
+            "ok": True,
+            "version": v1,
+            "environment": b.to_env,
+        }
 
     install_optional_api_key_middleware(app)
 

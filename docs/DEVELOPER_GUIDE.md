@@ -57,7 +57,7 @@ Uploads to the Python Package Index are org-specific: configure [trusted publish
 
 ## Project structure
 
-- `src/sre/` core package (includes `api/static/workbench/` for the Workbench UI)
+- `src/sre/` core package (includes `api/static/workbench/` for the Workbench UI, `governance/` for promotion pins)
 - `tests/` unit, property, integration, perf
 - `examples/` runnable examples
 - `docs/` customer and developer documentation
