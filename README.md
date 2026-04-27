@@ -143,17 +143,24 @@ Use the same interpreter for install and run commands.
 
 ## API run
 
+**Windows (easiest):** double‑click `scripts\\dev_server.cmd` or run it from a terminal. By default the server uses **port 8042** (avoids clashes with other tools on 8000). Set `SPARKRULES_PORT=9000` before running the script to use another port.
+
+**Any OS:**
+
 ```bash
-uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
+python -m pip install -e "."
+python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
-Open http://127.0.0.1:8000/docs
+Open http://127.0.0.1:8042/docs
+
+If the browser shows **connection refused**, the server is not running: keep the terminal open, use the **same port** in the URL, and use `http://` not `https://` unless you use a proxy.
 
 ## Rules Workbench (browser UI)
 
 Drools Workbench–style **authoring and operations shell** (rule asset list, DRL validate, simulation, engine/deployment readout, template helper):
 
-- http://127.0.0.1:8000/workbench/
+- http://127.0.0.1:8042/workbench/ (or the port you set in `SPARKRULES_PORT`)
 
 The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, etc.).
 
@@ -165,7 +172,7 @@ The UI calls the same REST API (`/rules`, `/simulations`, `/system/deployment`, 
 docker compose up --build
 ```
 
-Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs
+Then open http://127.0.0.1:8000/workbench/ and http://127.0.0.1:8000/docs (Dockerfile uses internal 8000; host port is whatever you map, e.g. `-p 8042:8000` then use **8042** in the browser.)
 
 ## Cloud deploy notes
 
