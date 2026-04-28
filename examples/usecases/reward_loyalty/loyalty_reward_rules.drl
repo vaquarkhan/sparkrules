@@ -1,0 +1,101 @@
+// Author: Vaquar Khan
+// Loyalty earn / burn decisioning (tiered benefits + compliance).
+
+rule deny_account_frozen
+  salience 120
+  agenda_group "compliance"
+  stop_on_fire true
+  when $m : T ( $m.account_lifecycle == "FROZEN" )
+  then
+    result.reward_status = "BLOCKED";
+    result.reason_code = "LOYALTY-FROZEN";
+end
+
+rule deny_insufficient_points
+  salience 119
+  agenda_group "ledger"
+  stop_on_fire true
+  when $m : T ( $m.redemption_points_requested > $m.points_balance )
+  then
+    result.reward_status = "DECLINED";
+    result.reason_code = "POINTS-INSUFFICIENT";
+end
+
+rule deny_silver_burst_cap
+  salience 118
+  agenda_group "tier_controls"
+  stop_on_fire true
+  when $m : T (
+    ($m.tier_code == "SILVER")
+    and ($m.redemption_points_requested > 8000)
+  )
+  then
+    result.reward_status = "DECLINED";
+    result.reason_code = "SILVER-MONTHLY-BURST";
+end
+
+rule gold_dining_bonus_lane
+  salience 80
+  agenda_group "premium"
+  when $m : T (
+    ($m.tier_code == "GOLD")
+    and ($m.offer_category == "DINING")
+    and ($m.points_balance >= $m.redemption_points_requested)
+  )
+  then
+    result.reward_status = "APPROVE";
+    result.reason_code = "GOLD-DINING-MULTIPLIER";
+end
+
+rule platinum_partner_escalation
+  salience 76
+  agenda_group "premium"
+  when $m : T (
+    ($m.tier_code == "PLATINUM")
+    and ($m.offer_category == "AIRLINE")
+    and ($m.points_balance >= $m.redemption_points_requested)
+  )
+  then
+    result.reward_status = "APPROVE";
+    result.reason_code = "PLAT-AIR-PORTAL";
+end
+
+rule silver_standard_catalog
+  salience 55
+  agenda_group "earn_burn"
+  when $m : T (
+    ($m.tier_code == "SILVER")
+    and ($m.redemption_points_requested <= 8000)
+    and ($m.points_balance >= $m.redemption_points_requested)
+    and ($m.account_lifecycle == "ACTIVE")
+  )
+  then
+    result.reward_status = "APPROVE";
+    result.reason_code = "SILVER-CATALOG-RELEASE";
+end
+
+rule bronze_baseline_grant
+  salience 50
+  agenda_group "earn_burn"
+  when $m : T (
+    ($m.tier_code == "BRONZE")
+    and ($m.account_lifecycle == "ACTIVE")
+    and ($m.points_balance >= $m.redemption_points_requested)
+  )
+  then
+    result.reward_status = "APPROVE";
+    result.reason_code = "BRONZE-BASELINE";
+end
+
+rule gold_catalog_non_dining
+  salience 48
+  agenda_group "earn_burn"
+  when $m : T (
+    ($m.tier_code == "GOLD")
+    and ($m.offer_category == "GENERAL_MERCH")
+    and ($m.points_balance >= $m.redemption_points_requested)
+  )
+  then
+    result.reward_status = "APPROVE";
+    result.reason_code = "GOLD-MERCH-PORTAL";
+end

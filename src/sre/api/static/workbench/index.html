@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Author: Vaquar Khan -->
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
@@ -422,7 +423,7 @@
       <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark">Light</button>
       <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
-      <input type="text" id="hdr-roles" placeholder="X-Roles (optional)" style="max-width:200px" title="e.g. ai_reviewer, dq_steward, platform_admin" />
+      <input type="text" id="hdr-roles" placeholder="X-Roles (default: rule_author)" style="max-width:220px" title="Comma-separated RBAC roles. Blank uses rule_author so Overview &amp; API calls work without 403." />
       <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
@@ -857,9 +858,10 @@
     function roleHeaders() {
       var o = {};
       var r = document.getElementById("hdr-roles");
-      if (r && r.value.trim()) o["X-Roles"] = r.value.trim();
+      var rv = r && r.value.trim() ? r.value.trim() : "rule_author";
+      o["X-Roles"] = rv;
       var t = document.getElementById("hdr-tenant");
-      if (t && t.value.trim()) o["X-Tenant-Id"] = t.value.trim();
+      o["X-Tenant-Id"] = t && t.value.trim() ? t.value.trim() : "default";
       return o;
     }
     async function getJson(path, opts) {

@@ -1,3 +1,4 @@
+// Author: Vaquar Khan
 // Prime-rate lending tier: underwriter-style criteria on a single application fact.
 // One rule per DRL (Spark `apply_drl` path). Metadata mirrors Drools for familiarity.
 

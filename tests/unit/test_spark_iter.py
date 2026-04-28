@@ -1,5 +1,7 @@
 """Pure-Python tests for sre.spark (no JVM)."""
 
+import pytest
+
 from sre.spark import iter_rule_rows
 
 _DRL = """
@@ -70,3 +72,8 @@ def test_iter_rule_rows_asdict_typeerror_fallback_still_evaluates() -> None:
 
     t = list(iter_rule_rows(iter([RowLegacy()]), _DRL_NESTED_NUM))
     assert t[0][1] is True
+
+
+def test_iter_rule_rows_empty_drl_raises() -> None:
+    with pytest.raises(ValueError, match="at least one"):
+        list(iter_rule_rows(iter([{"id": "1", "z": {"n": 1}}]), ""))
