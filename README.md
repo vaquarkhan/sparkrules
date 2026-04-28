@@ -132,7 +132,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 
 ## How it works
 
-![SparkRules flow](docs/images/sparrule-flow.png)
+![SparkRules flow](docs/images/sparrule-flow2.png)
 
 1. Author rules in DRL or decision-table form.
 2. Parse and validate rule source.
