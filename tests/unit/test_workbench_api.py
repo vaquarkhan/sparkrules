@@ -132,6 +132,8 @@ def test_workbench_static_index() -> None:
     assert b"btn-export-pack" in r.content
     assert b"view-overview" in r.content
     assert b"btn-theme" in r.content
+    assert b"sim-batch-max" in r.content
+    assert b"adv-dq-dashboard" in r.content
     logo = c.get("/workbench/sparkrules-logo.png")
     assert logo.status_code == 200
     assert "png" in logo.headers.get("content-type", "")
