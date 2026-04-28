@@ -1,0 +1,98 @@
+// Author: Vaquar Khan
+// Retail POS checkout orchestration (authorization + lane routing).
+// Multiple rules run in salience order; hard stops use stop_on_fire.
+
+rule deny_synthetic_risk
+  salience 110
+  agenda_group "risk"
+  stop_on_fire true
+  when $t : T ( $t.risk_score >= 94 )
+  then
+    result.lane_outcome = "DECLINE";
+    result.reason_code = "RF-SYNTH-HIGH";
+end
+
+rule deny_age_gate
+  salience 105
+  agenda_group "compliance"
+  stop_on_fire true
+  when $t : T (
+    ($t.age_gate_item == 1)
+    and ($t.id_verified == 0)
+  )
+  then
+    result.lane_outcome = "DECLINE";
+    result.reason_code = "AGE-ID-REQUIRED";
+end
+
+rule supervisor_cash_floor
+  salience 95
+  agenda_group "operations"
+  stop_on_fire true
+  when $t : T (
+    ($t.payment_kind == "CASH")
+    and ($t.basket_cents >= 100000)
+  )
+  then
+    result.lane_outcome = "SUPERVISOR_APPROVAL";
+    result.reason_code = "HIGH-CASH-VAULT";
+end
+
+rule approve_card_express
+  salience 60
+  agenda_group "routing"
+  when $t : T (
+    ($t.payment_kind == "CARD")
+    and ($t.basket_cents <= 60000)
+    and ($t.risk_score < 60)
+  )
+  then
+    result.lane_outcome = "APPROVE_CONTACTLESS";
+    result.reason_code = "LANE-EXPRESS-CARD";
+end
+
+rule approve_wallet_instant
+  salience 58
+  agenda_group "routing"
+  when $t : T (
+    ($t.payment_kind == "E_WALLET")
+    and ($t.risk_score < 85)
+  )
+  then
+    result.lane_outcome = "APPROVE_WALLET";
+    result.reason_code = "LANE-NFC-WALLET";
+end
+
+rule approve_cash_register
+  salience 50
+  agenda_group "routing"
+  when $t : T (
+    ($t.payment_kind == "CASH")
+    and ($t.basket_cents < 100000)
+  )
+  then
+    result.lane_outcome = "APPROVE_STANDARD_REGISTER";
+    result.reason_code = "LANE-CASH";
+end
+
+rule approve_value_desk
+  salience 46
+  agenda_group "routing"
+  when $t : T (
+    ($t.payment_kind == "CARD")
+    and ($t.basket_cents > 60000)
+    and ($t.risk_score < 80)
+  )
+  then
+    result.lane_outcome = "REFER_VALUE_DESK";
+    result.reason_code = "BIG-TICKET-REVIEW";
+end
+
+rule gift_card_escalation
+  salience 40
+  agenda_group "routing"
+  when $t : T ( $t.payment_kind == "GIFT_CARD" )
+  then
+    result.lane_outcome = "GIFT_CARD_OPS";
+    result.reason_code = "VOUCHER-HANDOFF";
+end

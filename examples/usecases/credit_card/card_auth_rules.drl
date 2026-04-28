@@ -1,0 +1,74 @@
+// Author: Vaquar Khan
+// Card authorization rails (merchant policy + ledger checks).
+
+rule decline_account_suspended
+  salience 120
+  agenda_group "risk"
+  stop_on_fire true
+  when $c : T ( $c.account_status == "SUSPENDED" )
+  then
+    result.decision = "DECLINE";
+    result.reason_code = "ACCOUNT-SUSPENDED";
+end
+
+rule decline_high_risk_mcc
+  salience 118
+  agenda_group "policy"
+  stop_on_fire true
+  when $c : T (
+    ($c.mcc_group == "HIGH_RISK")
+    or ($c.mcc_raw in [ "7995", "7922", "5960", "9399" ])
+  )
+  then
+    result.decision = "DECLINE";
+    result.reason_code = "POLICY-HIGH-RISK-MCC";
+end
+
+rule decline_over_available_credit
+  salience 116
+  agenda_group "ledger"
+  stop_on_fire true
+  when $c : T ( $c.txn_amount_cents > $c.available_credit_cents )
+  then
+    result.decision = "DECLINE";
+    result.reason_code = "AVAILABLE-CREDIT-EXCEEDED";
+end
+
+rule decline_crypto_cross_border
+  salience 115
+  agenda_group "risk"
+  stop_on_fire true
+  when $c : T (
+    ($c.crypto_merchant == 1)
+    and ($c.cross_border == 1)
+  )
+  then
+    result.decision = "DECLINE";
+    result.reason_code = "CRYPTO-CROSSBORDER-GUARD";
+end
+
+rule approve_travel_bonus
+  salience 60
+  agenda_group "approval"
+  when $c : T (
+    ($c.account_status == "ACTIVE")
+    and ($c.mcc_group == "TRAVEL")
+    and ($c.txn_amount_cents <= $c.available_credit_cents)
+  )
+  then
+    result.decision = "APPROVE";
+    result.reason_code = "TRAVEL-ACCEL-PATH";
+end
+
+rule approve_daily_spend_standard
+  salience 50
+  agenda_group "approval"
+  when $c : T (
+    ($c.account_status == "ACTIVE")
+    and ($c.txn_amount_cents <= $c.available_credit_cents)
+    and ($c.mcc_group != "TRAVEL")
+  )
+  then
+    result.decision = "APPROVE";
+    result.reason_code = "APPROVED-AUTH-STANDARD";
+end
