@@ -351,6 +351,28 @@
       padding: 0.25rem 0;
     }
     details.adv-panel .adv-body { padding-top: 0.5rem; }
+    .wb-subtle { color: var(--muted); font-size: 0.78rem; margin: 0.35rem 0; }
+    .wb-dash {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      margin: 0.5rem 0;
+      background: color-mix(in srgb, var(--panel) 92%, var(--accent) 8%);
+      font-size: 0.82rem;
+    }
+    .wb-dash .wb-metrics { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; margin-top: 0.45rem; }
+    .wb-dash .wb-m { font-family: ui-monospace, monospace; font-size: 0.78rem; }
+    .wb-table-wrap { overflow: auto; max-height: 200px; margin-top: 0.4rem; border-radius: 8px; border: 1px solid var(--border); }
+    .wb-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .wb-table-wrap th, .wb-table-wrap td { padding: 0.25rem 0.45rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .wb-table-wrap th { background: color-mix(in srgb, var(--border) 40%, transparent); position: sticky; top: 0; }
+    .wb-progress-wrap { margin: 0.45rem 0 0.25rem; display: none; }
+    .wb-progress-wrap.active { display: block; }
+    .wb-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .wb-progress-track { height: 8px; background: var(--border); border-radius: 6px; overflow: hidden; }
+    .wb-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--ok)); width: 0%; transition: width 0.2s ease; }
+    details.raw-json > summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); margin-top: 0.35rem; }
+    details.raw-json pre { margin-top: 0.35rem; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       nav {
@@ -511,15 +533,32 @@
           <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
-          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">Bulk load (CSV with header row, JSON array, or JSONL):</p>
+          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">Bulk load (CSV with header, JSON array, or JSONL). CSV supports quoted fields; nested lending-style facts can use wrap-as-<span class="mono">t</span>.</p>
           <div class="row" style="flex-wrap:wrap;align-items:center">
             <input type="file" id="fact-bulk-file" accept=".csv,.json,.jsonl,.txt,text/csv,application/json" />
             <label class="mono" style="font-size:0.8rem;color:var(--muted)">Row index</label>
             <input type="number" id="fact-bulk-idx" value="0" min="0" style="max-width:72px" />
             <button type="button" class="btn btn-sm" id="btn-bulk-to-fact">Load row into fact JSON</button>
-            <button type="button" class="btn btn-sm" id="btn-sim-batch">Run batch (first 25 rows)</button>
           </div>
-          <pre id="sim-batch-out" class="mono" style="max-height:160px;overflow:auto;display:none;font-size:0.78rem"></pre>
+          <div class="row" style="flex-wrap:wrap;align-items:center;margin-top:0.35rem">
+            <label class="mono" style="font-size:0.78rem;color:var(--muted)">Batch max rows</label>
+            <input type="number" id="sim-batch-max" value="100" min="1" max="5000" style="max-width:72px" title="Cap rows sent to POST /simulations" />
+            <label class="mono" style="font-size:0.78rem"><input type="checkbox" id="sim-batch-wrap-t" /> Wrap each row as <span class="mono">{"t":row}</span></label>
+            <button type="button" class="btn btn-sm" id="btn-sim-batch">Run batch</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="btn-sim-batch-stop" disabled>Stop</button>
+          </div>
+          <div id="sim-batch-progress-wrap" class="wb-progress-wrap" aria-live="polite">
+            <div class="wb-progress-meta">
+              <span id="sim-batch-progress-label">Idle</span>
+              <span id="sim-batch-progress-count"></span>
+            </div>
+            <div class="wb-progress-track"><div id="sim-batch-progress-fill" class="wb-progress-fill"></div></div>
+          </div>
+          <div id="sim-batch-summary" class="wb-dash" style="display:none"></div>
+          <details id="sim-batch-raw-wrap" class="raw-json" style="display:none">
+            <summary>Raw batch JSON</summary>
+            <pre id="sim-batch-out" class="mono" style="max-height:160px;overflow:auto;font-size:0.78rem"></pre>
+          </details>
           <div class="row">
             <button class="btn" type="button" id="btn-sim">Run simulation</button>
           </div>
@@ -529,8 +568,9 @@
       <section id="view-advanced" class="view hidden">
         <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled — graph response is JSON only.</p>
         <details class="adv-panel" open>
-          <summary>Natural language → rule suggestions</summary>
+          <summary>AI rule suggestions (stub — not a full NL pipeline)</summary>
           <div class="adv-body">
+            <p class="wb-subtle">This calls <span class="mono">POST /ai/suggest-rules</span> with optional <strong>sample facts</strong> only. The bundled provider is a <strong>stub</strong> (no real NL→DRL model). For your own prompts/audit trail you can add fields inside each fact object, e.g. <span class="mono">[{"intent":"Decline when DPD &gt; 90"}]</span>.</p>
             <div class="row">
               <input id="adv-suggest-ns" value="default" style="max-width:100px" />
               <input id="adv-suggest-handle" placeholder="rule_handle" value="candidate" style="max-width:160px" />
@@ -538,6 +578,7 @@
             </div>
             <p class="mono" style="font-size:0.75rem;color:var(--muted)">Sample facts JSON array (optional):</p>
             <textarea id="adv-suggest-facts" style="min-height:56px;width:100%">[]</textarea>
+            <div id="adv-suggest-cards" class="wb-dash" style="display:none;margin-top:0.5rem"></div>
             <pre id="adv-suggest-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
           </div>
         </details>
@@ -608,30 +649,34 @@
               <input id="adv-dq-runid" value="dq-ui" style="max-width:140px" />
               <button type="button" class="btn" id="btn-adv-dq">POST /dq/evaluate</button>
             </div>
-            <pre id="adv-dq-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
+            <div id="adv-dq-dashboard"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-dq-out" class="mono" style="max-height:180px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
           </div>
         </details>
         <details class="adv-panel">
-          <summary>Graph enrich (JSON)</summary>
+          <summary>Graph enrich (structured + JSON)</summary>
           <div class="adv-body">
+            <p class="wb-subtle">Not a graph designer — server returns enriched JSON. Summary below; raw under the fold.</p>
             <textarea id="adv-graph-fact" style="min-height:56px;width:100%">{"entity_id": "e1", "related": []}</textarea>
             <div class="row">
               <input id="adv-graph-entity" value="entity_id" style="max-width:140px" />
               <label class="mono" style="font-size:0.8rem"><input type="checkbox" id="adv-graph-pii" /> pii_reveal</label>
               <button type="button" class="btn" id="btn-adv-graph">POST /graph/enrich</button>
             </div>
-            <pre id="adv-graph-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
+            <div id="adv-graph-panel"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-graph-out" class="mono" style="max-height:180px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
           </div>
         </details>
         <details class="adv-panel">
-          <summary>Lineage events (run history)</summary>
+          <summary>Lineage events (run history table)</summary>
           <div class="adv-body">
-            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events — typically needs <span class="mono">platform_admin</span>.</p>
+            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events — typically needs <span class="mono">platform_admin</span>. Table is newest-first; open Raw for full payloads.</p>
             <div class="row">
               <input id="adv-lin-run" placeholder="filter run_id (optional)" style="max-width:220px" />
               <button type="button" class="btn" id="btn-adv-lin">Load events</button>
             </div>
-            <pre id="adv-lin-out" class="mono" style="max-height:280px;overflow:auto;margin-top:0.5rem"></pre>
+            <div id="adv-lin-table" class="wb-table-wrap" style="max-height:240px;margin-top:0.45rem"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-lin-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
           </div>
         </details>
       </section>
@@ -1061,6 +1106,27 @@
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
     window._bulkFacts = [];
+    window._simBatchAbort = false;
+    function parseCsvRow(line) {
+      var out = [];
+      var cur = "";
+      var inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line.charAt(i);
+        if (inQ) {
+          if (c === "\"") {
+            if (line.charAt(i + 1) === "\"") { cur += "\""; i++; }
+            else { inQ = false; }
+          } else { cur += c; }
+        } else {
+          if (c === "\"") { inQ = true; }
+          else if (c === ",") { out.push(cur); cur = ""; }
+          else { cur += c; }
+        }
+      }
+      out.push(cur);
+      return out.map(function (s) { return s.trim().replace(/^"|"$/g, ""); });
+    }
     function parseBulkFactsFromText(text) {
       text = (text || "").trim();
       if (!text) return [];
@@ -1089,10 +1155,11 @@
       }
       if (jsonlOk && jsonl.length) return jsonl;
       if (!lines.length) return [];
-      var hdr = lines[0].split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); });
+      var hdr = parseCsvRow(lines[0]);
       var rows = [];
       for (var r = 1; r < lines.length; r++) {
-        var cells = lines[r].split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); });
+        if (!lines[r]) continue;
+        var cells = parseCsvRow(lines[r]);
         var row = {};
         for (var c = 0; c < hdr.length; c++) {
           row[hdr[c]] = cells[c] != null ? cells[c] : "";
@@ -1100,6 +1167,82 @@
         rows.push(row);
       }
       return rows;
+    }
+    function factForSimBatch(row, wrapT) {
+      if (!wrapT) return row;
+      return { t: row };
+    }
+    function renderDqDashboard(j) {
+      var host = document.getElementById("adv-dq-dashboard");
+      if (!host) return;
+      var ok = !!j.ok;
+      var sev = (j.violations || []).reduce(function (acc, v) {
+        var s = (v.severity || "warn").toLowerCase();
+        acc[s] = (acc[s] || 0) + 1;
+        return acc;
+      }, {});
+      var badge = ok ? "<span class='badge badge-on'>PASS</span>" : "<span class='badge badge-off'>FAIL</span>";
+      var metrics = "<div class='wb-metrics'>";
+      metrics += "<span class='wb-m'>info: " + (j.info_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>warn: " + (j.warn_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>error: " + (j.error_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>critical: " + (j.critical_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>total violations: " + (j.total || 0) + "</span></div>";
+      var tbl = "";
+      if (j.violations && j.violations.length) {
+        tbl = "<div class='wb-table-wrap'><table><tr><th>Code</th><th>Field</th><th>Severity</th><th>Message</th></tr>";
+        j.violations.forEach(function (v) {
+          tbl += "<tr><td class='mono'>" + escapeHtml(v.code || "") + "</td><td class='mono'>" + escapeHtml(v.field || "") + "</td><td>" + escapeHtml(v.severity || "") + "</td><td>" + escapeHtml(v.message || "") + "</td></tr>";
+        });
+        tbl += "</table></div>";
+      } else {
+        tbl = "<p class='wb-subtle' style='margin-top:0.35rem'>No violations returned.</p>";
+      }
+      host.innerHTML = "<div class='wb-dash'><strong>DQ result</strong> " + badge + metrics + tbl + "</div>";
+    }
+    function renderGraphPanel(j) {
+      var host = document.getElementById("adv-graph-panel");
+      if (!host) return;
+      var snap = j.snapshot_id != null ? escapeHtml(String(j.snapshot_id)) : "—";
+      var fact = j.fact || {};
+      var keys = Object.keys(fact).slice(0, 12);
+      var khtml = keys.map(function (k) {
+        return "<tr><td class='mono'>" + escapeHtml(k) + "</td><td class='mono' style='max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' title='" + escapeHtml(JSON.stringify(fact[k])) + "'>" + escapeHtml(String(fact[k]).slice(0, 80)) + "</td></tr>";
+      }).join("");
+      host.innerHTML = "<div class='wb-dash'><strong>Graph enrich</strong> <span class='wb-m'>snapshot_id: " + snap + "</span>" +
+        (keys.length ? "<div class='wb-table-wrap' style='max-height:140px;margin-top:0.35rem'><table><tr><th>Field</th><th>Value (preview)</th></tr>" + khtml + "</table></div>" : "<p class='wb-subtle'>Empty fact object.</p>") + "</div>";
+    }
+    function renderLineageTable(rows) {
+      var host = document.getElementById("adv-lin-table");
+      if (!host) return;
+      if (!rows.length) {
+        host.innerHTML = "<p class='wb-subtle'>No events.</p>";
+        return;
+      }
+      var rev = rows.slice().reverse();
+      var h = "<table><tr><th>Event</th><th>run_id</th><th>Time</th></tr>";
+      rev.forEach(function (ev) {
+        var rid = escapeHtml(String(ev.run_id || ""));
+        var ts = escapeHtml(String(ev.ts || "").slice(0, 28));
+        h += "<tr><td class='mono'>" + escapeHtml(String(ev.event_type || "")) + "</td><td class='mono' style='font-size:0.72rem'>" + rid + "</td><td class='mono' style='font-size:0.72rem'>" + ts + "</td></tr>";
+      });
+      h += "</table>";
+      host.innerHTML = h;
+    }
+    function renderSuggestCards(rows) {
+      var host = document.getElementById("adv-suggest-cards");
+      if (!host) return;
+      if (!rows || !rows.length) {
+        host.style.display = "none";
+        host.innerHTML = "";
+        return;
+      }
+      var parts = rows.slice(0, 3).map(function (s, idx) {
+        var drl = (s.drl || "").slice(0, 200);
+        return "<div style='margin-top:" + (idx ? "0.5rem" : "0") + ";padding-top:" + (idx ? "0.5rem" : "0") + ";border-top:" + (idx ? "1px solid var(--border)" : "none") + "'><span class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id || "") + "</span> · <strong>" + escapeHtml(s.rule_handle || "") + "</strong><pre class='mono' style='font-size:0.72rem;max-height:72px;overflow:auto;margin:0.25rem 0 0'>" + escapeHtml(drl) + (s.drl && s.drl.length > 200 ? "…" : "") + "</pre></div>";
+      });
+      host.innerHTML = "<strong>Suggestions (preview)</strong>" + parts.join("");
+      host.style.display = "block";
     }
     function loadAdvAiTable() {
       return getJson("/ai/suggestions").then(function (rows) {
@@ -1383,29 +1526,77 @@
       document.getElementById("fact-json").value = JSON.stringify(rows[idx], null, 2);
       setMessage("Loaded bulk row " + idx + " into fact JSON.", "ok");
     });
+    document.getElementById("btn-sim-batch-stop").addEventListener("click", function () {
+      window._simBatchAbort = true;
+      setMessage("Stopping after current request…", "warn");
+    });
     document.getElementById("btn-sim-batch").addEventListener("click", function () {
       var drl = getSimDrl();
       var rows = window._bulkFacts || [];
       if (!rows.length) { setMessage("Load a bulk file first.", "err"); return; }
-      var n = Math.min(25, rows.length);
+      var maxEl = document.getElementById("sim-batch-max");
+      var cap = parseInt(maxEl && maxEl.value, 10) || 100;
+      if (cap < 1) cap = 1;
+      if (cap > 5000) cap = 5000;
+      var n = Math.min(cap, rows.length);
+      var wrapT = document.getElementById("sim-batch-wrap-t") && document.getElementById("sim-batch-wrap-t").checked;
       var outEl = document.getElementById("sim-batch-out");
-      outEl.style.display = "block";
-      outEl.textContent = "Running…";
+      var sumEl = document.getElementById("sim-batch-summary");
+      var rawWrap = document.getElementById("sim-batch-raw-wrap");
+      var progWrap = document.getElementById("sim-batch-progress-wrap");
+      var progFill = document.getElementById("sim-batch-progress-fill");
+      var progLab = document.getElementById("sim-batch-progress-label");
+      var progCnt = document.getElementById("sim-batch-progress-count");
+      var btnRun = document.getElementById("btn-sim-batch");
+      var btnStop = document.getElementById("btn-sim-batch-stop");
+      window._simBatchAbort = false;
+      btnRun.disabled = true;
+      btnStop.disabled = false;
+      progWrap.classList.add("active");
+      sumEl.style.display = "none";
+      rawWrap.style.display = "none";
+      outEl.textContent = "";
       var results = [];
-      (function step(i) {
-        if (i >= n) {
+      var okCount = 0;
+      var failCount = 0;
+      function updateProg(cur, total) {
+        var pct = total ? Math.min(100, Math.round(100 * cur / total)) : 100;
+        progFill.style.width = pct + "%";
+        progLab.textContent = cur < total ? ("Simulating row " + (cur + 1) + "…") : "Done";
+        progCnt.textContent = Math.min(cur + 1, total) + " / " + total;
+      }
+      function step(i) {
+        if (window._simBatchAbort || i >= n) {
+          progWrap.classList.remove("active");
+          btnRun.disabled = false;
+          btnStop.disabled = true;
+          progFill.style.width = "0%";
+          progLab.textContent = "Idle";
+          progCnt.textContent = "";
           outEl.textContent = JSON.stringify(results, null, 2);
-          setMessage("Batch simulation: " + n + " row(s).", "ok");
+          rawWrap.style.display = "block";
+          var st = window._simBatchAbort ? "stopped early" : "complete";
+          sumEl.style.display = "block";
+          sumEl.innerHTML = "<strong>Batch " + st + "</strong> · rows sent: " + results.length + " · <span style='color:var(--ok)'>ok " + okCount + "</span> · <span style='color:var(--err)'>fail " + failCount + "</span>";
+          setMessage("Batch simulation " + st + " (" + results.length + " row(s)).", okCount && !failCount ? "ok" : "warn");
           return;
         }
-        postJson("/simulations", { drl: drl, fact: rows[i] }).then(function (j) {
+        updateProg(i, n);
+        var fact = factForSimBatch(rows[i], wrapT);
+        postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
           results.push({ row: i, ok: true, result: j });
+          okCount++;
+          updateProg(i + 1, n);
           step(i + 1);
         }).catch(function (e) {
           results.push({ row: i, ok: false, error: e.message });
+          failCount++;
+          updateProg(i + 1, n);
           step(i + 1);
         });
-      })(0);
+      }
+      updateProg(0, n);
+      step(0);
     });
     document.getElementById("btn-adv-suggest").addEventListener("click", function () {
       var ns = (document.getElementById("adv-suggest-ns").value || "default").trim() || "default";
@@ -1415,6 +1606,7 @@
       if (!Array.isArray(facts)) { setMessage("Facts must be a JSON array.", "err"); return; }
       postJson("/ai/suggest-rules", { namespace: ns, rule_handle: h, facts: facts }).then(function (j) {
         document.getElementById("adv-suggest-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderSuggestCards === "function") renderSuggestCards(j);
         setMessage("Suggestions created.", "ok");
         if (typeof loadAdvAiTable === "function") loadAdvAiTable().catch(function () {});
       }).catch(function (e) { setMessage(e.message, "err"); });
@@ -1522,6 +1714,7 @@
       var run_id = (document.getElementById("adv-dq-runid").value || "").trim() || "dq-ui";
       postJson("/dq/evaluate", { fact: fact, checks: checks, run_id: run_id, persist: false }).then(function (j) {
         document.getElementById("adv-dq-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderDqDashboard === "function") renderDqDashboard(j);
         setMessage("DQ evaluate complete.", "ok");
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
@@ -1532,6 +1725,7 @@
       var pii = document.getElementById("adv-graph-pii") && document.getElementById("adv-graph-pii").checked;
       postJson("/graph/enrich", { fact: fact, entity_field: entity_field, pii_reveal: pii }).then(function (j) {
         document.getElementById("adv-graph-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderGraphPanel === "function") renderGraphPanel(j);
         setMessage("Graph enrich done.", "ok");
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
@@ -1540,6 +1734,7 @@
       var path = "/lineage/events" + (run ? ("?run_id=" + encodeURIComponent(run)) : "");
       getJson(path).then(function (rows) {
         document.getElementById("adv-lin-out").textContent = JSON.stringify(rows, null, 2);
+        if (typeof renderLineageTable === "function") renderLineageTable(rows);
         setMessage("Loaded " + rows.length + " lineage event(s).", "ok");
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
