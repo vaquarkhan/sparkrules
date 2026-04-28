@@ -19,6 +19,46 @@ class AiProvider(Protocol):
     def explain_rule(self, payload: dict[str, Any]) -> str: ...
 
 
+def _stub_explain_from_drl(payload: dict[str, Any]) -> str:
+    from sre.parser import parse
+    from sre.parser.ast import ParseError
+
+    if not isinstance(payload, dict):
+        return (
+            "Explain-rule expects a JSON object with a string \"drl\" field "
+            "(stub provider; no LLM is called)."
+        )
+    raw = payload.get("drl")
+    if raw is not None and not isinstance(raw, str):
+        return (
+            'Field "drl" must be a string of DRL source '
+            "(stub provider; no LLM is called)."
+        )
+    drl = str(raw or "").strip()
+    if not drl:
+        return (
+            "No DRL text was provided: send a non-empty \"drl\" string "
+            "(stub provider; no LLM is called)."
+        )
+    try:
+        r = parse(drl)
+    except ParseError as e:
+        return (
+            "DRL failed to parse, so the rule cannot be explained yet "
+            f"(stub provider). ParseError: {e}"
+        )
+    except Exception as e:  # noqa: BLE001
+        return (
+            "DRL triggered an unexpected error during parse/analysis "
+            f"(stub provider): {type(e).__name__}: {e}"
+        )
+    return (
+        f"Parsed rule `{r.name}` (stub provider — no LLM): salience {r.salience}, "
+        f"stop_on_fire={getattr(r, 'stop_on_fire', False)}. "
+        "When-clauses are evaluated against your fact JSON; then-actions populate result.*."
+    )
+
+
 def redact_payload(payload: dict[str, Any], pii_fields: set[str]) -> dict[str, Any]:
     def _mask(k: str, v: Any) -> Any:
         if k in pii_fields:
@@ -96,7 +136,7 @@ class StubAiProvider:
         return {"status": "ok", "drift_score": 0.0, "note": "stub analysis"}
 
     def explain_rule(self, payload: dict[str, Any]) -> str:
-        return "This rule matches when its predicates are true and emits configured result fields."
+        return _stub_explain_from_drl(payload)
 
 
 @dataclass
@@ -146,6 +186,28 @@ class AiService:
         if not s.simulator_result or not bool(s.simulator_result.get("ok")):
             raise ValueError("simulator evidence required before approval")
         upd = replace(s, status="APPROVED")
+        self.store.upsert(upd)
+        return upd
+
+    def record_simulation_evidence(
+        self,
+        sid: str,
+        *,
+        fired: bool,
+        action: dict[str, Any],
+        bound: dict[str, Any],
+    ) -> AiSuggestion:
+        s = self.store.get(sid)
+        if s.status != "PENDING":
+            raise ValueError("only PENDING suggestions accept simulation evidence")
+        sim: dict[str, Any] = {
+            "required": True,
+            "ok": True,
+            "fired": fired,
+            "action": action,
+            "bound": bound,
+        }
+        upd = replace(s, simulator_result=sim)
         self.store.upsert(upd)
         return upd
 

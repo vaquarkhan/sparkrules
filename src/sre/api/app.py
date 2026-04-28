@@ -9,6 +9,7 @@ import hashlib
 import uuid
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
 from sre.api.rulepack import build_export_payload, unified_diff_drl
@@ -51,6 +52,7 @@ from sre.api.schemas import (
     TimeTravelReplayResponse,
     AiSuggestRulesRequest,
     AiSuggestionResponse,
+    AiSuggestionSimulateRequest,
     AiMineDqRequest,
     AiAnalyzeDriftRequest,
     AiExplainRuleRequest,
@@ -80,7 +82,9 @@ from sre.dq.engine import checks_from_api, summarize_violations, to_violation_re
 from sre.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sre.model.rule_template import RuleTemplate
 from sre.ide import analyze_drl_for_lsp
+from sre.compiler import RuleEvaluationError
 from sre.parser import parse
+from sre.parser.ast import ParseError
 from sre.runtime import EngineConfig, guided_fields_from_template, runtime_conf
 from sre.runtime.lineage import InMemoryLineageSink, make_lineage_event
 from sre.runtime.graph import GraphEnricher, InMemoryGraphSource
@@ -188,9 +192,28 @@ def create_app(deps: AppDeps | None = None) -> Any:
     d = deps or AppDeps()
     app = FastAPI(title="sparkrules", version="0.1.0")
 
+    @app.exception_handler(RuleEvaluationError)
+    def _rule_eval_err(_request: Request, exc: RuleEvaluationError) -> JSONResponse:  # noqa: ARG001
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": exc.code, "message": str(exc)}},
+        )
+
     def _hash_request_payload(payload: object) -> str:
         raw = json.dumps(payload, sort_keys=True, default=str)
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    def _http_drl_parse_error(exc: Exception) -> HTTPException:
+        return HTTPException(
+            status_code=422,
+            detail={"code": "DRL_PARSE_ERROR", "message": str(exc)},
+        )
+
+    def _http_bad_request(message: str, *, code: str = "BAD_REQUEST") -> HTTPException:
+        return HTTPException(
+            status_code=400,
+            detail={"code": code, "message": message},
+        )
 
     def _audit(
         req: Request,
@@ -239,16 +262,26 @@ def create_app(deps: AppDeps | None = None) -> Any:
             )
         )
 
-    def _lineage_fail(run_id: str, *, exc: Exception) -> None:
+    def _lineage_fail(
+        run_id: str,
+        *,
+        exc: Exception,
+        inputs: dict[str, object] | None = None,
+        context: dict[str, object] | None = None,
+        principal: str | None = None,
+    ) -> None:
+        pl: dict[str, object] = {
+            "error_class": type(exc).__name__,
+            "error_message": str(exc),
+        }
+        if inputs is not None:
+            pl["inputs"] = inputs
+        if context is not None:
+            pl["context"] = context
+        if principal is not None:
+            pl["principal"] = principal
         d.lineage.emit(
-            make_lineage_event(
-                "FAIL",
-                run_id,
-                payload={
-                    "error_class": type(exc).__name__,
-                    "error_message": str(exc),
-                },
-            )
+            make_lineage_event("FAIL", run_id, payload=pl),
         )
 
     @app.get("/health", tags=["system"])
@@ -279,8 +312,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
         require_tenant_match(p, b.namespace)
         try:
             parse(b.drl)
-        except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
         t0 = datetime.now(UTC) - timedelta(days=1)
         r0 = Rule(
             rule_id=new_rule_id(),
@@ -322,16 +355,38 @@ def create_app(deps: AppDeps | None = None) -> Any:
             {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
         run_id = f"sim-{uuid.uuid4()}"
-        _lineage_start(
-            run_id,
-            inputs={"fact": dict(s.fact)},
-            context={"mode": "SIMULATION", "endpoint": "/simulations"},
-        )
+        sim_inputs: dict[str, object] = {"fact": dict(s.fact)}
+        sim_ctx = {"mode": "SIMULATION", "endpoint": "/simulations"}
+        _lineage_start(run_id, inputs=sim_inputs, context=sim_ctx)
         try:
             f = d.sim.run(s.drl, dict(s.fact))
-        except Exception as e:  # noqa: BLE001
-            _lineage_fail(run_id, exc=e)
+        except (ParseError, ValueError) as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=sim_inputs,
+                context=sim_ctx,
+                principal=p.principal,
+            )
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=sim_inputs,
+                context=sim_ctx,
+                principal=p.principal,
+            )
             raise
+        except Exception as e:  # noqa: BLE001
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=sim_inputs,
+                context=sim_ctx,
+                principal=p.principal,
+            )
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         _lineage_complete(
             run_id,
             outputs={"fired": bool(f.fired)},
@@ -352,16 +407,38 @@ def create_app(deps: AppDeps | None = None) -> Any:
             p,
             {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
-        _lineage_start(
-            s.run_id,
-            inputs={"fact": dict(s.fact)},
-            context={"mode": "SIMULATION_SHADOW", "endpoint": "/simulations/shadow"},
-        )
+        sh_inputs: dict[str, object] = {"fact": dict(s.fact)}
+        sh_ctx = {"mode": "SIMULATION_SHADOW", "endpoint": "/simulations/shadow"}
+        _lineage_start(s.run_id, inputs=sh_inputs, context=sh_ctx)
         try:
             out = d.sim.run_shadow(s.primary_drl, s.shadow_drl, dict(s.fact))
+        except (ParseError, ValueError) as e:
+            _lineage_fail(
+                s.run_id,
+                exc=e,
+                inputs=sh_inputs,
+                context=sh_ctx,
+                principal=p.principal,
+            )
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError as e:
+            _lineage_fail(
+                s.run_id,
+                exc=e,
+                inputs=sh_inputs,
+                context=sh_ctx,
+                principal=p.principal,
+            )
+            raise
         except Exception as e:  # noqa: BLE001
-            _lineage_fail(s.run_id, exc=e)
-            raise HTTPException(400, str(e)) from e
+            _lineage_fail(
+                s.run_id,
+                exc=e,
+                inputs=sh_inputs,
+                context=sh_ctx,
+                principal=p.principal,
+            )
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         _lineage_complete(
             s.run_id,
             outputs={"drifted": out.drifted, "drift_fields": list(out.drift_fields)},
@@ -389,8 +466,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
         try:
             out = d.sim.analyze_coverage(s.drl, list(s.facts))
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError:
+            raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         return CoverageSimulationResponse(
             total_facts=out.total_facts,
             total_rules=out.total_rules,
@@ -420,13 +501,60 @@ def create_app(deps: AppDeps | None = None) -> Any:
             p,
             {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
+        run_id = f"sim-cf-{uuid.uuid4()}"
+        cf_inputs: dict[str, object] = {
+            "baseline_fact": dict(s.baseline_fact),
+            "candidate_fact": dict(s.candidate_fact),
+        }
+        cf_ctx = {
+            "mode": "SIMULATION_COUNTERFACTUAL",
+            "endpoint": "/simulations/counterfactual",
+        }
+        _lineage_start(run_id, inputs=cf_inputs, context=cf_ctx)
         try:
             b = d.sim.run(s.drl, dict(s.baseline_fact))
             c = d.sim.run(s.drl, dict(s.candidate_fact))
+        except (ParseError, ValueError) as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=cf_inputs,
+                context=cf_ctx,
+                principal=p.principal,
+            )
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=cf_inputs,
+                context=cf_ctx,
+                principal=p.principal,
+            )
+            raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=cf_inputs,
+                context=cf_ctx,
+                principal=p.principal,
+            )
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         keys = set(b.action) | set(c.action)
         drift_fields = sorted(k for k in keys if b.action.get(k) != c.action.get(k))
+        _lineage_complete(
+            run_id,
+            outputs={
+                "baseline_fired": b.fired,
+                "candidate_fired": c.fired,
+                "drifted": bool(drift_fields),
+            },
+            metrics={
+                "facts_processed": 2,
+                "drift_field_count": len(drift_fields),
+            },
+        )
         return CounterfactualSimulationResponse(
             baseline_fired=b.fired,
             baseline_action=b.action,
@@ -452,8 +580,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
         try:
             r = d.sim.run(s.drl, dict(s.fact))
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError:
+            raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="TIME_TRAVEL_FAILED") from e
         sid = d.debug_runs.append(
             [
                 {
@@ -497,8 +629,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
         try:
             r = d.sim.run(str(row["drl"]), fact)
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError:
+            raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="TIME_TRAVEL_FAILED") from e
         return TimeTravelReplayResponse(
             run_id=s.run_id,
             snapshot_id=s.snapshot_id,
@@ -523,11 +659,9 @@ def create_app(deps: AppDeps | None = None) -> Any:
             {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
         )
         run_id = f"sim-chain-{uuid.uuid4()}"
-        _lineage_start(
-            run_id,
-            inputs={"fact": dict(s.fact)},
-            context={"mode": "SIMULATION_CHAIN", "endpoint": "/simulations/chain"},
-        )
+        ch_inputs: dict[str, object] = {"fact": dict(s.fact)}
+        ch_ctx = {"mode": "SIMULATION_CHAIN", "endpoint": "/simulations/chain"}
+        _lineage_start(run_id, inputs=ch_inputs, context=ch_ctx)
         sod = (
             s.stop_on_decline
             if s.stop_on_decline is not None
@@ -540,9 +674,33 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 stop_on_decline=sod,
                 agenda_group_modes=dict(s.agenda_group_modes),
             )
+        except (ParseError, ValueError) as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=ch_inputs,
+                context=ch_ctx,
+                principal=p.principal,
+            )
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError as e:
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=ch_inputs,
+                context=ch_ctx,
+                principal=p.principal,
+            )
+            raise
         except Exception as e:  # noqa: BLE001
-            _lineage_fail(run_id, exc=e)
-            raise HTTPException(400, str(e)) from e
+            _lineage_fail(
+                run_id,
+                exc=e,
+                inputs=ch_inputs,
+                context=ch_ctx,
+                principal=p.principal,
+            )
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         c = cr.chain
         fired_count = sum(1 for st in c.steps if st.fired)
         _lineage_complete(
@@ -649,6 +807,55 @@ def create_app(deps: AppDeps | None = None) -> Any:
             for s in rows
         ]
 
+    @app.post(
+        "/ai/suggestions/{sid}/simulate",
+        response_model=AiSuggestionResponse,
+        tags=["ai"],
+    )
+    def ai_suggestion_simulate(
+        req: Request,
+        sid: str,
+        b: AiSuggestionSimulateRequest,
+    ) -> AiSuggestionResponse:
+        p = principal_from_request(req)
+        require_any_role(p, {"ai_reviewer", "platform_admin"})
+        s = d.ai.store.get(sid)
+        require_tenant_match(p, s.namespace)
+        try:
+            sim_out = d.sim.run(s.drl, dict(b.fact))
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
+        except RuleEvaluationError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            raise _http_bad_request(str(e), code="AI_SIMULATION_FAILED") from e
+        upd = d.ai.record_simulation_evidence(
+            sid,
+            fired=sim_out.fired,
+            action=dict(sim_out.action),
+            bound=dict(sim_out.bound),
+        )
+        _audit(
+            req,
+            action="ai_suggestion_simulate",
+            resource=f"/ai/suggestions/{sid}/simulate",
+            tenant_id=upd.namespace,
+            status=200,
+            payload={"sid": sid, "fired": sim_out.fired},
+        )
+        return AiSuggestionResponse(
+            id=upd.id,
+            kind=upd.kind,
+            namespace=upd.namespace,
+            rule_handle=upd.rule_handle,
+            drl=upd.drl,
+            is_active=upd.is_active,
+            source=upd.source,
+            status=upd.status,
+            simulator_result=upd.simulator_result,
+            model_id=upd.model_id,
+        )
+
     @app.post("/ai/suggestions/{sid}/approve", response_model=AiSuggestionResponse, tags=["ai"])
     def ai_approve(req: Request, sid: str) -> AiSuggestionResponse:
         p = principal_from_request(req)
@@ -658,7 +865,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         try:
             upd = d.ai.approve(sid)
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="AI_APPROVE_FAILED") from e
         return AiSuggestionResponse(
             id=upd.id,
             kind=upd.kind,
@@ -813,6 +1020,36 @@ def create_app(deps: AppDeps | None = None) -> Any:
             out = [x for x in out if x.rule_group == group]
         return sorted(out, key=lambda x: (x.rule_handle, x.version))
 
+    @app.get(
+        "/rules/{rule_handle}/version/{version}",
+        response_model=RuleAssetResponse,
+        tags=["workbench", "rules"],
+    )
+    def get_rule_version(
+        req: Request,
+        rule_handle: str,
+        version: int,
+    ) -> RuleAssetResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {"rule_reader", "rule_author", "rule_admin", "run_operator", "dq_steward", "ai_reviewer"},
+        )
+        try:
+            r = d.store.get(rule_handle, version)
+        except UnknownRuleError as e:  # noqa: BLE001
+            raise HTTPException(404, str(e)) from e
+        require_tenant_match(p, r.namespace)
+        return RuleAssetResponse(
+            rule_handle=r.rule_handle,
+            version=r.version,
+            rule_group=r.rule_group,
+            namespace=r.namespace,
+            salience=r.salience,
+            is_active=r.is_active,
+            drl=r.rule_definition.source,
+        )
+
     @app.patch(
         "/rules/{rule_handle}/version/{version}",
         response_model=RuleVersionActiveResponse,
@@ -929,8 +1166,11 @@ def create_app(deps: AppDeps | None = None) -> Any:
             require_tenant_match(p, it.namespace)
             try:
                 parse(it.drl)
-            except Exception as e:  # noqa: BLE001
-                raise HTTPException(400, f"{it.rule_handle}: {e}") from e
+            except (ParseError, ValueError) as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail={"code": "DRL_PARSE_ERROR", "message": f"{it.rule_handle}: {e}"},
+                ) from e
         for it in b.items:
             t0 = datetime.now(UTC) - timedelta(days=1)
             r0 = Rule(
@@ -977,8 +1217,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
         try:
             parse(b.drl)
-        except Exception as e:  # noqa: BLE001
-            raise HTTPException(400, str(e)) from e
+        except (ParseError, ValueError) as e:
+            raise _http_drl_parse_error(e) from e
         return {"ok": True, "message": "parse ok"}
 
     @app.post(
@@ -1089,13 +1329,21 @@ def create_app(deps: AppDeps | None = None) -> Any:
             inputs={"fact": dict(req.fact)},
             context={"mode": "DQ", "endpoint": "/dq/evaluate"},
         )
+        dq_ctx = {"mode": "DQ", "endpoint": "/dq/evaluate"}
+        dq_in = {"fact": dict(req.fact)}
         try:
             checks = checks_from_api(
                 [x.model_dump() for x in req.checks]
             )
         except Exception as e:  # noqa: BLE001
-            _lineage_fail(req.run_id, exc=e)
-            raise HTTPException(400, str(e)) from e
+            _lineage_fail(
+                req.run_id,
+                exc=e,
+                inputs=dq_in,
+                context=dq_ctx,
+                principal=p.principal,
+            )
+            raise _http_bad_request(str(e), code="DQ_EVALUATION_FAILED") from e
         v = d.dq.evaluate(dict(req.fact), checks, rows=req.rows)
         s = summarize_violations(v)
         out = [
@@ -1221,7 +1469,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 d.store, d.promotion, b.namespace, b.rule_handle
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_SYNC_FAILED") from e
         _audit(
             req,
             action="governance_sync_dev",
@@ -1251,21 +1499,22 @@ def create_app(deps: AppDeps | None = None) -> Any:
             b.namespace, b.rule_handle, b.from_env
         )
         if v0 is None:
-            raise HTTPException(
-                400, "source pin is not set; sync dev first"
+            raise _http_bad_request(
+                "source pin is not set; sync dev first",
+                code="GOVERNANCE_PIN_MISSING",
             )
         try:
             validate_version_namespace(
                 d.store, b.namespace, b.rule_handle, v0
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_PROMOTE_FAILED") from e
         try:
             v1 = d.promotion.promote(
                 b.namespace, b.rule_handle, b.from_env, b.to_env
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_PROMOTE_FAILED") from e
         _audit(
             req,
             action="governance_promote",

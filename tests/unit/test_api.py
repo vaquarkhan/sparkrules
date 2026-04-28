@@ -62,14 +62,38 @@ end
     assert len(j["steps"]) == 1
 
 
-def test_simulation_chain_bad_drl_400() -> None:
+def test_simulation_chain_bad_drl_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post(
         "/simulations/chain",
         json={"drl": "not valid", "fact": {}},
     )
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DRL_PARSE_ERROR"
+
+
+def test_simulation_unbound_path_returns_structured_400() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/simulations",
+        json={
+            "drl": """
+rule r
+when
+$t : T ( $t.amount >= 100 )
+then
+result.ok = true;
+end
+""",
+            "fact": {"amount": 5000},
+        },
+    )
     assert r.status_code == 400
+    j = r.json()
+    assert j["error"]["code"] == "UNBOUND_OR_NULL"
+    assert "amount" in j["error"]["message"] or "t" in j["error"]["message"]
 
 
 def test_simulation_chain_agenda_group_mode() -> None:
@@ -171,7 +195,7 @@ end
     assert j["covered_rules"] == 2
 
 
-def test_simulation_coverage_bad_drl_400() -> None:
+def test_simulation_coverage_bad_drl_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post(
@@ -179,7 +203,7 @@ def test_simulation_coverage_bad_drl_400() -> None:
         json={"drl": "not drl", "facts": []},
         headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
     )
-    assert r.status_code == 400
+    assert r.status_code == 422
 
 
 def test_lsp_analyze_endpoint() -> None:
@@ -202,6 +226,17 @@ def test_lsp_analyze_endpoint() -> None:
     )
     assert bad.status_code == 200
     assert bad.json()["diagnostics"]
+    bad_tok = c.post(
+        "/ide/lsp/analyze",
+        json={
+            "drl": "rule a\nwhen\n$t : T ( $t.x == @ ) then end",
+            "prefix": "",
+        },
+        headers=h,
+    )
+    assert bad_tok.status_code == 200
+    d0 = bad_tok.json()["diagnostics"][0]
+    assert d0["line"] == 3 and d0["col"] >= 10
 
 
 def test_simulation_counterfactual() -> None:
@@ -222,7 +257,7 @@ def test_simulation_counterfactual() -> None:
     assert "decision" in j["drift_fields"]
 
 
-def test_simulation_counterfactual_bad_drl_400() -> None:
+def test_simulation_counterfactual_bad_drl_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post(
@@ -234,7 +269,7 @@ def test_simulation_counterfactual_bad_drl_400() -> None:
         },
         headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
     )
-    assert r.status_code == 400
+    assert r.status_code == 422
 
 
 def test_time_travel_capture_and_replay() -> None:
@@ -261,7 +296,7 @@ def test_time_travel_capture_and_replay() -> None:
     assert rep.json()["fired"] is True
 
 
-def test_time_travel_capture_bad_drl_400() -> None:
+def test_time_travel_capture_bad_drl_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     h = {"X-Roles": "run_operator", "X-Tenant-Id": "default"}
@@ -274,7 +309,7 @@ def test_time_travel_capture_bad_drl_400() -> None:
         },
         headers=h,
     )
-    assert cap.status_code == 400
+    assert cap.status_code == 422
 
 
 def test_time_travel_replay_error_paths() -> None:

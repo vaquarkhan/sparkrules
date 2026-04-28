@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
-
 from fastapi.testclient import TestClient
 
 from sre.api import AppDeps, create_app
@@ -27,17 +25,23 @@ def test_ai_approve_requires_simulator_evidence() -> None:
     deps = AppDeps()
     app = create_app(deps)
     c = TestClient(app)
+    h = {"X-Roles": "ai_reviewer", "X-Tenant-Id": "default"}
     r = c.post(
         "/ai/suggest-rules",
         json={"namespace": "default", "rule_handle": "hx", "facts": []},
-        headers={"X-Roles": "ai_reviewer", "X-Tenant-Id": "default"},
+        headers=h,
     )
     sid = r.json()[0]["id"]
-    a = c.post(f"/ai/suggestions/{sid}/approve", headers={"X-Roles": "ai_reviewer", "X-Tenant-Id": "default"})
+    a = c.post(f"/ai/suggestions/{sid}/approve", headers=h)
     assert a.status_code == 400
-    s = deps.ai.store.get(sid)
-    deps.ai.store.upsert(replace(s, simulator_result={"ok": True}))
-    a2 = c.post(f"/ai/suggestions/{sid}/approve", headers={"X-Roles": "ai_reviewer", "X-Tenant-Id": "default"})
+    sim = c.post(
+        f"/ai/suggestions/{sid}/simulate",
+        json={"fact": {"t": {}}},
+        headers=h,
+    )
+    assert sim.status_code == 200
+    assert sim.json()["simulator_result"]["ok"] is True
+    a2 = c.post(f"/ai/suggestions/{sid}/approve", headers=h)
     assert a2.status_code == 200
     assert a2.json()["status"] == "APPROVED"
     rj = c.post(f"/ai/suggestions/{sid}/reject", headers={"X-Roles": "ai_reviewer", "X-Tenant-Id": "default"})

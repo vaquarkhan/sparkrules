@@ -46,12 +46,20 @@ end
     a2 = c.get("/rules/assets")
     assert a2.json()[0]["is_active"] is False
 
+    g = c.get("/rules/h1/version/1")
+    assert g.status_code == 200
+    gj = g.json()
+    assert gj["rule_handle"] == "h1"
+    assert gj["version"] == 1
+    assert "T ( true )" in gj["drl"]
 
-def test_rules_validate_400() -> None:
+
+def test_rules_validate_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post("/rules/validate", json={"drl": "not drl at all {{"})
-    assert r.status_code == 400
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DRL_PARSE_ERROR"
 
 
 def test_deployment_status() -> None:
@@ -124,6 +132,8 @@ def test_workbench_static_index() -> None:
     assert b"btn-export-pack" in r.content
     assert b"view-overview" in r.content
     assert b"btn-theme" in r.content
+    assert b"sim-batch-max" in r.content
+    assert b"adv-dq-dashboard" in r.content
     logo = c.get("/workbench/sparkrules-logo.png")
     assert logo.status_code == 200
     assert "png" in logo.headers.get("content-type", "")

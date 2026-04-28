@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RuleCreateRequest(BaseModel):
@@ -127,11 +127,24 @@ class ChainStepResponse(BaseModel):
 
 
 class SimulationChainRequest(BaseModel):
-    """Multi-rule DRL (repeat `rule ... end` blocks). Phase 2k chain execution."""
+    """Multi-rule DRL (repeat ``rule ... end`` blocks). Phase 2k chain execution.
+
+    **Chain policy:** use ``stop_on_decline`` to stop when a rule does not fire (engine default if omitted).
+    **Per-rule short-circuit** after a fired rule is set in DRL with ``stop_on_fire true`` on that rule
+    (not a field on this request body).
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     drl: str
     fact: dict[str, Any] = {}
-    stop_on_decline: bool | None = None
+    stop_on_decline: bool | None = Field(
+        default=None,
+        description=(
+            "If true, stop the chain when a rule runs but does not fire. "
+            "If omitted, uses EngineConfig. For fail-fast after a firing rule, set stop_on_fire on the rule in DRL."
+        ),
+    )
     agenda_group_modes: dict[str, str] = {}
 
 
@@ -313,13 +326,23 @@ class AiSuggestionResponse(BaseModel):
     model_id: str
 
 
+class AiSuggestionSimulateRequest(BaseModel):
+    """Fact payload used to run ``POST /ai/suggestions/{sid}/simulate`` before approve."""
+
+    fact: dict[str, Any] = Field(default_factory=dict)
+
+
 class AiMineDqRequest(BaseModel):
+    """Payload for suggesting DQ checks; ``facts`` is a list of sample rows (not a single ``sample`` object)."""
+
     field: str
     namespace: str = "default"
     facts: list[dict[str, Any]] = []
 
 
 class AiAnalyzeDriftRequest(BaseModel):
+    """Drift analysis for a rule handle; ``handle`` is required (identifies the rule)."""
+
     namespace: str = "default"
     handle: str
     history: list[float] = []

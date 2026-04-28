@@ -330,15 +330,6 @@
       font-size: 0.84rem;
       margin: 0.35rem 0 0;
     }
-    .analysis-block {
-      margin-top: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.8rem 0.95rem;
-      background: var(--panel-solid);
-    }
-    .analysis-block p { margin: 0.2rem 0 0.45rem; }
-    .analysis-block .k { font-weight: 600; }
     .spark-callout {
       border-left: 3px solid var(--warn);
       padding: 0.6rem 0.75rem;
@@ -347,6 +338,41 @@
       font-size: 0.82rem;
       margin-top: 0.55rem;
     }
+    details.adv-panel {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.45rem 0.85rem 0.75rem;
+      background: var(--panel);
+    }
+    details.adv-panel summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0.25rem 0;
+    }
+    details.adv-panel .adv-body { padding-top: 0.5rem; }
+    .wb-subtle { color: var(--muted); font-size: 0.78rem; margin: 0.35rem 0; }
+    .wb-dash {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      margin: 0.5rem 0;
+      background: color-mix(in srgb, var(--panel) 92%, var(--accent) 8%);
+      font-size: 0.82rem;
+    }
+    .wb-dash .wb-metrics { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; margin-top: 0.45rem; }
+    .wb-dash .wb-m { font-family: ui-monospace, monospace; font-size: 0.78rem; }
+    .wb-table-wrap { overflow: auto; max-height: 200px; margin-top: 0.4rem; border-radius: 8px; border: 1px solid var(--border); }
+    .wb-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .wb-table-wrap th, .wb-table-wrap td { padding: 0.25rem 0.45rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .wb-table-wrap th { background: color-mix(in srgb, var(--border) 40%, transparent); position: sticky; top: 0; }
+    .wb-progress-wrap { margin: 0.45rem 0 0.25rem; display: none; }
+    .wb-progress-wrap.active { display: block; }
+    .wb-progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .wb-progress-track { height: 8px; background: var(--border); border-radius: 6px; overflow: hidden; }
+    .wb-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--ok)); width: 0%; transition: width 0.2s ease; }
+    details.raw-json > summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); margin-top: 0.35rem; }
+    details.raw-json pre { margin-top: 0.35rem; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       nav {
@@ -396,6 +422,8 @@
       <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark">Light</button>
       <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
+      <input type="text" id="hdr-roles" placeholder="X-Roles (optional)" style="max-width:200px" title="e.g. ai_reviewer, dq_steward, platform_admin" />
+      <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
         <span class="link-quiet" style="padding:0 0.2rem;pointer-events:none">·</span>
@@ -410,6 +438,7 @@
       <button type="button" data-view="assets">Rule assets</button>
       <button type="button" data-view="author">Author / validate</button>
       <button type="button" data-view="sim">Simulate</button>
+      <button type="button" data-view="advanced">Advanced tools</button>
       <p class="nav-label">Ship &amp; control</p>
       <button type="button" data-view="deploy">Deployment</button>
       <button type="button" data-view="template">Template helper</button>
@@ -448,7 +477,6 @@
           <div class="spark-callout" id="spark-callout">
             Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package — see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
           </div>
-          <div class="analysis-block" id="claims-summary"></div>
         </div>
       </section>
       <section id="view-assets" class="view hidden">
@@ -505,11 +533,152 @@
           <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
+          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">Bulk load (CSV with header, JSON array, or JSONL). CSV supports quoted fields; nested lending-style facts can use wrap-as-<span class="mono">t</span>.</p>
+          <div class="row" style="flex-wrap:wrap;align-items:center">
+            <input type="file" id="fact-bulk-file" accept=".csv,.json,.jsonl,.txt,text/csv,application/json" />
+            <label class="mono" style="font-size:0.8rem;color:var(--muted)">Row index</label>
+            <input type="number" id="fact-bulk-idx" value="0" min="0" style="max-width:72px" />
+            <button type="button" class="btn btn-sm" id="btn-bulk-to-fact">Load row into fact JSON</button>
+          </div>
+          <div class="row" style="flex-wrap:wrap;align-items:center;margin-top:0.35rem">
+            <label class="mono" style="font-size:0.78rem;color:var(--muted)">Batch max rows</label>
+            <input type="number" id="sim-batch-max" value="100" min="1" max="5000" style="max-width:72px" title="Cap rows sent to POST /simulations" />
+            <label class="mono" style="font-size:0.78rem"><input type="checkbox" id="sim-batch-wrap-t" /> Wrap each row as <span class="mono">{"t":row}</span></label>
+            <button type="button" class="btn btn-sm" id="btn-sim-batch">Run batch</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="btn-sim-batch-stop" disabled>Stop</button>
+          </div>
+          <div id="sim-batch-progress-wrap" class="wb-progress-wrap" aria-live="polite">
+            <div class="wb-progress-meta">
+              <span id="sim-batch-progress-label">Idle</span>
+              <span id="sim-batch-progress-count"></span>
+            </div>
+            <div class="wb-progress-track"><div id="sim-batch-progress-fill" class="wb-progress-fill"></div></div>
+          </div>
+          <div id="sim-batch-summary" class="wb-dash" style="display:none"></div>
+          <details id="sim-batch-raw-wrap" class="raw-json" style="display:none">
+            <summary>Raw batch JSON</summary>
+            <pre id="sim-batch-out" class="mono" style="max-height:160px;overflow:auto;font-size:0.78rem"></pre>
+          </details>
           <div class="row">
             <button class="btn" type="button" id="btn-sim">Run simulation</button>
           </div>
           <pre id="sim-out" class="panel mono"></pre>
         </div>
+      </section>
+      <section id="view-advanced" class="view hidden">
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled — graph response is JSON only.</p>
+        <details class="adv-panel" open>
+          <summary>AI rule suggestions (stub — not a full NL pipeline)</summary>
+          <div class="adv-body">
+            <p class="wb-subtle">This calls <span class="mono">POST /ai/suggest-rules</span> with optional <strong>sample facts</strong> only. The bundled provider is a <strong>stub</strong> (no real NL→DRL model). For your own prompts/audit trail you can add fields inside each fact object, e.g. <span class="mono">[{"intent":"Decline when DPD &gt; 90"}]</span>.</p>
+            <div class="row">
+              <input id="adv-suggest-ns" value="default" style="max-width:100px" />
+              <input id="adv-suggest-handle" placeholder="rule_handle" value="candidate" style="max-width:160px" />
+              <button type="button" class="btn" id="btn-adv-suggest">POST /ai/suggest-rules</button>
+            </div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Sample facts JSON array (optional):</p>
+            <textarea id="adv-suggest-facts" style="min-height:56px;width:100%">[]</textarea>
+            <div id="adv-suggest-cards" class="wb-dash" style="display:none;margin-top:0.5rem"></div>
+            <pre id="adv-suggest-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel" open>
+          <summary>AI suggestions queue</summary>
+          <div class="adv-body">
+            <div class="row">
+              <button type="button" class="btn" id="btn-adv-ai-refresh">Refresh list</button>
+            </div>
+            <div id="adv-ai-table" style="margin-top:0.5rem;font-size:0.85rem"></div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact for simulate (JSON object):</p>
+            <textarea id="adv-ai-sim-fact" style="min-height:52px;width:100%">{"t":{}}</textarea>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Chain / shadow / counterfactual</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">DRL (multi-rule for chain):</p>
+            <textarea id="adv-chain-drl" style="min-height:100px;width:100%">rule a when $t : T ( true ) then result.n = 1; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact JSON:</p>
+            <textarea id="adv-chain-fact" style="min-height:52px;width:100%">{"t":{}}</textarea>
+            <div class="row">
+              <label class="mono" style="font-size:0.75rem"><input type="checkbox" id="adv-chain-sod" /> stop_on_decline</label>
+              <button type="button" class="btn" id="btn-adv-chain">POST /simulations/chain</button>
+            </div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Shadow — primary DRL:</p>
+            <textarea id="adv-sh-primary" style="min-height:72px;width:100%">rule a when $t : T ( true ) then result.d = "p"; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Shadow DRL:</p>
+            <textarea id="adv-sh-shadow" style="min-height:72px;width:100%">rule b when $t : T ( true ) then result.d = "s"; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Fact + run_id:</p>
+            <input id="adv-sh-run" placeholder="run_id" value="shadow-ui" style="max-width:200px" />
+            <textarea id="adv-sh-fact" style="min-height:44px;width:100%;margin-top:0.35rem">{"t":{}}</textarea>
+            <button type="button" class="btn" id="btn-adv-shadow">POST /simulations/shadow</button>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Counterfactual — same DRL, two facts:</p>
+            <textarea id="adv-cf-drl" style="min-height:72px;width:100%">rule r when $t : T ( $t.x > 5 ) then result.v = 1; end</textarea>
+            <p class="mono" style="font-size:0.75rem">baseline_fact</p>
+            <textarea id="adv-cf-base" style="min-height:40px;width:100%">{"t":{"x":1}}</textarea>
+            <p class="mono" style="font-size:0.75rem">candidate_fact</p>
+            <textarea id="adv-cf-cand" style="min-height:40px;width:100%">{"t":{"x":9}}</textarea>
+            <button type="button" class="btn" id="btn-adv-cf">POST /simulations/counterfactual</button>
+            <pre id="adv-multi-out" class="mono" style="max-height:240px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Time travel (capture / replay)</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Capture — run_id, DRL, fact:</p>
+            <input id="adv-tt-run" placeholder="run_id" style="max-width:220px;margin-bottom:0.35rem" />
+            <textarea id="adv-tt-drl" style="min-height:80px;width:100%">rule r when $t : T ( true ) then result.ok = true; end</textarea>
+            <textarea id="adv-tt-fact" style="min-height:44px;width:100%">{"t":{"x":1}}</textarea>
+            <button type="button" class="btn" id="btn-adv-tt-cap">POST /debug/time-travel/capture</button>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Replay — snapshot_id from capture response, same run_id:</p>
+            <input id="adv-tt-snap" type="number" placeholder="snapshot_id" style="max-width:120px" />
+            <input id="adv-tt-replay-run" placeholder="run_id" style="max-width:220px" />
+            <textarea id="adv-tt-override" style="min-height:36px;width:100%;margin-top:0.35rem" placeholder='optional fact_override JSON (or leave {})'></textarea>
+            <button type="button" class="btn" id="btn-adv-tt-rep">POST /debug/time-travel/replay</button>
+            <pre id="adv-tt-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>DQ evaluate</summary>
+          <div class="adv-body">
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Requires role <span class="mono">dq_steward</span> (or admin). Fact JSON:</p>
+            <textarea id="adv-dq-fact" style="min-height:44px;width:100%">{"id": "row-1"}</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Checks JSON array:</p>
+            <textarea id="adv-dq-checks" style="min-height:100px;width:100%">[{"kind":"not_null","field":"id"}]</textarea>
+            <div class="row">
+              <input id="adv-dq-runid" value="dq-ui" style="max-width:140px" />
+              <button type="button" class="btn" id="btn-adv-dq">POST /dq/evaluate</button>
+            </div>
+            <div id="adv-dq-dashboard"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-dq-out" class="mono" style="max-height:180px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Graph enrich (structured + JSON)</summary>
+          <div class="adv-body">
+            <p class="wb-subtle">Not a graph designer — server returns enriched JSON. Summary below; raw under the fold.</p>
+            <textarea id="adv-graph-fact" style="min-height:56px;width:100%">{"entity_id": "e1", "related": []}</textarea>
+            <div class="row">
+              <input id="adv-graph-entity" value="entity_id" style="max-width:140px" />
+              <label class="mono" style="font-size:0.8rem"><input type="checkbox" id="adv-graph-pii" /> pii_reveal</label>
+              <button type="button" class="btn" id="btn-adv-graph">POST /graph/enrich</button>
+            </div>
+            <div id="adv-graph-panel"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-graph-out" class="mono" style="max-height:180px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>Lineage events (run history table)</summary>
+          <div class="adv-body">
+            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events — typically needs <span class="mono">platform_admin</span>. Table is newest-first; open Raw for full payloads.</p>
+            <div class="row">
+              <input id="adv-lin-run" placeholder="filter run_id (optional)" style="max-width:220px" />
+              <button type="button" class="btn" id="btn-adv-lin">Load events</button>
+            </div>
+            <div id="adv-lin-table" class="wb-table-wrap" style="max-height:240px;margin-top:0.45rem"></div>
+            <details class="raw-json"><summary>Raw JSON</summary><pre id="adv-lin-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.35rem;font-size:0.78rem"></pre></details>
+          </div>
+        </details>
       </section>
       <section id="view-deploy" class="view hidden">
         <div class="panel">
@@ -555,6 +724,32 @@
           </div>
           <div id="gov-pins" class="mono" style="margin-top:0.75rem"></div>
         </div>
+        <div class="panel">
+          <h2>Deprecations</h2>
+          <p style="color:var(--muted);font-size:0.9rem">Propose → approve → enforce deactivates matching rule versions. Requires <span class="mono">rule_admin</span> for mutations.</p>
+          <div class="row">
+            <input type="text" id="dep-ns" value="default" style="max-width:120px" />
+            <button type="button" class="btn" id="btn-dep-refresh">List deprecations</button>
+          </div>
+          <div id="dep-list" class="mono" style="margin-top:0.5rem;font-size:0.85rem"></div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Propose</p>
+          <div class="row">
+            <input type="text" id="dep-prop-handle" placeholder="rule_handle" style="max-width:180px" />
+            <input type="text" id="dep-prop-reason" placeholder="reason" style="flex:1;min-width:160px" />
+            <button type="button" class="btn" id="btn-dep-propose">Propose</button>
+          </div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">Approve</p>
+          <div class="row">
+            <input type="text" id="dep-app-handle" placeholder="rule_handle" style="max-width:180px" />
+            <button type="button" class="btn" id="btn-dep-approve">Approve</button>
+          </div>
+          <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">Enforce (optional handle filter)</p>
+          <div class="row">
+            <input type="text" id="dep-enf-handle" placeholder="rule_handle or empty for all approved" style="max-width:260px" />
+            <button type="button" class="btn" id="btn-dep-enforce">Enforce</button>
+          </div>
+          <pre id="dep-out" class="mono" style="max-height:200px;overflow:auto;margin-top:0.5rem"></pre>
+        </div>
       </section>
       <section id="view-template" class="view hidden">
         <div class="panel">
@@ -583,12 +778,6 @@
       { rule: "auth_ins_funds", fired: 922, pct: 18.4 },
       { rule: "uw_fico_prime", fired: 893, pct: 17.9 }
     ];
-    var claimRealityRows = [
-      { claim: "Drools-style rule engine", reality: "True — predicates, when/then, salience, activation groups, version store work as designed." },
-      { claim: "Apache Spark for evaluating many rules / huge fact volumes (default API path)", reality: "Not demonstrated here. PySpark may be installed, but default /simulations does not create SparkSession or use executors — single-process Python." },
-      { claim: "Scales to billions of rows in seconds", reality: "Not shown on this path; would need distributed DataFrame evaluation and measured cluster runs." },
-      { claim: "Rule evaluation over Iceberg snapshots", reality: "Iceberg-like in-memory model works; live Iceberg catalog + cluster evidence is deployment-specific." }
-    ];
     function setMessage(text, type) {
       const el = document.getElementById("message");
       el.textContent = text;
@@ -608,8 +797,11 @@
       document.querySelectorAll("nav button").forEach(function (b) {
         b.classList.toggle("active", b.getAttribute("data-view") === name);
       });
-      if (name === "governance" && typeof loadGovernancePins === "function") {
-        loadGovernancePins();
+      if (name === "governance") {
+        if (typeof loadGovernancePins === "function") loadGovernancePins();
+        if (typeof loadDeprecations === "function") {
+          loadDeprecations().catch(function () {});
+        }
       }
       if (name === "overview" && typeof loadDashboard === "function") {
         loadDashboard().catch(function (e) { setMessage(e.message, "err"); });
@@ -619,6 +811,9 @@
       }
       if ((name === "author" || name === "sim") && typeof window.layoutDrlMonaco === "function") {
         requestAnimationFrame(function () { window.layoutDrlMonaco(); });
+      }
+      if (name === "advanced" && typeof loadAdvAiTable === "function") {
+        loadAdvAiTable().catch(function () {});
       }
     }
     (function initTheme() {
@@ -659,11 +854,20 @@
       if (!v) return {};
       return { "X-API-Key": v };
     }
+    function roleHeaders() {
+      var o = {};
+      var r = document.getElementById("hdr-roles");
+      if (r && r.value.trim()) o["X-Roles"] = r.value.trim();
+      var t = document.getElementById("hdr-tenant");
+      if (t && t.value.trim()) o["X-Tenant-Id"] = t.value.trim();
+      return o;
+    }
     async function getJson(path, opts) {
       opts = opts || {};
       const h = Object.assign(
         { "Accept": "application/json" },
         apiKeyHeaders(),
+        roleHeaders(),
         opts.headers || {}
       );
       const r = await fetch(path, Object.assign({}, opts, { headers: h }));
@@ -675,7 +879,8 @@
         method: "POST",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
-          apiKeyHeaders()
+          apiKeyHeaders(),
+          roleHeaders()
         ),
         body: JSON.stringify(body),
       });
@@ -688,7 +893,8 @@
         method: "PATCH",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
-          apiKeyHeaders()
+          apiKeyHeaders(),
+          roleHeaders()
         ),
         body: JSON.stringify(body),
       });
@@ -899,6 +1105,188 @@
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
+    window._bulkFacts = [];
+    window._simBatchAbort = false;
+    function parseCsvRow(line) {
+      var out = [];
+      var cur = "";
+      var inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line.charAt(i);
+        if (inQ) {
+          if (c === "\"") {
+            if (line.charAt(i + 1) === "\"") { cur += "\""; i++; }
+            else { inQ = false; }
+          } else { cur += c; }
+        } else {
+          if (c === "\"") { inQ = true; }
+          else if (c === ",") { out.push(cur); cur = ""; }
+          else { cur += c; }
+        }
+      }
+      out.push(cur);
+      return out.map(function (s) { return s.trim().replace(/^"|"$/g, ""); });
+    }
+    function parseBulkFactsFromText(text) {
+      text = (text || "").trim();
+      if (!text) return [];
+      if (text.charAt(0) === "[") {
+        var arr = JSON.parse(text);
+        if (!Array.isArray(arr)) throw new Error("JSON root must be an array of objects");
+        arr.forEach(function (x, i) {
+          if (x == null || typeof x !== "object" || Array.isArray(x)) {
+            throw new Error("Row " + i + " must be a JSON object");
+          }
+        });
+        return arr;
+      }
+      var lines = text.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+      var jsonlOk = true;
+      var jsonl = [];
+      for (var li = 0; li < lines.length; li++) {
+        try {
+          var o = JSON.parse(lines[li]);
+          if (typeof o !== "object" || o === null || Array.isArray(o)) { jsonlOk = false; break; }
+          jsonl.push(o);
+        } catch (e) {
+          jsonlOk = false;
+          break;
+        }
+      }
+      if (jsonlOk && jsonl.length) return jsonl;
+      if (!lines.length) return [];
+      var hdr = parseCsvRow(lines[0]);
+      var rows = [];
+      for (var r = 1; r < lines.length; r++) {
+        if (!lines[r]) continue;
+        var cells = parseCsvRow(lines[r]);
+        var row = {};
+        for (var c = 0; c < hdr.length; c++) {
+          row[hdr[c]] = cells[c] != null ? cells[c] : "";
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+    function factForSimBatch(row, wrapT) {
+      if (!wrapT) return row;
+      return { t: row };
+    }
+    function renderDqDashboard(j) {
+      var host = document.getElementById("adv-dq-dashboard");
+      if (!host) return;
+      var ok = !!j.ok;
+      var sev = (j.violations || []).reduce(function (acc, v) {
+        var s = (v.severity || "warn").toLowerCase();
+        acc[s] = (acc[s] || 0) + 1;
+        return acc;
+      }, {});
+      var badge = ok ? "<span class='badge badge-on'>PASS</span>" : "<span class='badge badge-off'>FAIL</span>";
+      var metrics = "<div class='wb-metrics'>";
+      metrics += "<span class='wb-m'>info: " + (j.info_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>warn: " + (j.warn_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>error: " + (j.error_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>critical: " + (j.critical_count || 0) + "</span>";
+      metrics += "<span class='wb-m'>total violations: " + (j.total || 0) + "</span></div>";
+      var tbl = "";
+      if (j.violations && j.violations.length) {
+        tbl = "<div class='wb-table-wrap'><table><tr><th>Code</th><th>Field</th><th>Severity</th><th>Message</th></tr>";
+        j.violations.forEach(function (v) {
+          tbl += "<tr><td class='mono'>" + escapeHtml(v.code || "") + "</td><td class='mono'>" + escapeHtml(v.field || "") + "</td><td>" + escapeHtml(v.severity || "") + "</td><td>" + escapeHtml(v.message || "") + "</td></tr>";
+        });
+        tbl += "</table></div>";
+      } else {
+        tbl = "<p class='wb-subtle' style='margin-top:0.35rem'>No violations returned.</p>";
+      }
+      host.innerHTML = "<div class='wb-dash'><strong>DQ result</strong> " + badge + metrics + tbl + "</div>";
+    }
+    function renderGraphPanel(j) {
+      var host = document.getElementById("adv-graph-panel");
+      if (!host) return;
+      var snap = j.snapshot_id != null ? escapeHtml(String(j.snapshot_id)) : "—";
+      var fact = j.fact || {};
+      var keys = Object.keys(fact).slice(0, 12);
+      var khtml = keys.map(function (k) {
+        return "<tr><td class='mono'>" + escapeHtml(k) + "</td><td class='mono' style='max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' title='" + escapeHtml(JSON.stringify(fact[k])) + "'>" + escapeHtml(String(fact[k]).slice(0, 80)) + "</td></tr>";
+      }).join("");
+      host.innerHTML = "<div class='wb-dash'><strong>Graph enrich</strong> <span class='wb-m'>snapshot_id: " + snap + "</span>" +
+        (keys.length ? "<div class='wb-table-wrap' style='max-height:140px;margin-top:0.35rem'><table><tr><th>Field</th><th>Value (preview)</th></tr>" + khtml + "</table></div>" : "<p class='wb-subtle'>Empty fact object.</p>") + "</div>";
+    }
+    function renderLineageTable(rows) {
+      var host = document.getElementById("adv-lin-table");
+      if (!host) return;
+      if (!rows.length) {
+        host.innerHTML = "<p class='wb-subtle'>No events.</p>";
+        return;
+      }
+      var rev = rows.slice().reverse();
+      var h = "<table><tr><th>Event</th><th>run_id</th><th>Time</th></tr>";
+      rev.forEach(function (ev) {
+        var rid = escapeHtml(String(ev.run_id || ""));
+        var ts = escapeHtml(String(ev.ts || "").slice(0, 28));
+        h += "<tr><td class='mono'>" + escapeHtml(String(ev.event_type || "")) + "</td><td class='mono' style='font-size:0.72rem'>" + rid + "</td><td class='mono' style='font-size:0.72rem'>" + ts + "</td></tr>";
+      });
+      h += "</table>";
+      host.innerHTML = h;
+    }
+    function renderSuggestCards(rows) {
+      var host = document.getElementById("adv-suggest-cards");
+      if (!host) return;
+      if (!rows || !rows.length) {
+        host.style.display = "none";
+        host.innerHTML = "";
+        return;
+      }
+      var parts = rows.slice(0, 3).map(function (s, idx) {
+        var drl = (s.drl || "").slice(0, 200);
+        return "<div style='margin-top:" + (idx ? "0.5rem" : "0") + ";padding-top:" + (idx ? "0.5rem" : "0") + ";border-top:" + (idx ? "1px solid var(--border)" : "none") + "'><span class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id || "") + "</span> · <strong>" + escapeHtml(s.rule_handle || "") + "</strong><pre class='mono' style='font-size:0.72rem;max-height:72px;overflow:auto;margin:0.25rem 0 0'>" + escapeHtml(drl) + (s.drl && s.drl.length > 200 ? "…" : "") + "</pre></div>";
+      });
+      host.innerHTML = "<strong>Suggestions (preview)</strong>" + parts.join("");
+      host.style.display = "block";
+    }
+    function loadAdvAiTable() {
+      return getJson("/ai/suggestions").then(function (rows) {
+        var host = document.getElementById("adv-ai-table");
+        if (!host) return;
+        if (!rows.length) {
+          host.innerHTML = "<span style='color:var(--muted)'>No pending suggestions.</span>";
+          setMessage("No pending AI suggestions.", "");
+          return;
+        }
+        var h = "<table style='width:100%;border-collapse:collapse'><tr><th>ID</th><th>Handle</th><th>Status</th><th>Sim OK</th><th></th></tr>";
+        rows.forEach(function (s) {
+          var sim = s.simulator_result && s.simulator_result.ok;
+          var ds = JSON.stringify(s.id);
+          h += "<tr><td class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id) + "</td><td class='mono'>" + escapeHtml(s.rule_handle) + "</td><td>" + escapeHtml(s.status) + "</td><td>" + (sim ? "yes" : "no") + "</td><td style='white-space:nowrap'>";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-sim' data-sid=" + ds + ">Simulate</button> ";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-appr' data-sid=" + ds + ">Approve</button> ";
+          h += "<button type='button' class='btn btn-sm js-adv-ai-rej' data-sid=" + ds + ">Reject</button>";
+          h += "</td></tr>";
+        });
+        h += "</table>";
+        host.innerHTML = h;
+        setMessage("Loaded " + rows.length + " AI suggestion(s).", "ok");
+      });
+    }
+    function loadDeprecations() {
+      var ns0 = document.getElementById("dep-ns");
+      var ns = (ns0 && ns0.value.trim()) || "";
+      var q = ns ? ("?namespace=" + encodeURIComponent(ns)) : "";
+      return getJson("/governance/deprecations" + q).then(function (rows) {
+        var host = document.getElementById("dep-list");
+        if (!host) return;
+        if (!rows.length) {
+          host.innerHTML = "<span style='color:var(--muted)'>No deprecations.</span>";
+          return;
+        }
+        var h = "<table style='width:100%;border-collapse:collapse'><tr><th>Handle</th><th>Status</th><th>Reason</th></tr>";
+        rows.forEach(function (r) {
+          h += "<tr><td class='mono'>" + escapeHtml(r.rule_handle) + "</td><td>" + escapeHtml(r.status) + "</td><td>" + escapeHtml(r.reason || "") + "</td></tr>";
+        });
+        h += "</table>";
+        host.innerHTML = h;
+      });
+    }
     function renderFireSamples(totalRules) {
       var title = document.getElementById("fire-sample-title");
       if (title) title.textContent = "Sample rule-fire results (top 20 of " + totalRules + ")";
@@ -913,17 +1301,6 @@
       var sc = document.getElementById("spark-callout");
       if (sc) {
         sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None — no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
-      }
-      var cs = document.getElementById("claims-summary");
-      if (cs) {
-        var t = "<p class='k'>What this tells us about product claims</p>";
-        t += "<table><tr><th>Claim</th><th>Reality</th></tr>";
-        claimRealityRows.forEach(function (r) {
-          t += "<tr><td>" + escapeHtml(r.claim) + "</td><td>" + escapeHtml(r.reality) + "</td></tr>";
-        });
-        t += "</table>";
-        t += "<p><span class='k'>Honest summary:</span> the engine is a legitimate Python-first Drools-style core. “Spark” in the name is aspirational until you wire mapPartitions, broadcast CompiledRulePackage (see <span class='mono'>broadcaster.py</span>), and run on a real cluster — see <span class='mono'>docs/KNOWN_LIMITATIONS.md</span>.</p>";
-        cs.innerHTML = t;
       }
     }
     function renderAssetsTablePaged() {
@@ -964,7 +1341,11 @@
     async function downloadRulePack() {
       setMessage("Preparing download…", "");
       try {
-        const h = Object.assign({ "Accept": "application/json" }, apiKeyHeaders());
+        const h = Object.assign(
+          { "Accept": "application/json" },
+          apiKeyHeaders(),
+          roleHeaders()
+        );
         const r = await fetch("/rules/export", { method: "GET", headers: h });
         if (!r.ok) { throw new Error((await r.text()) || r.status); }
         const blob = await r.blob();
@@ -1118,6 +1499,280 @@
       postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
         document.getElementById("sim-out").textContent = JSON.stringify(j, null, 2);
         setMessage("Simulation complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("fact-bulk-file").addEventListener("change", function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          window._bulkFacts = parseBulkFactsFromText(String(rd.result || ""));
+          setMessage("Loaded " + window._bulkFacts.length + " row(s) from file.", "ok");
+        } catch (e) {
+          window._bulkFacts = [];
+          setMessage("Bulk parse failed: " + e.message, "err");
+        }
+      };
+      rd.onerror = function () { setMessage("Could not read file.", "err"); };
+      rd.readAsText(f, "UTF-8");
+      this.value = "";
+    });
+    document.getElementById("btn-bulk-to-fact").addEventListener("click", function () {
+      var rows = window._bulkFacts || [];
+      if (!rows.length) { setMessage("Load a CSV / JSON / JSONL file first.", "err"); return; }
+      var idx = parseInt(document.getElementById("fact-bulk-idx").value, 10) || 0;
+      if (idx < 0 || idx >= rows.length) { setMessage("Row index out of range (0–" + (rows.length - 1) + ").", "err"); return; }
+      document.getElementById("fact-json").value = JSON.stringify(rows[idx], null, 2);
+      setMessage("Loaded bulk row " + idx + " into fact JSON.", "ok");
+    });
+    document.getElementById("btn-sim-batch-stop").addEventListener("click", function () {
+      window._simBatchAbort = true;
+      setMessage("Stopping after current request…", "warn");
+    });
+    document.getElementById("btn-sim-batch").addEventListener("click", function () {
+      var drl = getSimDrl();
+      var rows = window._bulkFacts || [];
+      if (!rows.length) { setMessage("Load a bulk file first.", "err"); return; }
+      var maxEl = document.getElementById("sim-batch-max");
+      var cap = parseInt(maxEl && maxEl.value, 10) || 100;
+      if (cap < 1) cap = 1;
+      if (cap > 5000) cap = 5000;
+      var n = Math.min(cap, rows.length);
+      var wrapT = document.getElementById("sim-batch-wrap-t") && document.getElementById("sim-batch-wrap-t").checked;
+      var outEl = document.getElementById("sim-batch-out");
+      var sumEl = document.getElementById("sim-batch-summary");
+      var rawWrap = document.getElementById("sim-batch-raw-wrap");
+      var progWrap = document.getElementById("sim-batch-progress-wrap");
+      var progFill = document.getElementById("sim-batch-progress-fill");
+      var progLab = document.getElementById("sim-batch-progress-label");
+      var progCnt = document.getElementById("sim-batch-progress-count");
+      var btnRun = document.getElementById("btn-sim-batch");
+      var btnStop = document.getElementById("btn-sim-batch-stop");
+      window._simBatchAbort = false;
+      btnRun.disabled = true;
+      btnStop.disabled = false;
+      progWrap.classList.add("active");
+      sumEl.style.display = "none";
+      rawWrap.style.display = "none";
+      outEl.textContent = "";
+      var results = [];
+      var okCount = 0;
+      var failCount = 0;
+      function updateProg(cur, total) {
+        var pct = total ? Math.min(100, Math.round(100 * cur / total)) : 100;
+        progFill.style.width = pct + "%";
+        progLab.textContent = cur < total ? ("Simulating row " + (cur + 1) + "…") : "Done";
+        progCnt.textContent = Math.min(cur + 1, total) + " / " + total;
+      }
+      function step(i) {
+        if (window._simBatchAbort || i >= n) {
+          progWrap.classList.remove("active");
+          btnRun.disabled = false;
+          btnStop.disabled = true;
+          progFill.style.width = "0%";
+          progLab.textContent = "Idle";
+          progCnt.textContent = "";
+          outEl.textContent = JSON.stringify(results, null, 2);
+          rawWrap.style.display = "block";
+          var st = window._simBatchAbort ? "stopped early" : "complete";
+          sumEl.style.display = "block";
+          sumEl.innerHTML = "<strong>Batch " + st + "</strong> · rows sent: " + results.length + " · <span style='color:var(--ok)'>ok " + okCount + "</span> · <span style='color:var(--err)'>fail " + failCount + "</span>";
+          setMessage("Batch simulation " + st + " (" + results.length + " row(s)).", okCount && !failCount ? "ok" : "warn");
+          return;
+        }
+        updateProg(i, n);
+        var fact = factForSimBatch(rows[i], wrapT);
+        postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
+          results.push({ row: i, ok: true, result: j });
+          okCount++;
+          updateProg(i + 1, n);
+          step(i + 1);
+        }).catch(function (e) {
+          results.push({ row: i, ok: false, error: e.message });
+          failCount++;
+          updateProg(i + 1, n);
+          step(i + 1);
+        });
+      }
+      updateProg(0, n);
+      step(0);
+    });
+    document.getElementById("btn-adv-suggest").addEventListener("click", function () {
+      var ns = (document.getElementById("adv-suggest-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("adv-suggest-handle").value || "candidate").trim() || "candidate";
+      var facts;
+      try { facts = JSON.parse(document.getElementById("adv-suggest-facts").value || "[]"); } catch (e) { setMessage("Facts must be a JSON array: " + e, "err"); return; }
+      if (!Array.isArray(facts)) { setMessage("Facts must be a JSON array.", "err"); return; }
+      postJson("/ai/suggest-rules", { namespace: ns, rule_handle: h, facts: facts }).then(function (j) {
+        document.getElementById("adv-suggest-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderSuggestCards === "function") renderSuggestCards(j);
+        setMessage("Suggestions created.", "ok");
+        if (typeof loadAdvAiTable === "function") loadAdvAiTable().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-ai-refresh").addEventListener("click", function () {
+      loadAdvAiTable().catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("adv-ai-table").addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      var sid = t.getAttribute("data-sid");
+      if (!sid) return;
+      if (t.classList.contains("js-adv-ai-sim")) {
+        var fact;
+        try { fact = JSON.parse(document.getElementById("adv-ai-sim-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/simulate", { fact: fact }).then(function () {
+          setMessage("Simulated suggestion " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      } else if (t.classList.contains("js-adv-ai-appr")) {
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/approve", {}).then(function () {
+          setMessage("Approved " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      } else if (t.classList.contains("js-adv-ai-rej")) {
+        postJson("/ai/suggestions/" + encodeURIComponent(sid) + "/reject", {}).then(function () {
+          setMessage("Rejected " + sid + ".", "ok");
+          loadAdvAiTable().catch(function () {});
+        }).catch(function (e) { setMessage(e.message, "err"); });
+      }
+    });
+    document.getElementById("btn-adv-chain").addEventListener("click", function () {
+      var drl = document.getElementById("adv-chain-drl").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-chain-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var sodEl = document.getElementById("adv-chain-sod");
+      var body = { drl: drl, fact: fact, agenda_group_modes: {} };
+      if (sodEl && sodEl.checked) body.stop_on_decline = true;
+      postJson("/simulations/chain", body).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Chain simulation done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-shadow").addEventListener("click", function () {
+      var primary_drl = document.getElementById("adv-sh-primary").value || "";
+      var shadow_drl = document.getElementById("adv-sh-shadow").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-sh-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var run_id = (document.getElementById("adv-sh-run").value || "").trim() || "shadow-ui";
+      postJson("/simulations/shadow", {
+        primary_drl: primary_drl,
+        shadow_drl: shadow_drl,
+        fact: fact,
+        run_id: run_id,
+      }).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Shadow simulation done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-cf").addEventListener("click", function () {
+      var drl = document.getElementById("adv-cf-drl").value || "";
+      var baseline_fact;
+      var candidate_fact;
+      try { baseline_fact = JSON.parse(document.getElementById("adv-cf-base").value || "{}"); } catch (e) { setMessage("Invalid baseline_fact: " + e, "err"); return; }
+      try { candidate_fact = JSON.parse(document.getElementById("adv-cf-cand").value || "{}"); } catch (e) { setMessage("Invalid candidate_fact: " + e, "err"); return; }
+      postJson("/simulations/counterfactual", { drl: drl, baseline_fact: baseline_fact, candidate_fact: candidate_fact }).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Counterfactual done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-tt-cap").addEventListener("click", function () {
+      var run_id = (document.getElementById("adv-tt-run").value || "").trim();
+      if (!run_id) { setMessage("run_id required for capture.", "err"); return; }
+      var drl = document.getElementById("adv-tt-drl").value || "";
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-tt-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      postJson("/debug/time-travel/capture", { run_id: run_id, drl: drl, fact: fact }).then(function (j) {
+        document.getElementById("adv-tt-out").textContent = JSON.stringify(j, null, 2);
+        if (j.snapshot_id != null) document.getElementById("adv-tt-snap").value = String(j.snapshot_id);
+        if (j.run_id) document.getElementById("adv-tt-replay-run").value = j.run_id;
+        setMessage("Time-travel capture stored snapshot " + j.snapshot_id + ".", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-tt-rep").addEventListener("click", function () {
+      var snap = parseInt(document.getElementById("adv-tt-snap").value, 10);
+      if (isNaN(snap)) { setMessage("snapshot_id (number) required.", "err"); return; }
+      var run_id = (document.getElementById("adv-tt-replay-run").value || "").trim();
+      if (!run_id) { setMessage("run_id required for replay.", "err"); return; }
+      var body = { snapshot_id: snap, run_id: run_id };
+      var ovRaw = (document.getElementById("adv-tt-override").value || "").trim();
+      if (ovRaw && ovRaw !== "{}") {
+        try { body.fact_override = JSON.parse(ovRaw); } catch (e) { setMessage("Invalid fact_override JSON: " + e, "err"); return; }
+      }
+      postJson("/debug/time-travel/replay", body).then(function (j) {
+        document.getElementById("adv-tt-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Replay complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-dq").addEventListener("click", function () {
+      var fact;
+      var checks;
+      try { fact = JSON.parse(document.getElementById("adv-dq-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      try { checks = JSON.parse(document.getElementById("adv-dq-checks").value || "[]"); } catch (e) { setMessage("Invalid checks JSON: " + e, "err"); return; }
+      if (!Array.isArray(checks)) { setMessage("checks must be a JSON array.", "err"); return; }
+      var run_id = (document.getElementById("adv-dq-runid").value || "").trim() || "dq-ui";
+      postJson("/dq/evaluate", { fact: fact, checks: checks, run_id: run_id, persist: false }).then(function (j) {
+        document.getElementById("adv-dq-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderDqDashboard === "function") renderDqDashboard(j);
+        setMessage("DQ evaluate complete.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-graph").addEventListener("click", function () {
+      var fact;
+      try { fact = JSON.parse(document.getElementById("adv-graph-fact").value || "{}"); } catch (e) { setMessage("Invalid fact JSON: " + e, "err"); return; }
+      var entity_field = (document.getElementById("adv-graph-entity").value || "entity_id").trim() || "entity_id";
+      var pii = document.getElementById("adv-graph-pii") && document.getElementById("adv-graph-pii").checked;
+      postJson("/graph/enrich", { fact: fact, entity_field: entity_field, pii_reveal: pii }).then(function (j) {
+        document.getElementById("adv-graph-out").textContent = JSON.stringify(j, null, 2);
+        if (typeof renderGraphPanel === "function") renderGraphPanel(j);
+        setMessage("Graph enrich done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-lin").addEventListener("click", function () {
+      var run = (document.getElementById("adv-lin-run").value || "").trim();
+      var path = "/lineage/events" + (run ? ("?run_id=" + encodeURIComponent(run)) : "");
+      getJson(path).then(function (rows) {
+        document.getElementById("adv-lin-out").textContent = JSON.stringify(rows, null, 2);
+        if (typeof renderLineageTable === "function") renderLineageTable(rows);
+        setMessage("Loaded " + rows.length + " lineage event(s).", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-refresh").addEventListener("click", function () {
+      loadDeprecations().catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-propose").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-prop-handle").value || "").trim();
+      var reason = (document.getElementById("dep-prop-reason").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      if (!reason) { setMessage("reason required.", "err"); return; }
+      postJson("/governance/deprecations/propose", { namespace: ns, rule_handle: h, reason: reason }).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Deprecation proposed.", "ok");
+        loadDeprecations().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-approve").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-app-handle").value || "").trim();
+      if (!h) { setMessage("rule_handle required.", "err"); return; }
+      postJson("/governance/deprecations/approve", { namespace: ns, rule_handle: h }).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Deprecation approved.", "ok");
+        loadDeprecations().catch(function () {});
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-dep-enforce").addEventListener("click", function () {
+      var ns = (document.getElementById("dep-ns").value || "default").trim() || "default";
+      var h = (document.getElementById("dep-enf-handle").value || "").trim();
+      var body = { namespace: ns };
+      if (h) body.rule_handle = h;
+      postJson("/governance/deprecations/enforce", body).then(function (j) {
+        document.getElementById("dep-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Enforce complete: " + (j.deactivated_versions || 0) + " version(s) deactivated.", "ok");
+        loadDeprecations().catch(function () {});
+        if (typeof loadAssets === "function") loadAssets().catch(function () {});
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
     function loadDeployment() {
