@@ -32,7 +32,10 @@ def iter_rule_rows(
         if isinstance(row, dict):
             dct = row
         elif hasattr(row, "asDict") and callable(getattr(row, "asDict")):
-            dct = row.asDict()  # type: ignore[union-attr]
+            try:
+                dct = row.asDict(recursive=True)  # type: ignore[union-attr]
+            except TypeError:
+                dct = row.asDict()  # type: ignore[union-attr]; mocks without recursive=
         else:
             dct = dict(row)  # type: ignore[call-overload,arg-type]
         fact = {k: v for k, v in dct.items() if k != fact_id_field}
