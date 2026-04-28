@@ -1,0 +1,180 @@
+// Author: Vaquar Khan
+// Clinical trial lab harmonization + deduplication (demo).
+// Precompute canonical numerics in ETL (see staging.py / dbt staging); rules carry
+// policy (dedupe, QC) and promote fields onto result.*.
+
+rule dq_prot_incomplete
+  salience 110
+  agenda_group "dq"
+  when $f : T (
+    ($f.measure_code == "PROT")
+    and (
+      ($f.raw_value == null)
+      or ($f.raw_value == "")
+      or ($f.raw_value matches "^\\s*$")
+    )
+  )
+  then
+    result.qc_flag = "PROT_INCOMPLETE";
+    result.dedup_policy = "keep_for_qc";
+    result.policy = "needs_collection";
+    result.conversion_applied = "flag_missing";
+end
+
+rule dedup_repeat_draw
+  salience 100
+  agenda_group "dedup_repeat"
+  stop_on_fire true
+  when $f : T (
+    ($f.is_repeat_of_record != null)
+    and ($f.is_repeat_of_record != "")
+    and ($f.is_repeat_of_record matches "^R[0-9]+")
+  )
+  then
+    result.dedup_policy = "drop_repeat";
+    result.normalization_notes = $f.repeat_note;
+    result.conversion_applied = "dedup_repeat";
+end
+
+rule dedup_same_batch_dup
+  salience 96
+  agenda_group "dedup_batch"
+  stop_on_fire true
+  when $f : T (
+    ($f.dup_key != null)
+    and ($f.dup_key != "")
+    and ($f.dup_key matches "^DUP_")
+  )
+  then
+    result.dedup_policy = "drop_dup";
+    result.normalization_notes = $f.dup_note;
+    result.conversion_applied = "dedup_batch_dup";
+end
+
+rule harmonize_weight_lb_to_kg
+  salience 85
+  agenda_group "lab_wt"
+  when $f : T (
+    (($f.measure_code == "WT") or ($f.measure_code == "WEIGHT"))
+    and ($f.raw_unit matches "(?i)^lb$")
+    and ($f.wt_pref_kg != null)
+  )
+  then
+    result.normalized_value = $f.wt_pref_kg;
+    result.normalized_unit = "kg";
+    result.ucum_unit = "[lb_av]";
+    result.conversion_applied = "lb_to_kg";
+    result.conversion_factor = $f.conv_factor_lb_to_kg;
+end
+
+rule harmonize_glucose_mmol_to_mgdL
+  salience 80
+  agenda_group "lab_glucose"
+  when $f : T (
+    ($f.measure_code == "GLUCOSE")
+    and ($f.raw_unit matches "(?i)^mmol/L$")
+    and ($f.glucose_pref_mgdl != null)
+  )
+  then
+    result.normalized_value = $f.glucose_pref_mgdl;
+    result.normalized_unit = "mg/dL";
+    result.ucum_unit = "mg/dL";
+    result.conversion_applied = "mmolL_to_mgdL";
+    result.conversion_factor = $f.conv_factor_mmol_to_mgdl;
+end
+
+rule harmonize_hgb_gL_to_gdL
+  salience 75
+  agenda_group "lab_hgb"
+  when $f : T (
+    ($f.measure_code == "HGB")
+    and ($f.raw_unit matches "(?i)^g/L$")
+    and ($f.hgb_pref_gdl != null)
+  )
+  then
+    result.normalized_value = $f.hgb_pref_gdl;
+    result.normalized_unit = "g/dL";
+    result.ucum_unit = "g/dL";
+    result.conversion_applied = "gL_to_gdL";
+    result.conversion_factor = $f.conv_factor_gl_per_gdl;
+end
+
+rule harmonize_alt_uL_to_kuL
+  salience 70
+  agenda_group "lab_alt"
+  when $f : T (
+    ($f.measure_code == "ALT")
+    and ($f.raw_unit matches "(?i)^U/L$")
+    and ($f.alt_pref_kul != null)
+  )
+  then
+    result.normalized_value = $f.alt_pref_kul;
+    result.normalized_unit = "kU/L";
+    result.ucum_unit = "k[U]/L";
+    result.conversion_applied = "UL_to_kUL";
+    result.conversion_factor = $f.conv_factor_ul_to_kul;
+end
+
+rule pass_glucose_mgdl
+  salience 50
+  agenda_group "pass_glucose"
+  when $f : T (
+    ($f.measure_code == "GLUCOSE")
+    and ($f.raw_unit matches "(?i)^mg/dl$")
+    and ($f.numeric_value != null)
+  )
+  then
+    result.normalized_value = $f.numeric_value;
+    result.normalized_unit = "mg/dL";
+    result.ucum_unit = "mg/dL";
+    result.conversion_applied = "none";
+    result.conversion_factor = 1.0;
+end
+
+rule pass_hgb_gdl
+  salience 40
+  agenda_group "pass_hgb"
+  when $f : T (
+    ($f.measure_code == "HGB")
+    and ($f.raw_unit matches "(?i)^g/dl$")
+    and ($f.numeric_value != null)
+  )
+  then
+    result.normalized_value = $f.numeric_value;
+    result.normalized_unit = "g/dL";
+    result.ucum_unit = "g/dL";
+    result.conversion_applied = "none";
+    result.conversion_factor = 1.0;
+end
+
+rule pass_weight_kg
+  salience 35
+  agenda_group "pass_wt"
+  when $f : T (
+    (($f.measure_code == "WT") or ($f.measure_code == "WEIGHT"))
+    and ($f.raw_unit matches "(?i)^kg$")
+    and ($f.numeric_value != null)
+  )
+  then
+    result.normalized_value = $f.numeric_value;
+    result.normalized_unit = "kg";
+    result.ucum_unit = "kg";
+    result.conversion_applied = "none";
+    result.conversion_factor = 1.0;
+end
+
+rule pass_prot_measured
+  salience 25
+  agenda_group "prot_pass"
+  when $f : T (
+    ($f.measure_code == "PROT")
+    and ($f.numeric_value != null)
+    and ($f.raw_unit != null)
+    and ($f.raw_unit != "")
+  )
+  then
+    result.normalized_value = $f.numeric_value;
+    result.normalized_unit = $f.raw_unit;
+    result.conversion_applied = "none";
+    result.conversion_factor = 1.0;
+end

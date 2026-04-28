@@ -10,6 +10,7 @@ This document records **intentional honesty** about what is **not** production-c
 - If no `X-Roles` header and no JWT role claims, the principal now has **no roles** (`roles` is empty). Mutating routes (e.g. `POST /rules`, governance enforce) return **403** unless the caller supplies roles or a token with roles.  
 - **Local / CI backward compatibility:** set `SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true` to restore the old implicit `platform_admin` for header-less requests (the test suite sets this via `tests/conftest.py` unless you override it).  
 - Optional: `SPARKRULES_LOCAL_DEFAULT_ROLES=rule_reader,rule_author` for a fixed non-superuser role set when not using JWT.  
+- **Workbench (static UI):** browser calls now **default `X-Roles` to `rule_author`** whenever the Roles header field is left blank, so `GET /rules` and an empty rule store return `[]` instead of **`403`** from `forbidden: role`. Override the field (e.g. `ai_reviewer`, `platform_admin`) when a pane requires a different RBAC intersection.  
 - **Reason:** shipping with anonymous full superuser was unsafe when `SPARKRULES_AUTH_MODE` defaults to `local`.
 
 **OIDC / SAML / full federation**  
@@ -84,6 +85,27 @@ Example back-of-thevelope: if effective throughput were on the order of **~10² 
 **Tier 3.1 — full run history UI**  
 - There is **no** `GET /runs` (or equivalent) for listing **arbitrary** execution history for the Workbench. Internal tables (e.g. `run_history`, `debug_runs`, audit) back **specific** features, not a general-purpose “runs browser”.  
 - **Reason:** a full run catalog needs retention policy, query indexes, and UI design—**not** shipped as a first-class run explorer.
+
+---
+
+## Performance and scale (engineering backlog vs. Drools-grade engines)
+
+SparkRules favors **correctness and a portable DRL subset** over Drools parity on throughput. The points below describe **real tradeoffs**, not regressions—they are backlog items unless stated otherwise.
+
+| Topic | Severity | Reality today | Typical direction |
+|-------|----------|---------------|-------------------|
+| Interpreter-style eval (`_eval`) | Critical | Predicate evaluation walks the AST with `isinstance` checks per row—no bytecode compilation of predicates. | Compile hot paths to closures or bytecode; discriminator/caching layers. |
+| Spark `out_json` column | Critical | [`iter_rule_rows`](../src/sre/spark/dataframe.py) does `json.dumps({"action","bound"})`; **`bound`** repeats the effective fact footprint. Large facts × huge row counts multiply JSON CPU and bytes. | Typed structs / `MapType` columns; optional omit-`bound` mode; Catalyst-friendly schema. |
+| Rete / PHREAK / discrimination in production paths | High | [`DiscriminationNetwork`](../src/sre/compiler/discrimination.py) exists; [`run_rule_chain`](../src/sre/runtime/rule_chain.py) is a linear salience sweep with per-rule evaluation. Simulator does **not** route all traffic through alpha/beta nets. | Wire nets for hot rule sets or accept O(rules × rows) cost for moderate packs. |
+| Per-request parsing (HTTP / sim) | High | [`RuleSimulator.run_chain`](../src/sre/sim/simulator.py) calls `parse_rules(drl)` on each invocation. Spark path parses **once per partition** (OK). | LRU cache keyed by DRL hash; reuse `CompiledRulePackage` across calls. |
+| Broadcast = DRL text only | Medium | [`apply_drl`](../src/sre/spark/dataframe.py) broadcasts the **string**, not [`CompiledRulePackage`](../src/sre/compiler/compiler.py). Workers parse per partition startup (still far better than per row). | Broadcast serialized compiled pack + version id. |
+| PySpark IPC / Scala | Medium | Row-at-a-time Python UDF-style work inherits executor ↔ Python worker latency. Scala/JVM evaluator would trade portability. | Larger partitions, predicate simplification; optional JVM evaluator is product-scale work. |
+| Per-row allocations | Medium | `asDict(recursive=True)` + dict comprehension per row in `iter_rule_rows`. Adds Python allocation pressure at extreme scale. | Columnar ingest path; reuse buffers; codegen where applicable. |
+| Vectorized batches | Low | No NumPy/PyArrow SIMD evaluation lane; one logical row per evaluator call today. | Optional batch backends for homogeneous schemas. |
+| Fixed output schema (`out_json`) | Low | Consumers that need columns must JSON-parse—but keeps one generic API. | Alternate `apply_drl_*` overloads emitting typed columns only. |
+| Iceberg parity | Low | Snapshot-style helpers model contracts; **not** a bundled catalog client writing real Iceberg tables to S3/Azure. See **Per-tenant Iceberg** elsewhere in this doc. | Integrate connector in deploy code, not the core library alone. |
+
+**How to cite this:** For benchmarks, contrast **pure-Python throughput** (~single-process `evaluate_rule`), **Spark `apply_drl`** (~partition-local parse amortization), and **REST `/simulations`**, where parse+copy costs dominate small payloads.
 
 ---
 

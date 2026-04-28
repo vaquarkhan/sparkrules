@@ -24,10 +24,32 @@ def iter_rule_rows(
     fact_id_field: str = "id",
 ) -> Iterator[tuple[str, bool, str]]:
     """Map each Spark-like row to ``(fact_id, fired, out_json)`` (unit-testable, no Spark)."""
-    from sre.compiler import evaluate_rule
-    from sre.parser import parse
+    from sre.compiler import RuleMatch, evaluate_rule
+    from sre.parser import parse_rules
+    from sre.runtime.rule_chain import ChainExecutionPolicy, run_rule_chain
 
-    rast = parse(drl)
+    rules = parse_rules(drl)
+    if len(rules) == 0:
+        raise ValueError("DRL must contain at least one rule block")
+    if len(rules) == 1:
+        ast = rules[0]
+    else:
+
+        def _eval_with_chain(facts: dict[str, Any]) -> RuleMatch:
+            cr = run_rule_chain(
+                rules,
+                facts,
+                ChainExecutionPolicy(stop_on_decline=False),
+            )
+            fired = any(step.fired for step in cr.steps)
+            return RuleMatch(
+                "__chain__",
+                fired,
+                dict(cr.final_bound),
+                dict(cr.final_action),
+            )
+
+        ast = None
     for row in part:
         if isinstance(row, dict):
             dct = row
@@ -39,7 +61,10 @@ def iter_rule_rows(
         else:
             dct = dict(row)  # type: ignore[call-overload,arg-type]
         fact = {k: v for k, v in dct.items() if k != fact_id_field}
-        m2 = evaluate_rule(rast, fact)
+        if ast is None:
+            m2 = _eval_with_chain(fact)
+        else:
+            m2 = evaluate_rule(ast, fact)
         out = {"action": m2.action_output, "bound": m2.bound}
         yield str(dct.get(fact_id_field, "")), m2.fired, json.dumps(out)
 

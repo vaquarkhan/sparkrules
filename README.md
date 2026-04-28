@@ -1,5 +1,7 @@
 ﻿# sparkrules
 
+**Primary author / maintainer:** [Vaquar Khan](https://github.com/vaquarkhan) — see also [`AUTHORS`](AUTHORS).
+
 <p align="center">
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI downloads" src="https://img.shields.io/pypi/dm/sparkrules"></a>

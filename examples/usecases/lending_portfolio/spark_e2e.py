@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
-"""Drools-style DRL + PySpark: load lending CSV (or synthetic rows), nested fact `a`, apply_drl.
-
-Demonstrates:
-  - broadcast DRL + mapPartitions (through apply_drl)
-  - repartitioning for parallelism on larger data
-  - timing for throughput smoke (not a formal benchmark)
-
-Prerequisites: Java, pip install -e ".[test]"
-
-Examples:
-  python examples/spark/lending_e2e.py
-  python examples/spark/lending_e2e.py --synthetic 50000 --partitions 32
-"""
+# Author: Vaquar Khan
+"""Lending prime tier DRL + Spark (same behavior as legacy ``lending_e2e``)."""
 
 from __future__ import annotations
 
@@ -21,7 +10,7 @@ import time
 from pathlib import Path
 
 
-def _spark_dir() -> Path:
+def _here() -> Path:
     return Path(__file__).resolve().parent
 
 
@@ -30,30 +19,25 @@ def main() -> int:
         from pyspark.sql import SparkSession
         from pyspark.sql import functions as F
     except ImportError:
-        print("Install: pip install -e \".[test]\"", file=sys.stderr)
+        print('Install: pip install -e ".[test]"', file=sys.stderr)
         return 1
 
-    p = argparse.ArgumentParser(description="Lending DRL + Spark DataFrame E2E")
-    p.add_argument(
-        "--csv",
-        type=Path,
-        default=_spark_dir() / "data" / "lending_portfolio_sample.csv",
-        help="CSV: id,annual_income,fico_score,dti,state,product,delinq_90d_12m",
-    )
+    p = argparse.ArgumentParser(description="Lending DRL + Spark")
+    p.add_argument("--csv", type=Path, default=_here() / "data" / "sample.csv")
     p.add_argument(
         "--synthetic",
         type=int,
         default=0,
         metavar="N",
-        help="If >0, ignore CSV and generate N deterministic lending-like rows",
+        help="If >0, ignore CSV and generate N rows",
     )
-    p.add_argument("--partitions", type=int, default=8, help="Target RDD partitions after load")
+    p.add_argument("--partitions", type=int, default=8)
     args = p.parse_args()
 
     try:
         spark = (
             SparkSession.builder.master("local[*]")
-            .appName("sparkrules-lending-e2e")
+            .appName("sparkrules-lending-portfolio")
             .getOrCreate()
         )
     except Exception as e:  # noqa: BLE001
@@ -63,7 +47,8 @@ def main() -> int:
     try:
         from sre.spark import apply_drl
 
-        drl = (_spark_dir() / "drools_lending_premium.drl").read_text(encoding="utf-8")
+        sd = _here()
+        drl = (sd / "drools_lending_premium.drl").read_text(encoding="utf-8")
 
         if args.synthetic > 0:
             n = args.synthetic
@@ -78,7 +63,8 @@ def main() -> int:
             )
             prods = ["PERSONAL_LOAN", "AUTO_REFI", "CREDIT_CARD", "HOME_EQUITY"]
             pr = F.element_at(
-                F.array(*[F.lit(p) for p in prods]), (sid % F.lit(4)).cast("int") + 1
+                F.array(*[F.lit(p) for p in prods]),
+                (sid % F.lit(4)).cast("int") + 1,
             )
             base = spark.range(0, n).select(
                 F.concat(F.lit("s-"), F.col("id").cast("string")).alias("id"),
@@ -128,8 +114,9 @@ def main() -> int:
         fired = out.filter(F.col("fired") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
 
-        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt/elapsed:.0f}")
-        print("sample:")
+        print(
+            f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt/elapsed:.0f}"
+        )
         out.show(5, truncate=False)
     finally:
         spark.stop()

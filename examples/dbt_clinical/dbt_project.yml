@@ -1,0 +1,33 @@
+# Author: Vaquar Khan
+name: sparkrules_clinical_lab_demo
+version: '1.0.0'
+config-version: 2
+
+profile: sparkrules_clinical_lab_demo
+
+model-paths: ['models']
+seed-paths: ['seeds']
+
+seeds:
+  sparkrules_clinical_lab_demo:
+    clinical_labs_sample:
+      +column_types:
+        record_id: text
+        subject_id: text
+        visit_id: text
+        study_arm: text
+        measure_code: text
+        lab_name_raw: text
+        raw_value: text
+        raw_unit: text
+        ingest_batch: text
+        site_code: text
+        is_repeat_of_record: text
+        dup_key: text
+        dup_note: text
+        repeat_note: text
+
+models:
+  sparkrules_clinical_lab_demo:
+    staging:
+      +materialized: view

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Author: Vaquar Khan
 """End-to-end: PySpark local session + sre.spark.apply_drl on a small DataFrame.
 
 Prerequisites:

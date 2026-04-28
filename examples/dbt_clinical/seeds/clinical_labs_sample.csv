@@ -1,0 +1,12 @@
+record_id,subject_id,visit_id,study_arm,measure_code,lab_name_raw,raw_value,raw_unit,ingest_batch,site_code,is_repeat_of_record,dup_key,dup_note,repeat_note
+R001,SUB-1001,W01,PLACEBO,WT,Body Weight,70.0,kg,B2026-03-a,SITE-01,,,,
+R002,SUB-1001,W01,TREAT-A,WT,Weight,154.3,lb,B2026-03-a,SITE-01,,,,
+R003,SUB-1001,W01,TREAT-A,HGB,Hemoglobin,13.2,g/dl,B2026-03-a,SITE-01,,,,
+R004,SUB-1001,W01,TREAT-A,HGB,Hgb,132,g/L,B2026-03-b,SITE-01,R003,,,Primary HGB for retest is R003.
+R005,SUB-1002,V2,TREAT-A,GLUCOSE,Glucose Fasting,95,mg/dl,B2026-03-a,SITE-02,,,,
+R006,SUB-1002,V2,TREAT-A,GLUCOSE,Glucose,5.4,mmol/L,B2026-03-a,SITE-02,,,,
+R007,SUB-1003,W01,PLACEBO,ALT,,42,U/L,B2026-03-a,SITE-01,,,,
+R008,SUB-1003,W01,PLACEBO,ALT,SGPT (ALT),41,U/L,B2026-03-b,SITE-01,R007,,,Primary ALT for retest is R007.
+R009,SUB-1004,V1,TREAT-A,PROT,Prot/creatinine ratio,,,B2026-03-a,SITE-02,,,,
+R010,SUB-1004,V1,TREAT-A,PROT,Urine protein/creat,0.12,ratio,B2026-03-c,SITE-02,,,,
+R011,SUB-1001,W01,TREAT-A,WT,Weight dup,154.3,lb,B2026-03-a,SITE-01,,DUP_R002,Dropped deterministic duplicate row in same ingest batch as R002.,
