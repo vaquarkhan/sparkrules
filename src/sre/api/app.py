@@ -209,6 +209,12 @@ def create_app(deps: AppDeps | None = None) -> Any:
             detail={"code": "DRL_PARSE_ERROR", "message": str(exc)},
         )
 
+    def _http_bad_request(message: str, *, code: str = "BAD_REQUEST") -> HTTPException:
+        return HTTPException(
+            status_code=400,
+            detail={"code": code, "message": message},
+        )
+
     def _audit(
         req: Request,
         *,
@@ -380,7 +386,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 context=sim_ctx,
                 principal=p.principal,
             )
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         _lineage_complete(
             run_id,
             outputs={"fired": bool(f.fired)},
@@ -432,7 +438,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 context=sh_ctx,
                 principal=p.principal,
             )
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         _lineage_complete(
             s.run_id,
             outputs={"drifted": out.drifted, "drift_fields": list(out.drift_fields)},
@@ -465,7 +471,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except RuleEvaluationError:
             raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         return CoverageSimulationResponse(
             total_facts=out.total_facts,
             total_rules=out.total_rules,
@@ -534,7 +540,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 context=cf_ctx,
                 principal=p.principal,
             )
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         keys = set(b.action) | set(c.action)
         drift_fields = sorted(k for k in keys if b.action.get(k) != c.action.get(k))
         _lineage_complete(
@@ -579,7 +585,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except RuleEvaluationError:
             raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="TIME_TRAVEL_FAILED") from e
         sid = d.debug_runs.append(
             [
                 {
@@ -628,7 +634,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except RuleEvaluationError:
             raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="TIME_TRAVEL_FAILED") from e
         return TimeTravelReplayResponse(
             run_id=s.run_id,
             snapshot_id=s.snapshot_id,
@@ -694,7 +700,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 context=ch_ctx,
                 principal=p.principal,
             )
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="SIMULATION_FAILED") from e
         c = cr.chain
         fired_count = sum(1 for st in c.steps if st.fired)
         _lineage_complete(
@@ -822,7 +828,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         except RuleEvaluationError:
             raise
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="AI_SIMULATION_FAILED") from e
         upd = d.ai.record_simulation_evidence(
             sid,
             fired=sim_out.fired,
@@ -859,7 +865,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         try:
             upd = d.ai.approve(sid)
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="AI_APPROVE_FAILED") from e
         return AiSuggestionResponse(
             id=upd.id,
             kind=upd.kind,
@@ -1337,7 +1343,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 context=dq_ctx,
                 principal=p.principal,
             )
-            raise HTTPException(status_code=400, detail=str(e)) from e
+            raise _http_bad_request(str(e), code="DQ_EVALUATION_FAILED") from e
         v = d.dq.evaluate(dict(req.fact), checks, rows=req.rows)
         s = summarize_violations(v)
         out = [
@@ -1463,7 +1469,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 d.store, d.promotion, b.namespace, b.rule_handle
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_SYNC_FAILED") from e
         _audit(
             req,
             action="governance_sync_dev",
@@ -1493,21 +1499,22 @@ def create_app(deps: AppDeps | None = None) -> Any:
             b.namespace, b.rule_handle, b.from_env
         )
         if v0 is None:
-            raise HTTPException(
-                400, "source pin is not set; sync dev first"
+            raise _http_bad_request(
+                "source pin is not set; sync dev first",
+                code="GOVERNANCE_PIN_MISSING",
             )
         try:
             validate_version_namespace(
                 d.store, b.namespace, b.rule_handle, v0
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_PROMOTE_FAILED") from e
         try:
             v1 = d.promotion.promote(
                 b.namespace, b.rule_handle, b.from_env, b.to_env
             )
         except ValueError as e:
-            raise HTTPException(400, str(e)) from e
+            raise _http_bad_request(str(e), code="GOVERNANCE_PROMOTE_FAILED") from e
         _audit(
             req,
             action="governance_promote",

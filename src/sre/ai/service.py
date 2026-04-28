@@ -21,16 +21,39 @@ class AiProvider(Protocol):
 
 def _stub_explain_from_drl(payload: dict[str, Any]) -> str:
     from sre.parser import parse
+    from sre.parser.ast import ParseError
 
-    drl = str(payload.get("drl") or "").strip()
+    if not isinstance(payload, dict):
+        return (
+            "Explain-rule expects a JSON object with a string \"drl\" field "
+            "(stub provider; no LLM is called)."
+        )
+    raw = payload.get("drl")
+    if raw is not None and not isinstance(raw, str):
+        return (
+            'Field "drl" must be a string of DRL source '
+            "(stub provider; no LLM is called)."
+        )
+    drl = str(raw or "").strip()
     if not drl:
-        return "No DRL text was provided."
+        return (
+            "No DRL text was provided: send a non-empty \"drl\" string "
+            "(stub provider; no LLM is called)."
+        )
     try:
         r = parse(drl)
+    except ParseError as e:
+        return (
+            "DRL failed to parse, so the rule cannot be explained yet "
+            f"(stub provider). ParseError: {e}"
+        )
     except Exception as e:  # noqa: BLE001
-        return f"DRL is not valid for this engine: {e}"
+        return (
+            "DRL triggered an unexpected error during parse/analysis "
+            f"(stub provider): {type(e).__name__}: {e}"
+        )
     return (
-        f"Rule `{r.name}` (stub): salience {r.salience}, "
+        f"Parsed rule `{r.name}` (stub provider — no LLM): salience {r.salience}, "
         f"stop_on_fire={getattr(r, 'stop_on_fire', False)}. "
         "When-clauses are evaluated against your fact JSON; then-actions populate result.*."
     )
