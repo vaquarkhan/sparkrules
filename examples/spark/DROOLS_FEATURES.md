@@ -1,6 +1,8 @@
 # Drools-style features in the lending example
 
-The file [**drools_lending_premium.drl**](drools_lending_premium.drl) is written to look like **Drools** / DRL that practitioners recognize.
+**Author:** Vaquar Khan  
+
+The reference DRL [**`examples/usecases/lending_portfolio/drools_lending_premium.drl`**](../usecases/lending_portfolio/drools_lending_premium.drl) is written to look like **Drools** / DRL that practitioners recognize.
 
 | Feature | In this example | Notes |
 |---------|-----------------|--------|
@@ -21,4 +23,4 @@ The file [**drools_lending_premium.drl**](drools_lending_premium.drl) is written
 **Performance on huge data**
 
 - `apply_drl` = **broadcast** DRL + **`mapPartitions`** → parse **once per partition**, evaluate per row.
-- Scale out with **more partitions**, **larger clusters**, and Spark tuning (AQE, shuffle). The `--synthetic` and `--partitions` flags in [**lending_e2e.py**](lending_e2e.py) are a **smoke** for throughput; production jobs set resources in **Glue / Databricks / Dataproc** (see `EngineConfig` in `src/sre/runtime/config_contract.py` and [deploy/README.md](../../deploy/README.md)).
+- Scale out with **more partitions**, **larger clusters**, and Spark tuning (AQE, shuffle). Smoke runs: **`python examples/usecases/lending_portfolio/spark_e2e.py --synthetic 100000 --partitions 32`**; production jobs set resources in **Glue / Databricks / Dataproc** (see `EngineConfig` in `src/sre/runtime/config_contract.py` and [deploy/README.md](../../deploy/README.md)).

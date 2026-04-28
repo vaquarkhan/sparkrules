@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Author: Vaquar Khan
 """No JVM: the same DRL and facts through iter_rule_rows (used inside Spark mapPartitions).
 
 Use this in CI or on machines without Java to verify the rule + row mapping logic.

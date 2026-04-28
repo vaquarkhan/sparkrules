@@ -1,5 +1,7 @@
 # Examples
 
+**Author:** Vaquar Khan  
+
 Full requirements and glossary: [**docs/REQUIREMENTS.md**](../docs/REQUIREMENTS.md) · Docs index: [**docs/README.md**](../docs/README.md).
 
 All examples assume a working install of the package from the repo root:
@@ -17,11 +19,13 @@ On Windows, if `import sre` fails, use the **same** interpreter for `pip` and `p
 | [decision_table/first_match.json](decision_table/first_match.json) | `DecisionTable` as JSON (load with `sre.model.decision_table.dt_from_json`). |
 | [python/evaluate_drl_file.py](python/evaluate_drl_file.py) | Parse a `.drl` file and run `evaluate_rule` on sample facts. |
 | [python/api_inprocess.py](python/api_inprocess.py) | Build the FastAPI app and print OpenAPI path keys (in-process, no `uvicorn`). |
-| [spark/README.md](spark/README.md) | **PySpark E2E** — minimal + **lending portfolio** (`drools_lending_premium.drl`, `data/lending_portfolio_sample.csv`), **`validate_lending_csv.py`** (no Java), **`lending_e2e.py`** (scale with `--synthetic`). |
+| [usecases/README.md](usecases/README.md) | **SparkRules domain packs** — lending, clinical research, POS, credit card, loyalty: each has **DRL**, **CSV**, **`validate_csv.py`**, **`spark_e2e.py`**, **`EXAMPLE.md`**. |
+| [spark/README.md](spark/README.md) | **Thin PySpark harness** — `apply_drl_local`, `iter_rule_rows_no_jvm`, `DROOLS_FEATURES.md`. |
+| [dbt_clinical/README.md](dbt_clinical/README.md) | **dbt + DuckDB** staging mirror of `examples/usecases/clinical_research/staging.py` (same seed CSV; optional SQL-side QA). |
 
 ### PySpark (cluster-style rule runs)
 
-See **[spark/README.md](spark/README.md)** — start with **`python examples/spark/validate_lending_csv.py`** (no Spark). Then **`python examples/spark/lending_e2e.py`** with **Java** + `pip install -e ".[test]"`. See **DROOLS_FEATURES.md** in that folder for Drools-style metadata vs chain APIs.
+Open **[usecases/README.md](usecases/README.md)**, pick a domain, then **`python examples/usecases/<name>/validate_csv.py`** (no Java). For executors: **`python examples/usecases/<name>/spark_e2e.py`**. Generic smoke tests stay in **[spark/README.md](spark/README.md)**. Drools-style authoring notes: **[spark/DROOLS_FEATURES.md](spark/DROOLS_FEATURES.md)**.
 
 ### DRL: built-in tool
 

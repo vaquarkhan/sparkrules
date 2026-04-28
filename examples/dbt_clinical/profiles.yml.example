@@ -1,0 +1,10 @@
+# Author: Vaquar Khan
+# Copy this block under ~/.dbt/profiles.yml or use profiles.yml locally with:
+#   dbt ... --profiles-dir .
+sparkrules_clinical_lab_demo:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ./target/clinical_lab_demo.duckdb
+      schema: analytics
