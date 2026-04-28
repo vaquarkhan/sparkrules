@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from sre.parser import parse
@@ -19,6 +20,16 @@ class LspDiagnostic:
 class LspAnalysis:
     diagnostics: tuple[LspDiagnostic, ...]
     completions: tuple[str, ...]
+
+
+_MSG_AT_LOC = re.compile(r" at (\d+):(\d+)\s*$")
+
+
+def _line_col_from_message(msg: str) -> tuple[int, int]:
+    m = _MSG_AT_LOC.search(msg)
+    if m:
+        return max(1, int(m.group(1))), max(1, int(m.group(2)))
+    return 1, 1
 
 
 _COMMON_SNIPPETS: tuple[str, ...] = (
@@ -52,12 +63,14 @@ def analyze_drl_for_lsp(drl: str, *, prefix: str = "") -> LspAnalysis:
             )
         )
     except Exception as e:  # noqa: BLE001
+        msg = str(e)
+        ln, col = _line_col_from_message(msg)
         diags.append(
             LspDiagnostic(
                 severity="ERROR",
-                message=str(e),
-                line=1,
-                col=1,
+                message=msg,
+                line=ln,
+                col=col,
             )
         )
     pool = _completion_pool()

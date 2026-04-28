@@ -56,7 +56,7 @@ def test_rules_assets_filter_group() -> None:
     assert r.json()[0]["rule_handle"] == "b"
 
 
-def test_rules_import_validation_400() -> None:
+def test_rules_import_validation_422() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post(
@@ -71,7 +71,8 @@ def test_rules_import_validation_400() -> None:
             ],
         },
     )
-    assert r.status_code == 400
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DRL_PARSE_ERROR"
 
 
 def test_rules_diff_404() -> None:

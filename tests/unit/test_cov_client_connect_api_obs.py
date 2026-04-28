@@ -186,14 +186,15 @@ def test_metrics_app_has_route() -> None:
     assert "HELP" in r.text or len(r.text) > 0
 
 
-def test_post_rule_400_on_bad_drl() -> None:
+def test_post_rule_422_on_bad_drl() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
     r = c.post(
         "/rules",
         json={"rule_handle": "h", "group": "g", "drl": "not a rule at all {{"},
     )
-    assert r.status_code == 400
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DRL_PARSE_ERROR"
 
 
 def test_sre_init_module() -> None:
