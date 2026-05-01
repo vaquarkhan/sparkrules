@@ -18,7 +18,7 @@
 ## Execution and runtime
 
 - Single-fact and batch-style execution paths
-- Spark dataframe helper paths for partition processing — **optional**; default API path is pure Python ([SPARK_INTEGRATION.md](SPARK_INTEGRATION.md))
+- Spark dataframe helper paths for partition processing ï¿½ **optional**; default API path is pure Python ([SPARK_INTEGRATION.md](SPARK_INTEGRATION.md))
 - Replay metadata model for deterministic re-runs
 - Spark version targeting for Spark 3.x runtimes with normalization (`3`, `3.5`, `3.5.1`)
 - Config-only platform switching across Glue/Databricks/GCP Dataproc/Azure Synapse/local
@@ -38,11 +38,11 @@
 - Browser **Rules Workbench** at `/workbench/`: **Monaco** DRL editor, **validate** (parse) + **LSP** diagnostics, **Overview** (stats, charts), **light/dark theme** synced with editor, assets with filters, per-version **activate/deactivate** (see API), simulation, deployment readout, template helper, **Phase 3** pack + diff, **Phase 4** governance pane
 - Python package APIs for parser, compiler, executor, store, and runtime modules
 - Data quality API endpoint for check evaluation and summarized violation outputs
-- Optional **`SPARKRULES_API_KEY`**: also required for sensitive **GET**s on rules, deployment, and governance when set (public: `/health`, OpenAPI, `OPTIONS`, static `/workbench/…` shell)
-- **Docker** `Dockerfile` and `docker compose`; **CI** can push images to **GHCR** and publish **sdist/wheel** to **PyPI** (trusted publishing) — [PUBLISHING.md](PUBLISHING.md)
+- Optional **`SPARKRULES_API_KEY`**: also required for sensitive **GET**s on rules, deployment, and governance when set (public: `/health`, OpenAPI, `OPTIONS`, static `/workbench/ï¿½` shell)
+- **Docker** `Dockerfile` and `docker compose`; **CI** can push images to **GHCR** and publish **sdist/wheel** to **PyPI** (trusted publishing) ï¿½ [PUBLISHING.md](PUBLISHING.md)
 - **Deploy** documentation for AWS Glue, Databricks, GCP Dataproc, and Azure Synapse (config-driven)
 - **Phase 3:** rule pack, asset search, group/namespace filter, DRL version diff, API key (writes + sensitive reads)
-- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory), **deprecation** records and **enforce** to deactivate live versions — [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist: [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
+- **Phase 4:** rule **namespace**, dev/stage/prod **promotion pins** (in-memory), **deprecation** records and **enforce** to deactivate live versions ï¿½ [GOVERNANCE.md](GOVERNANCE.md); lakehouse benchmark checklist: [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks)
 - Release: [PUBLISHING.md](PUBLISHING.md) (local build, **PyPI on `v*` tags** or manual, **ghcr.io** images on branch/tag push)
 
 ## Metadata lifecycle
@@ -62,4 +62,4 @@
 
 - Full test suite with unit, property, and integration coverage
 - **100% line coverage** gate on `src/sparkrules` (`pytest tests/unit/ --cov=src/sre`, `fail_under=100` in `pyproject.toml`)
-- Honest **scope boundary** vs external enterprise blueprints: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
+- Architecture scope and extension points: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)

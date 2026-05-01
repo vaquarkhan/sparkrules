@@ -54,7 +54,7 @@ Use Spark when you need **distributed** execution over **large** row sets alread
 - The **FastAPI** process (`uvicorn`, Docker, etc.) is **separate** from a **batch Spark job**. You typically **do not** run the cluster inside the same process as `/simulations`.
 - You **can** use the API to **govern and store** rules, then your Spark job **loads** the DRL (or package) and calls `apply_drl` or the executor path you design.
 
-For **claim-level** honesty about default paths and throughput, see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#spark-and-distributed-execution) and [BENCHMARKS.md](BENCHMARKS.md).
+For architecture scope and execution paths, see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#execution-architecture) and [BENCHMARKS.md](BENCHMARKS.md).
 
 ---
 

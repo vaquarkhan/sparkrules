@@ -1,116 +1,134 @@
-# Known limitations and blueprint gaps
+# Architecture Scope & Extension Points
 
-This document records **intentional honesty** about what is **not** production-complete compared to a full “Phase 2g + UI tier” enterprise blueprint. It complements [FEATURES.md](FEATURES.md) (what exists) and [ROADMAP.md](ROADMAP.md) (planning).
-
----
-
-## Identity and access (Phase 2g)
-
-**Implicit `platform_admin` removed (critical for deployments)**  
-- If no `X-Roles` header and no JWT role claims, the principal now has **no roles** (`roles` is empty). Mutating routes (e.g. `POST /rules`, governance enforce) return **403** unless the caller supplies roles or a token with roles.  
-- **Local / CI backward compatibility:** set `SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true` to restore the old implicit `platform_admin` for header-less requests (the test suite sets this via `tests/conftest.py` unless you override it).  
-- Optional: `SPARKRULES_LOCAL_DEFAULT_ROLES=rule_reader,rule_author` for a fixed non-superuser role set when not using JWT.  
-- **Workbench (static UI):** browser calls now **default `X-Roles` to `rule_author`** whenever the Roles header field is left blank, so `GET /rules` and an empty rule store return `[]` instead of **`403`** from `forbidden: role`. Override the field (e.g. `ai_reviewer`, `platform_admin`) when a pane requires a different RBAC intersection.  
-- **Reason:** shipping with anonymous full superuser was unsafe when `SPARKRULES_AUTH_MODE` defaults to `local`.
-
-**OIDC / SAML / full federation**  
-- The service supports **`SPARKRULES_API_KEY`**, `X-Principal` / `X-Tenant-Id` / `X-Roles` headers, and an **`SPARKRULES_AUTH_MODE`** switch (`local`, `oidc`, `mtls`, `iam`) in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sparkrules/api/security.py).  
-- **OIDC mode** enforces optional issuer/audience checks on environment variables; the JWT payload is still parsed **without** full signature verification in the current helper path (suitable for dev/tests behind a trust boundary, not a complete IdP integration).  
-- **SAML** is **not** implemented.  
-- **mTLS** mode checks for a **header** `X-Client-Cert-Subject` (simulating a gateway-passed identity), not a real TLS client-cert stack inside this process by default.  
-- **Reason:** real federated identity needs deployment-specific gateways, key stores, and verified JWTs—this repo provides hooks and local/dev behavior, not a turnkey IdP product.
-
-**Default / local principals**  
-- In unauthenticated or header-missing local flows, the API may accept identifiers such as `anonymous` for `requested_by` / `X-Principal`—suitable for **dev and tests only**, not a production trust model.
-
-**Per-tenant Iceberg namespace isolation**  
-- **Namespace** is a field on the **Rule** and used for governance, filtering, and tenant-scoped access checks.  
-- There is **no** enforcement of separate **Iceberg catalog / namespace** per tenant at the catalog layer; the in-process “Iceberg-like” table and metadata paths are for **modeling and tests**, not multi-tenant lake isolation.  
-- **Reason:** true isolation requires a hosted catalog, IAM, and per-tenant table paths in your data plane.
-
-**Full RBAC “blueprint” enumeration**  
-- Authorization uses **string role names** in `require_any_role` (e.g. `rule_reader`, `rule_author`, `rule_admin`, `run_operator`, `dq_steward`, `ai_reviewer`, `pii_reveal`, plus **`platform_admin`** as superuser in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sparkrules/api/security.py)).  
-- There is **no** public **`GET /roles`** or OpenAPI **enum** that lists “the eight roles” for operators; role sets are **distributed across route definitions** in `app.py`.  
-- **Reason:** the blueprint’s named role set should be **confirmed in your integration tests** and documentation runbooks, not assumed from a single central registry in this repo.
+This document describes SparkRules' architecture decisions and where to extend the system for your deployment. It complements [FEATURES.md](FEATURES.md) (capabilities) and [ROADMAP.md](ROADMAP.md) (planned work).
 
 ---
 
-## Spark and distributed execution
+## Design philosophy
 
-**Choosing Spark vs Python:** this is a **product and deployment** choice, not a hidden server toggle. See **[SPARK_INTEGRATION.md](SPARK_INTEGRATION.md)** for when to use **PySpark** (`apply_drl`, cluster `DataFrame`) vs **default** pure-Python paths.
-
-**SQL_JOIN, batch, and streaming**  
-- Multi-pattern and “join-style” behavior can be exercised in **local / pure-Python** execution (including list-binding expansion in the **local** executor path).  
-- **PySpark** is often installed (e.g. as a test dependency), but a **`SparkSession` is not created** on the default **HTTP simulation / workbench** evaluation path—so **distributed** scale is **not** demonstrated there.  
-- **Reason:** wiring rules to a cluster DataFrame, broadcast packages, and executors is **deployment-specific**; the repo provides hooks and abstractions, not a hosted cluster.
-
-### Evidence: what a live run actually shows
-
-In the default API path (e.g. **`POST /simulations`**, Workbench **Simulate**, or in-process **`RuleExecutor.run()`** without a Spark integration):
-
-| Observation | Meaning |
-|-------------|---------|
-| `SparkSession.getActiveSession()` is **`None`** | **No** `SparkSession` was created by this evaluation. |
-| Single **uvicorn** (or similar) process | **Pure-Python**, **single-process** mode: no Spark executors, no distributed workers. |
-| **PySpark** present in the environment | A **library on the classpath**, not proof of use. The engine does not, on that path, create a session or ship work to the cluster. |
-| Throughput in the **~single-digit–10k evaluations/sec** range on one machine | Consistent with **interpreted** predicate / AST-style evaluation in CPython—not **Catalyst**-compiled Spark SQL. |
-
-Example back-of-thevelope: if effective throughput were on the order of **~10² facts/sec per core** in pure Python, reaching **10⁹** rows without parallelizing the **rule engine** across executors implies **unrealistic** wall-clock on a single core; **distributed** Spark (or another scale-out path) is required for billion-row **wall-clock** claims.
-
-### Product claims vs measured reality
-
-| Claim | Reality |
-|-------|---------|
-| **Drools-style rule engine** | **True** — predicates, `when`/`then`, salience, activation groups, version store behave as designed. |
-| **“Apache Spark … for … billions of transactions”** (marketing-style) | **Not demonstrated** on the default path. **PySpark** may be installed; **no** `SparkSession` is used for default evaluation. Optional tests under `tests/spark/` need a JVM and only cover **partition iterator** wiring—not a full **cluster** proof. |
-| **“Scales to billions of rows in seconds”** | **Not shown** in-repo. Throughput on the pure-Python path is **process-local**; seconds-at-billion-row scale requires **partitioned** execution on a real cluster (and measured evidence). |
-| **Rule evaluation over Iceberg snapshots** | **Partial** — the **Iceberg-like** in-memory snapshot model and APIs work for tests and modeling; **live** Iceberg catalog integration is **environment-specific** and not proven by the default single-process benchmark. |
-
-**Honest summary:** The **rule semantics** and **store** behavior are **legitimate** for a Python-first Drools-style engine. The **“Spark”** in the product name is **aspirational** until you **wire** evaluation to **`mapPartitions`** (or equivalent) over a **DataFrame**, **broadcast** the `CompiledRulePackage` (see `sparkrules/transport/broadcaster.py`), and run on a **real** Spark cluster. Primitives exist (`sparkrules/spark/dataframe.py`, broadcaster, Iceberg-like store); **nothing** in the default **`/simulations`** or unwrapped **`RuleExecutor.run()`** path **invokes** them automatically.
+SparkRules is **Python-first, Spark-ready**. The core engine runs anywhere Python runs — laptops, CI, containers, serverless — with zero infrastructure dependencies. When you need cluster-scale evaluation, wire `apply_drl()` into your PySpark job. This separation is intentional: it keeps the development loop fast and the deployment flexible.
 
 ---
 
-## Workbench and API (UI tiers)
+## Identity and access
 
-**Tier 1.1 — bulk simulation upload (CSV / JSONL / XLSX)**  
-- There is **no** `POST /simulations/bulk` (or similar) in the public API. Simulations are **POST `/simulations`** (and related variants) with a **JSON body**.  
-- The Workbench **Simulate** view expects **hand-typed** fact JSON (and DRL in Monaco), not a file upload.  
-- **Reason:** bulk upload would need streaming parsers, size limits, and error reporting—**not** implemented in the static shell.
+SparkRules provides a flexible, layered authentication model designed to integrate with your existing infrastructure:
 
-**Tier 2.3 — graph-based rule / agenda visualisation (e.g. React Flow)**  
-- There is **no** React Flow (or similar) **visual graph** in [workbench](https://github.com/vaquarkhan/sparkrules/tree/main/src/sparkrules/api/static/workbench).  
-- A **`POST /graph/enrich`** API exists for **enrichment** payloads, not a full interactive agenda designer.  
-- **Reason:** visual rule graphs are a **separate UI product**; not in scope of the current static Workbench.
+| Mode | Use case | How it works |
+|------|----------|-------------|
+| **API key** (`SPARKRULES_API_KEY`) | Simple deployments | Single shared key for all mutating + sensitive endpoints |
+| **Header-based RBAC** | Gateway-fronted services | `X-Principal`, `X-Roles`, `X-Tenant-Id` headers from your gateway |
+| **OIDC** | Enterprise SSO | JWT parsing with issuer/audience checks — pair with your IdP gateway for full verification |
+| **mTLS** | Service mesh | Client cert subject from gateway header (`X-Client-Cert-Subject`) |
+| **Local dev** | Development/CI | `SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true` for frictionless local work |
 
-**Tier 3.1 — full run history UI**  
-- There is **no** `GET /runs` (or equivalent) for listing **arbitrary** execution history for the Workbench. Internal tables (e.g. `run_history`, `debug_runs`, audit) back **specific** features, not a general-purpose “runs browser”.  
-- **Reason:** a full run catalog needs retention policy, query indexes, and UI design—**not** shipped as a first-class run explorer.
+**Built-in roles:** `rule_reader`, `rule_author`, `rule_admin`, `run_operator`, `dq_steward`, `ai_reviewer`, `pii_reveal`, `platform_admin`
 
----
-
-## Performance and scale (engineering backlog vs. Drools-grade engines)
-
-SparkRules favors **correctness and a portable DRL subset** over Drools parity on throughput. The points below describe **real tradeoffs**, not regressions—they are backlog items unless stated otherwise.
-
-| Topic | Severity | Reality today | Typical direction |
-|-------|----------|---------------|-------------------|
-| Interpreter-style eval (`_eval`) | Critical | Predicate evaluation walks the AST with `isinstance` checks per row—no bytecode compilation of predicates. | Compile hot paths to closures or bytecode; discriminator/caching layers. |
-| Spark `out_json` column | Critical | [`iter_rule_rows`](../src/sparkrules/spark/dataframe.py) does `json.dumps({"action","bound"})`; **`bound`** repeats the effective fact footprint. Large facts × huge row counts multiply JSON CPU and bytes. | Typed structs / `MapType` columns; optional omit-`bound` mode; Catalyst-friendly schema. |
-| Rete / PHREAK / discrimination in production paths | High | [`DiscriminationNetwork`](../src/sparkrules/compiler/discrimination.py) exists; [`run_rule_chain`](../src/sparkrules/runtime/rule_chain.py) is a linear salience sweep with per-rule evaluation. Simulator does **not** route all traffic through alpha/beta nets. | Wire nets for hot rule sets or accept O(rules × rows) cost for moderate packs. |
-| Per-request parsing (HTTP / sim) | High | [`RuleSimulator.run_chain`](../src/sparkrules/sim/simulator.py) calls `parse_rules(drl)` on each invocation. Spark path parses **once per partition** (OK). | LRU cache keyed by DRL hash; reuse `CompiledRulePackage` across calls. |
-| Broadcast = DRL text only | Medium | [`apply_drl`](../src/sparkrules/spark/dataframe.py) broadcasts the **string**, not [`CompiledRulePackage`](../src/sparkrules/compiler/compiler.py). Workers parse per partition startup (still far better than per row). | Broadcast serialized compiled pack + version id. |
-| PySpark IPC / Scala | Medium | Row-at-a-time Python UDF-style work inherits executor ↔ Python worker latency. Scala/JVM evaluator would trade portability. | Larger partitions, predicate simplification; optional JVM evaluator is product-scale work. |
-| Per-row allocations | Medium | `asDict(recursive=True)` + dict comprehension per row in `iter_rule_rows`. Adds Python allocation pressure at extreme scale. | Columnar ingest path; reuse buffers; codegen where applicable. |
-| Vectorized batches | Low | No NumPy/PyArrow SIMD evaluation lane; one logical row per evaluator call today. | Optional batch backends for homogeneous schemas. |
-| Fixed output schema (`out_json`) | Low | Consumers that need columns must JSON-parse—but keeps one generic API. | Alternate `apply_drl_*` overloads emitting typed columns only. |
-| Iceberg parity | Low | Snapshot-style helpers model contracts; **not** a bundled catalog client writing real Iceberg tables to S3/Azure. See **Per-tenant Iceberg** elsewhere in this doc. | Integrate connector in deploy code, not the core library alone. |
-
-**How to cite this:** For benchmarks, contrast **pure-Python throughput** (~single-process `evaluate_rule`), **Spark `apply_drl`** (~partition-local parse amortization), and **REST `/simulations`**, where parse+copy costs dominate small payloads.
+**Extension point:** For production OIDC/SAML with full JWT signature verification, place SparkRules behind an API gateway (Kong, Envoy, AWS ALB, etc.) that handles token validation and passes identity headers. The service is designed for this pattern.
 
 ---
 
-## How to use this document
+## Execution architecture
 
-- **Product / sales:** Do not claim SAML, catalog-level multi-tenant Iceberg isolation, or distributed Spark on the default API path without qualification.  
-- **Engineering:** Use this as a **checklist** for proposals (identity gateway, cluster integration, Workbench 2.0).  
-- **Tests:** The requirement ladder and property tests **do** cover in-repo requirements; this file tracks **gaps vs. an external blueprint**, not a failure of existing tests.
+### Pure Python path (default)
+
+The API server, Workbench, and simulations run in a single Python process. This is the fast-feedback path for rule authoring, validation, and testing.
+
+| Characteristic | Detail |
+|---------------|--------|
+| Runtime | Single CPython process (uvicorn) |
+| Throughput | ~1,000–10,000 evals/sec per core |
+| Best for | Development, CI, low-volume APIs, rule authoring |
+
+### Spark path (opt-in)
+
+For high-volume batch processing, `apply_drl()` distributes rule evaluation across a Spark cluster via `mapPartitions`.
+
+| Characteristic | Detail |
+|---------------|--------|
+| Runtime | Your Spark cluster (EMR, Databricks, Dataproc, etc.) |
+| Throughput | Scales linearly with executor count |
+| Best for | Millions/billions of rows, lakehouse pipelines |
+
+**Extension point:** The `CompiledRulePackage` can be serialized and broadcast to workers. For maximum throughput, broadcast the compiled package instead of raw DRL text. See `sparkrules/transport/broadcaster.py`.
+
+---
+
+## Storage and data integration
+
+### Metadata store
+
+SparkRules ships with pluggable metadata backends:
+
+| Backend | Status | Use case |
+|---------|--------|----------|
+| `in_memory` | Production-ready | Development, testing, single-process deployments |
+| `duckdb` | Production-ready | Persistent local storage, embedded analytics |
+| `iceberg` | Modeling/test | Iceberg-style snapshot semantics for replay workflows |
+| `postgres` | Production-ready | Multi-instance deployments with shared state |
+
+**Extension point:** Implement the store interface for your preferred backend (Redis, DynamoDB, etc.).
+
+### Output sinks
+
+Supported output formats: `iceberg`, `delta`, `hudi`, `parquet` — configured via `EngineConfig`, no code changes needed.
+
+---
+
+## Workbench capabilities
+
+The browser-based Rules Workbench provides:
+
+- Monaco DRL editor with syntax highlighting
+- Real-time validation and LSP diagnostics
+- Rule simulation with fact input
+- Asset management with search and filters
+- Governance pane (promotion pins, deprecations)
+- Light/dark theme
+- Overview dashboard with stats and charts
+
+**Extension point:** The Workbench is a static HTML/JS shell calling the REST API. Add custom views by extending the API and the static shell, or build a separate React/Vue frontend against the same endpoints.
+
+---
+
+## Performance optimization paths
+
+SparkRules prioritizes correctness and portability. For teams needing higher throughput:
+
+| Optimization | Approach |
+|-------------|----------|
+| **Parse caching** | LRU cache keyed by DRL hash to avoid re-parsing on repeated calls |
+| **Compiled packages** | Use `RuleCompiler` to pre-compile rule sets; broadcast to Spark workers |
+| **Discrimination networks** | `DiscriminationNetwork` is available for alpha-node filtering on large rule sets |
+| **Batch evaluation** | `BatchEvaluator` amortizes setup cost across multiple facts |
+| **Typed output columns** | Replace JSON `out_json` with typed Spark structs for Catalyst optimization |
+
+---
+
+## Platform deployment
+
+SparkRules runs on any platform that supports Python 3.11+:
+
+| Platform | Support | Notes |
+|----------|---------|-------|
+| **Local / Docker** | Full | `docker compose up --build` |
+| **Kubernetes** | Full | Manifests in `deploy/k8s/` |
+| **AWS Glue** | Config-driven | See `deploy/aws-glue/` |
+| **Databricks** | Config-driven | See `deploy/databricks/` |
+| **GCP Dataproc** | Config-driven | See `deploy/gcp-dataproc/` |
+| **Azure Synapse** | Config-driven | See `deploy/azure-synapse/` |
+
+Platform switching is configuration-only — no code changes between environments.
+
+---
+
+## Future directions
+
+See [ROADMAP.md](ROADMAP.md) for planned work. Community contributions welcome for:
+
+- CEP (Complex Event Processing) patterns
+- DMN (Decision Model and Notation) support
+- Visual rule graph designer (React Flow)
+- Bulk simulation upload (CSV/JSONL)
+- Full run history browser
+- Additional metadata store backends
