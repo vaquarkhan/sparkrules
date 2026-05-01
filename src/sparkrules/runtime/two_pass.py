@@ -20,7 +20,18 @@ def _extract_path(r: Mapping[str, Any], path: str) -> Any:
 def _row_group_key(r: Mapping[str, Any], group_by: tuple[str, ...]) -> tuple[Any, ...]:
     if not group_by:
         return ()
-    return tuple(_extract_path(r, k) for k in group_by)
+    result: list[Any] = []
+    for k in group_by:
+        v = _extract_path(r, k)
+        if v is None:
+            # Try inside binding-key wrappers (e.g. {"t": {"region": "US"}})
+            for val in r.values():
+                if isinstance(val, Mapping):
+                    v = _extract_path(val, k)
+                    if v is not None:
+                        break
+        result.append(v)
+    return tuple(result)
 
 
 @dataclass
