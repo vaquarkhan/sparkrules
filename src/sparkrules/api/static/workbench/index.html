@@ -660,7 +660,20 @@ end</pre>
         </div>
       </section>
       <section id="view-advanced" class="view hidden">
-        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled  -  graph response is JSON only.</p>
+        <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+          <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use Advanced tools</summary>
+          <div style="padding:0.5rem 0 0;line-height:1.6">
+            <p style="margin:0 0 0.4rem"><strong>AI suggestions:</strong> Generate rule candidates from sample facts (stub provider - replace with your own NL model).</p>
+            <p style="margin:0 0 0.4rem"><strong>Chain simulation:</strong> Evaluate multiple rules in sequence with salience ordering and stop-on-fire/decline policies.</p>
+            <p style="margin:0 0 0.4rem"><strong>Shadow mode:</strong> Compare two rule sets side-by-side to detect drift before deploying changes.</p>
+            <p style="margin:0 0 0.4rem"><strong>Counterfactual:</strong> "What if?" analysis - compare results with different fact values to understand rule sensitivity.</p>
+            <p style="margin:0 0 0.4rem"><strong>Time travel:</strong> Capture a rule execution snapshot, then replay it later with different facts for debugging.</p>
+            <p style="margin:0 0 0.4rem"><strong>DQ evaluate:</strong> Run data quality checks (not-null, range, in-set, regex, uniqueness) on a fact. Requires <span class="mono">dq_steward</span> role.</p>
+            <p style="margin:0 0 0.4rem"><strong>Graph enrich:</strong> Enrich a fact with graph-based relationships (JSON response, not visual).</p>
+            <p style="margin:0"><strong>Lineage events:</strong> View the audit trail of all rule evaluations, captures, and governance actions.</p>
+          </div>
+        </details>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled - graph response is JSON only.</p>
         <details class="adv-panel" open>
           <summary>AI rule suggestions (stub  -  not a full NL pipeline)</summary>
           <div class="adv-body">
@@ -777,6 +790,17 @@ end</pre>
       <section id="view-deploy" class="view hidden">
         <div class="panel">
           <h2>Engine / platform (config view)</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use this tab</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.4rem">This is a <strong>read-only</strong> view of the current engine configuration. It shows:</p>
+              <p style="margin:0 0 0.4rem">- <strong>Platform:</strong> local, glue, databricks, gcp-dataproc, or azure-synapse</p>
+              <p style="margin:0 0 0.4rem">- <strong>Spark version:</strong> target Spark 3.x version</p>
+              <p style="margin:0 0 0.4rem">- <strong>Executor resources:</strong> cores, workers, memory</p>
+              <p style="margin:0 0 0.4rem">- <strong>Store backend:</strong> in_memory, pickle_file, etc.</p>
+              <p style="margin:0">To change configuration, set environment variables on the server (e.g. <span class="mono">SPARKRULES_PLATFORM=databricks</span>).</p>
+            </div>
+          </details>
           <p class="mono" style="color:var(--muted)">Read-only view of the active engine config map. Change via environment in production.</p>
           <div class="row">
             <button class="btn" type="button" id="btn-deploy-refresh">Refresh</button>
@@ -787,6 +811,15 @@ end</pre>
       <section id="view-pack" class="view hidden">
         <div class="panel">
           <h2>Import rule pack</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use this tab</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.4rem"><strong>Export:</strong> Use the "Download pack JSON" button on the Rule assets tab to export all rules.</p>
+              <p style="margin:0 0 0.4rem"><strong>Import:</strong> Paste the exported JSON below and click Import. Each item needs <span class="mono">rule_handle</span> and <span class="mono">drl</span>.</p>
+              <p style="margin:0 0 0.4rem"><strong>Diff:</strong> Compare two versions of the same rule handle to see what changed (unified diff format).</p>
+              <p style="margin:0">Format: <span class="mono">{"format":"sparkrules-rulepack-1","items":[{"rule_handle":"...","drl":"...","group":"..."}]}</span></p>
+            </div>
+          </details>
           <p style="color:var(--muted);font-size:0.9rem">Paste JSON from <span class="mono">/rules/export</span> or a minimal <span class="mono">items</span> array. Each item must include <span class="mono">rule_handle</span>, <span class="mono">drl</span>, and optional <span class="mono">group</span>.</p>
           <textarea id="import-json" style="min-height:120px" placeholder='{ "format": "sparkrules-rulepack-1", "items": [ { "rule_handle": "a", "group": "g", "drl": "..." } ] }'></textarea>
           <div class="row">
@@ -807,6 +840,17 @@ end</pre>
       <section id="view-governance" class="view hidden">
         <div class="panel">
           <h2>Promotion (dev → stage → prod)</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use Governance</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.4rem"><strong>Promotion workflow:</strong></p>
+              <p style="margin:0 0 0.4rem">1. <strong>Sync dev:</strong> Pin the current active version of a rule to the <span class="mono">dev</span> environment.</p>
+              <p style="margin:0 0 0.4rem">2. <strong>Promote to stage:</strong> Copy the dev pin to <span class="mono">stage</span> for testing.</p>
+              <p style="margin:0 0 0.4rem">3. <strong>Promote to prod:</strong> Copy the stage pin to <span class="mono">prod</span> for production use.</p>
+              <p style="margin:0 0 0.4rem"><strong>Deprecations:</strong> Propose retiring a rule, get approval, then enforce (deactivates all active versions).</p>
+              <p style="margin:0">Set the <strong>namespace</strong> and <strong>rule_handle</strong> fields, then use the buttons to manage the lifecycle.</p>
+            </div>
+          </details>
           <p style="color:var(--muted);font-size:0.9rem">Pins record which <strong>version</strong> is in each environment. <strong>Sync dev</strong> from the time-active rule, then <strong>promote</strong> only forward along <span class="mono">dev → stage</span> and <span class="mono">stage → prod</span>. Runtime deployment wiring stays in your platform.</p>
           <div class="row">
             <input type="text" id="gov-ns" value="default" style="max-width:140px" title="namespace" />
@@ -848,6 +892,15 @@ end</pre>
       <section id="view-template" class="view hidden">
         <div class="panel">
           <h2>Guided template</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use Templates</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.4rem">Templates let you create reusable DRL patterns with <strong>placeholders</strong> in curly braces.</p>
+              <p style="margin:0 0 0.4rem">Example: <span class="mono">rule {rule_name} when $t : T ( $t.x > {min_x} ) then end</span></p>
+              <p style="margin:0 0 0.4rem">Click <strong>Load fields</strong> to extract the placeholders. Fill in values to generate concrete DRL.</p>
+              <p style="margin:0">Useful for business analysts who need to create rules from a standard pattern without writing DRL from scratch.</p>
+            </div>
+          </details>
           <p style="color:var(--muted);font-size:0.9rem">Placeholder pattern for DRL. Fields drive form labels in an editor shell.</p>
           <textarea id="tpl-pattern" style="min-height:72px">rule {rule_name} when $t : T ( $t.x > {min_x} ) then end</textarea>
           <div class="row">
