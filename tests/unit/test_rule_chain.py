@@ -45,9 +45,7 @@ when $t : T ( true ) then
 end
 """
     rs = parse_rules(drl)
-    out = run_rule_chain(
-        rs, {"t": {"x": 1}}, ChainExecutionPolicy(stop_on_decline=False)
-    )
+    out = run_rule_chain(rs, {"t": {"x": 1}}, ChainExecutionPolicy(stop_on_decline=False))
     assert out.stop_reason and out.stop_reason.startswith("stop_on_fire:")
     assert "extra" not in out.final_action
 
@@ -64,9 +62,7 @@ when $t : T ( true ) then
 end
 """
     rs = parse_rules(drl)
-    r = run_rule_chain(
-        rs, {"t": {"x": 0}}, ChainExecutionPolicy(stop_on_decline=True)
-    )
+    r = run_rule_chain(rs, {"t": {"x": 0}}, ChainExecutionPolicy(stop_on_decline=True))
     assert r.stop_reason == "stop_on_decline"
     assert len(r.steps) == 1
 

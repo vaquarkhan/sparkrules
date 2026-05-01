@@ -23,7 +23,7 @@ def _unquote(s: str) -> str:
     if len(s) < 2:
         return s
     q = s[0]
-    if q not in '"\'':
+    if q not in "\"'":
         return s
     body = s[1:-1]
     return bytes(body, "utf-8").decode("unicode_escape")
@@ -74,9 +74,7 @@ def _check_resolve(expr: Expr | None, bindings: set[str], *, err_tok: Token) -> 
             continue
         if _bind_root(n) in bindings:
             continue
-        raise ParseError(
-            f"unresolved identifier: {n}", err_tok.line, err_tok.col
-        )
+        raise ParseError(f"unresolved identifier: {n}", err_tok.line, err_tok.col)
 
 
 class DrlParser:
@@ -181,9 +179,7 @@ class DrlParser:
                     stop_on_fire = False
                 else:
                     t = self._peek()
-                    raise ParseError(
-                        "expected true or false after stop_on_fire", t.line, t.col
-                    )
+                    raise ParseError("expected true or false after stop_on_fire", t.line, t.col)
         self._expect(TokenKind.WHEN)
         when = self._parse_when()
         bset: set[str] = {p.bind_name for p in when}
@@ -211,9 +207,7 @@ class DrlParser:
         if not self._match(TokenKind.RBRACK):
             while True:
                 s = self._expect(TokenKind.STRING, TokenKind.IDENT)
-                out.append(
-                    _unquote(s.text) if s.kind == TokenKind.STRING else s.text
-                )
+                out.append(_unquote(s.text) if s.kind == TokenKind.STRING else s.text)
                 if self._match(TokenKind.RBRACK):
                     break
                 self._expect(TokenKind.COMMA)
@@ -311,9 +305,11 @@ class DrlParser:
                 r = self._parse_add()
                 l = InExpr(l, r, negated=False)
                 continue
-            if t.kind == TokenKind.NOT and self._i + 1 < len(self._toks) and self._toks[
-                self._i + 1
-            ].kind == TokenKind.IN:
+            if (
+                t.kind == TokenKind.NOT
+                and self._i + 1 < len(self._toks)
+                and self._toks[self._i + 1].kind == TokenKind.IN
+            ):
                 self._advance()
                 self._expect(TokenKind.IN)
                 r = self._parse_add()

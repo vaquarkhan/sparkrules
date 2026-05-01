@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from openpyxl import Workbook
 
-from sparkrules.model.decision_table import ColumnType, DecisionTable, InputColumn, OutputColumn
+from sparkrules.model.decision_table import ColumnType, DecisionTable
 
 
 def _ct_label(c: ColumnType) -> str:

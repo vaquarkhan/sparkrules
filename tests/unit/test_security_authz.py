@@ -44,7 +44,9 @@ def test_decode_jwt_claims_unverified_paths() -> None:
 
 
 def test_principal_from_headers_and_claims() -> None:
-    p1 = principal_from_request(_req({"X-Principal": "u2", "X-Tenant-Id": "t2", "X-Roles": "rule_reader,rule_author"}))
+    p1 = principal_from_request(
+        _req({"X-Principal": "u2", "X-Tenant-Id": "t2", "X-Roles": "rule_reader,rule_author"})
+    )
     assert p1.principal == "u2"
     assert p1.tenant_id == "t2"
     assert "rule_author" in p1.roles
@@ -104,9 +106,7 @@ def test_principal_auth_mode_mtls(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SPARKRULES_AUTH_MODE", "mtls")
     with pytest.raises(HTTPException):
         principal_from_request(_req({"X-Roles": "rule_reader"}))
-    p = principal_from_request(
-        _req({"X-Client-Cert-Subject": "CN=test", "X-Roles": "rule_reader"})
-    )
+    p = principal_from_request(_req({"X-Client-Cert-Subject": "CN=test", "X-Roles": "rule_reader"}))
     assert "rule_reader" in p.roles
 
 
@@ -125,4 +125,3 @@ def test_principal_auth_mode_iam(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert p.principal.startswith("arn:")
     assert "rule_admin" in p.roles
-

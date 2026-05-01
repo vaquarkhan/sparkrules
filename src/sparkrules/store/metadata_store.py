@@ -26,9 +26,7 @@ class UnknownRuleError(KeyError):
     pass
 
 
-def _overlaps(
-    a0: datetime, a1: datetime | None, b0: datetime, b1: datetime | None
-) -> bool:
+def _overlaps(a0: datetime, a1: datetime | None, b0: datetime, b1: datetime | None) -> bool:
     """Return True if half-open [a0, a1) and [b0, b1) overlap (a1 or b1 None = +inf)."""
     if a1 is not None and a1 <= b0:
         return False
@@ -61,20 +59,14 @@ class InMemoryRuleMetadataStore:
                 continue
             if not r.is_active:
                 continue
-            if _overlaps(
-                r.effective_from, r.effective_to, eff_from, eff_to
-            ):
-                raise ConflictError(
-                    f"overlapping active window for {handle!r} v{r.version} vs new"
-                )
+            if _overlaps(r.effective_from, r.effective_to, eff_from, eff_to):
+                raise ConflictError(f"overlapping active window for {handle!r} v{r.version} vs new")
 
     def insert(self, r: Rule) -> Rule:
         h = r.rule_handle
         ver = self._next_version(h)
         self._check_overlap(h, r.effective_from, r.effective_to, r.is_active, None)
-        out = r.with_updates(
-            rule_id=new_rule_id(), version=ver, created_at=now_utc()
-        )
+        out = r.with_updates(rule_id=new_rule_id(), version=ver, created_at=now_utc())
         self._by_handle.setdefault(h, []).append(out)
         self._by_id[out.rule_id] = out
         return out
@@ -164,8 +156,7 @@ class InMemoryRuleMetadataStore:
                 if f and f.at_time is not None:
                     at = f.at_time
                     if not (
-                        r.effective_from <= at
-                        and (r.effective_to is None or at <= r.effective_to)
+                        r.effective_from <= at and (r.effective_to is None or at <= r.effective_to)
                     ):
                         continue
                 res.append(r)
@@ -180,9 +171,7 @@ class InMemoryRuleMetadataStore:
             for r in arr:
                 if not r.is_active:
                     continue
-                if r.effective_from <= t and (
-                    r.effective_to is None or t <= r.effective_to
-                ):
+                if r.effective_from <= t and (r.effective_to is None or t <= r.effective_to):
                     if r.version > by_h.get(h, -1):
                         by_h[h] = r.version
         s = ",".join(f"{h}:{by_h[h]}" for h in sorted(by_h))

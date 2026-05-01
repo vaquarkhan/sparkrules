@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Union
 
-Expr = Union["BinaryOp", "Not", "Identifier", "Literal", "ListExpr", "InExpr", "CallExpr", "FieldAccess"]
+Expr = Union[
+    "BinaryOp", "Not", "Identifier", "Literal", "ListExpr", "InExpr", "CallExpr", "FieldAccess"
+]
 
 
 class BinaryOperator(Enum):

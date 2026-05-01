@@ -1,4 +1,5 @@
 """Rule evaluation on PySpark DataFrames (parse once per partition, evaluate per row)."""
+
 from __future__ import annotations
 
 import json

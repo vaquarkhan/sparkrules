@@ -41,9 +41,7 @@ def test_ast_from_template_missing_placeholder() -> None:
 def test_ast_from_template_injected_parser() -> None:
     t = RuleTemplate.from_pattern("n", "rule r1 when $t : T ( true ) then end")
     p = MagicMock()
-    p.parse = MagicMock(
-        return_value=MagicMock(spec=RuleAst)
-    )
+    p.parse = MagicMock(return_value=MagicMock(spec=RuleAst))
     ast_from_template(t, {}, _parser=p)
     p.parse.assert_called_once()
 

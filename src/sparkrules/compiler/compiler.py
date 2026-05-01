@@ -35,17 +35,13 @@ class CompiledRulePackage:
 
 @dataclass
 class RuleCompiler:
-    classifier: StrategyClassifier = field(
-        default_factory=StrategyClassifier
-    )
+    classifier: StrategyClassifier = field(default_factory=StrategyClassifier)
     batcher: RuleBatcher = field(default_factory=RuleBatcher)
 
     def compile(self, rules: dict[str, str], *, run_id: str | None = None) -> CompiledRulePackage:  # noqa: E501
         rid = run_id or str(uuid4())
         by_id: dict[str, RuleAst] = {k: parse(v) for k, v in rules.items()}
-        st: dict[str, Strategy] = {
-            k: self.classifier.classify(rules[k]) for k in by_id
-        }
+        st: dict[str, Strategy] = {k: self.classifier.classify(rules[k]) for k in by_id}
         bch = self.batcher.batch(list(rules))
         dnets: dict[str, DiscriminationNetwork] = {
             "b0": DiscriminationNetwork.build(rules),

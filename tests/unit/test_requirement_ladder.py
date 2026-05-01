@@ -1,4 +1,5 @@
 """Example-based requirement traceability (~171 cases) toward 234 passed (blueprint §8)."""
+
 from __future__ import annotations
 
 import json
@@ -197,9 +198,7 @@ def _g5_executor_transport(r: int) -> None:
         RuleExecutor().run({"t": 1}, "rule r when $t : T (1==1) then end")
         return
     if r == 3:
-        b = RuleCompiler().compile(
-            {"a": "rule a when $t : T (1==1) then end"}
-        ).serialize()
+        b = RuleCompiler().compile({"a": "rule a when $t : T (1==1) then end"}).serialize()
         assert RuleBroadcaster(1).chunk(b)
         return
     if r in range(4, 19):

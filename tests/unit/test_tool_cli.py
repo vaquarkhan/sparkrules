@@ -75,7 +75,7 @@ def test_cli_lsp_check(capsys) -> None:
 
 
 def test_cli_counterfactual_check(capsys) -> None:
-    drl = "rule r when $t : T ( $t.x > 10 ) then result.decision = \"decline\"; end"
+    drl = 'rule r when $t : T ( $t.x > 10 ) then result.decision = "decline"; end'
     assert (
         cli.main(
             [

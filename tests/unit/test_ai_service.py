@@ -48,10 +48,7 @@ def test_stub_explain_distinct_messages_by_payload() -> None:
     assert "must be a string" in p.explain_rule({"drl": 123})
     assert "No DRL text" in p.explain_rule({"drl": ""})
     assert "No DRL text" in p.explain_rule({})
-    out_ok = p.explain_rule(
-        {"drl": "rule z when $t : T ( true ) then result.x = 1; end"}
-    )
+    out_ok = p.explain_rule({"drl": "rule z when $t : T ( true ) then result.x = 1; end"})
     assert "Parsed rule `z`" in out_ok and "stub provider" in out_ok.lower()
     out_bad = p.explain_rule({"drl": "not a rule at all"})
     assert "ParseError" in out_bad or "parse" in out_bad.lower()
-

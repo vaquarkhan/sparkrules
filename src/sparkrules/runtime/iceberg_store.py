@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import copy
-import pickle
 from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Sequence
 
 Row = dict[str, Any]
 Pred = Callable[[Row], bool]
@@ -18,9 +17,7 @@ class IcebergLikeTable:
     name: str
     schema: dict[str, type] = field(default_factory=dict)
     append_only: bool = False
-    _snapshots: dict[int, list[Row]] = field(
-        default_factory=dict, repr=False
-    )
+    _snapshots: dict[int, list[Row]] = field(default_factory=dict, repr=False)
     _current: int = field(default=0, repr=False)
 
     def __post_init__(self) -> None:

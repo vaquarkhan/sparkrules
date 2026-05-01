@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
+
 class ChainingLimitExceededError(ValueError):
     pass
 
@@ -10,17 +11,12 @@ class ChainingLimitExceededError(ValueError):
 def order_activations(
     activations: Sequence[tuple[int, str, str | None, str]],
 ) -> list[str]:
-    items = [
-        ( -a[0], a[1], a[2] or "", a[3], i)
-        for i, a in enumerate(activations)
-    ]
+    items = [(-a[0], a[1], a[2] or "", a[3], i) for i, a in enumerate(activations)]
     items.sort()
     return [x[3] for x in items]
 
 
-def resolve_activation_groups(
-    fired: Sequence[tuple[str, str | None]]
-) -> list[str]:
+def resolve_activation_groups(fired: Sequence[tuple[str, str | None]]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     for h, g in fired:
@@ -53,7 +49,5 @@ def forward_chain(
 
 @dataclass
 class AgendaController:
-    def order_activations(
-        self, acts: Sequence[tuple[int, str, str | None, str]]
-    ) -> list[str]:
+    def order_activations(self, acts: Sequence[tuple[int, str, str | None, str]]) -> list[str]:
         return order_activations(acts)

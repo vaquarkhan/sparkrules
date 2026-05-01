@@ -125,9 +125,7 @@ end
 
 
 def test_simulation_chain_uses_engine_policy_default() -> None:
-    app = create_app(
-        AppDeps(engine_cfg=EngineConfig(stop_on_decline=True))
-    )
+    app = create_app(AppDeps(engine_cfg=EngineConfig(stop_on_decline=True)))
     c = TestClient(app)
     r = c.post(
         "/simulations/chain",
@@ -156,8 +154,8 @@ def test_simulation_shadow() -> None:
     r = c.post(
         "/simulations/shadow",
         json={
-            "primary_drl": "rule a when $t : T ( true ) then result.decision = \"approve\"; end",
-            "shadow_drl": "rule b when $t : T ( true ) then result.decision = \"decline\"; end",
+            "primary_drl": 'rule a when $t : T ( true ) then result.decision = "approve"; end',
+            "shadow_drl": 'rule b when $t : T ( true ) then result.decision = "decline"; end',
             "fact": {"t": {}},
         },
         headers={"X-Roles": "run_operator", "X-Tenant-Id": "default"},
@@ -245,7 +243,7 @@ def test_simulation_counterfactual() -> None:
     r = c.post(
         "/simulations/counterfactual",
         json={
-            "drl": "rule r when $t : T ( $t.x > 10 ) then result.decision = \"decline\"; end",
+            "drl": 'rule r when $t : T ( $t.x > 10 ) then result.decision = "decline"; end',
             "baseline_fact": {"t": {"x": 5}},
             "candidate_fact": {"t": {"x": 20}},
         },

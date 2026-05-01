@@ -26,7 +26,9 @@ from sparkrules.runtime.streaming import StreamingRuleRefresher
 
 
 def test_r6_guided_template_fields() -> None:
-    t = RuleTemplate.from_pattern("p", "rule {rule_name} when $x : T ( amount > {min_amount} ) then end")
+    t = RuleTemplate.from_pattern(
+        "p", "rule {rule_name} when $x : T ( amount > {min_amount} ) then end"
+    )
     fields = guided_fields_from_template(t)
     names = [x.name for x in fields]
     assert names == ["min_amount", "rule_name"]
@@ -34,14 +36,7 @@ def test_r6_guided_template_fields() -> None:
 
 
 def test_r11_sql_join_path_no_longer_not_implemented() -> None:
-    drl = (
-        'rule "join"\n'
-        "when\n"
-        "  $a : A ( true ) and $b : B ( true )\n"
-        "then\n"
-        "  result.ok = true;\n"
-        "end"
-    )
+    drl = 'rule "join"\nwhen\n  $a : A ( true ) and $b : B ( true )\nthen\n  result.ok = true;\nend'
     out = RuleExecutor().run({"a": {"id": 1}, "b": {"id": 2}}, drl, allow_sql_join=True)
     assert out.error_class != "SqlJoinNotImplemented"
 

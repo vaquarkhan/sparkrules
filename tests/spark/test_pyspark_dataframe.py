@@ -22,11 +22,7 @@ end
 @pytest.fixture(scope="module")
 def spark() -> SparkSession:
     try:
-        s = (
-            SparkSession.builder.master("local[1]")
-            .appName("sparkrules-e2e")
-            .getOrCreate()
-        )
+        s = SparkSession.builder.master("local[1]").appName("sparkrules-e2e").getOrCreate()
     except (TypeError, OSError) as e:
         pytest.skip(f"Spark session unavailable: {e!s}")
     yield s

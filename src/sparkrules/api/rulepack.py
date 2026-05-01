@@ -12,9 +12,7 @@ def unified_diff_drl(drl_a: str, drl_b: str) -> str:
     a = drl_a.splitlines(keepends=True)
     b = drl_b.splitlines(keepends=True)
     return "".join(
-        difflib.unified_diff(
-            a, b, fromfile="version_a", tofile="version_b", lineterm=""
-        )
+        difflib.unified_diff(a, b, fromfile="version_a", tofile="version_b", lineterm="")
     )
 
 

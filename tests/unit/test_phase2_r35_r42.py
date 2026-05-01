@@ -145,7 +145,10 @@ def test_r42_udf_registry_replay_pinning() -> None:
     assert a.version == 1
     assert b.version == 2
     assert eval_registered_pure_udf(b, (1, 2, 3)) == 6
-    assert eval_registered_pure_udf(UdfDefinition("g", 1, ("str",), "int", True, "len"), (["a", "b"],)) == 2
+    assert (
+        eval_registered_pure_udf(UdfDefinition("g", 1, ("str",), "int", True, "len"), (["a", "b"],))
+        == 2
+    )
     assert eval_registered_pure_udf(UdfDefinition("g", 1, ("str",), "int", True, "len"), ()) == 0
     with pytest.raises(ValueError):
         eval_registered_pure_udf(UdfDefinition("g", 1, ("int",), "int", False, "sum"), (1,))

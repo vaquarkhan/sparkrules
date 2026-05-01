@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
-from typing import Any, Sequence
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,9 +18,7 @@ class ABTestConfig:
 
 @dataclass
 class ABTestRunner:
-    def assign(
-        self, key: str, cfg: ABTestConfig
-    ) -> str:
+    def assign(self, key: str, cfg: ABTestConfig) -> str:
         h = int.from_bytes(
             hashlib.sha256((key + cfg.key_field).encode()).digest()[:4],
             "big",

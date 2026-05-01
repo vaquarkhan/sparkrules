@@ -95,9 +95,8 @@ def principal_from_request(request: Request) -> Principal:
         or request.headers.get("x-principal")
         or str(claims.get("sub") or claims.get("email") or "anonymous")
     )
-    tenant_id = (
-        request.headers.get("x-tenant-id")
-        or str(claims.get("tenant_id") or claims.get("tid") or "default")
+    tenant_id = request.headers.get("x-tenant-id") or str(
+        claims.get("tenant_id") or claims.get("tid") or "default"
     )
     r_hdr = request.headers.get("x-roles", "")
     if mode == "iam":
@@ -115,8 +114,8 @@ def principal_from_request(request: Request) -> Principal:
             # For local/tests that relied on implicit superuser, set
             # SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true (see KNOWN_LIMITATIONS.md).
             dev_super = (
-                os.environ.get("SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER", "") or ""
-            ).strip().lower()
+                (os.environ.get("SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER", "") or "").strip().lower()
+            )
             if dev_super in ("1", "true", "yes"):
                 roles = ("platform_admin",)
             else:
@@ -172,7 +171,5 @@ def install_optional_api_key_middleware(app: FastAPI) -> None:
             if not _sensitive_get_path(request.url.path):
                 return await call_next(request)
         if _supplied_key(request) != required:
-            return JSONResponse(
-                status_code=401, content={"detail": "invalid or missing API key"}
-            )
+            return JSONResponse(status_code=401, content={"detail": "invalid or missing API key"})
         return await call_next(request)

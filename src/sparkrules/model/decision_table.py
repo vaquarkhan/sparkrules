@@ -138,7 +138,9 @@ def _input_from_dict(d: dict[str, Any]) -> InputColumn:
     return InputColumn(
         name=d["name"],
         field_ref=d["field_ref"],
-        col_type=ColumnType[d["col_type"]] if d["col_type"] in ColumnType.__members__ else ColumnType(d["col_type"]),
+        col_type=ColumnType[d["col_type"]]
+        if d["col_type"] in ColumnType.__members__
+        else ColumnType(d["col_type"]),
         operator=d.get("operator"),
     )
 
@@ -147,7 +149,9 @@ def _output_from_dict(d: dict[str, Any]) -> OutputColumn:
     return OutputColumn(
         name=d["name"],
         field_ref=d["field_ref"],
-        col_type=ColumnType[d["col_type"]] if d["col_type"] in ColumnType.__members__ else ColumnType(d["col_type"]),
+        col_type=ColumnType[d["col_type"]]
+        if d["col_type"] in ColumnType.__members__
+        else ColumnType(d["col_type"]),
     )
 
 
@@ -157,9 +161,7 @@ def dt_to_json(table: DecisionTable) -> str:
         "hit_policy": table.hit_policy.name,
         "input_columns": [_col_to_dict(c) for c in table.input_columns],
         "output_columns": [_col_to_dict(c) for c in table.output_columns],
-        "rows": [
-            {"cells": list(r.cells), "priority": r.priority} for r in table.rows
-        ],
+        "rows": [{"cells": list(r.cells), "priority": r.priority} for r in table.rows],
     }
     payload["__meta__"] = {"generated_at": now_utc().isoformat()}
     return json.dumps(payload, default=str)
@@ -171,8 +173,7 @@ def dt_from_json(s: str) -> DecisionTable:
     inputs = tuple(_input_from_dict(c) for c in d["input_columns"])
     outputs = tuple(_output_from_dict(c) for c in d["output_columns"])
     rows = tuple(
-        Row(cells=tuple(x["cells"]), priority=int(x.get("priority", 0)))
-        for x in d["rows"]
+        Row(cells=tuple(x["cells"]), priority=int(x.get("priority", 0))) for x in d["rows"]
     )
     return DecisionTable(
         name=d["name"],

@@ -75,9 +75,9 @@ def print_ast(rule: RuleAst) -> str:
     if rule.salience:
         lines.append(f"    salience {rule.salience}")
     if rule.agenda_group != DEFAULT_AGENDA_GROUP:
-        lines.append(f"    agenda_group { _quote(rule.agenda_group) }")
+        lines.append(f"    agenda_group {_quote(rule.agenda_group)}")
     if rule.activation_group is not None:
-        lines.append(f"    activation_group { _quote(rule.activation_group) }")
+        lines.append(f"    activation_group {_quote(rule.activation_group)}")
     if rule.pass_name:
         lines.append(f"    pass {rule.pass_name}")
     if rule.group_by:

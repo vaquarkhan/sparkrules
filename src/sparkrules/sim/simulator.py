@@ -50,14 +50,10 @@ class CoverageSimulationResult:
 class RuleSimulator:
     _persist: list[Any] = field(default_factory=list, repr=False, init=False)
 
-    def run(
-        self, drl: str, fact: MutableMapping[str, Any]
-    ) -> SimulationResult:
+    def run(self, drl: str, fact: MutableMapping[str, Any]) -> SimulationResult:
         r = parse(drl)
         m = evaluate_rule(r, fact)
-        return SimulationResult(
-            r.name, m.fired, dict(m.action_output), dict(m.bound)
-        )
+        return SimulationResult(r.name, m.fired, dict(m.action_output), dict(m.bound))
 
     def run_chain(
         self,

@@ -2,17 +2,13 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Hashable, MutableMapping
+from typing import Any, Hashable
 
 
 @dataclass
 class DerivedColumnCache:
-    _d: dict[tuple[Hashable, str], Any] = field(
-        default_factory=dict, init=False, repr=False
-    )
-    _lock: threading.Lock = field(
-        default_factory=threading.Lock, init=False, repr=False
-    )
+    _d: dict[tuple[Hashable, str], Any] = field(default_factory=dict, init=False, repr=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     def get(self, key: tuple[Hashable, str]) -> Any:
         with self._lock:

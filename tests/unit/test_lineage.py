@@ -101,11 +101,7 @@ def test_lineage_fail_event_on_bad_single_simulation() -> None:
     assert r.status_code == 422
     ev = c.get("/lineage/events", headers={"X-Roles": "platform_admin"}).json()
     assert any(x["event_type"] == "FAIL" and str(x["run_id"]).startswith("sim-") for x in ev)
-    fail = next(
-        x
-        for x in ev
-        if x["event_type"] == "FAIL" and str(x["run_id"]).startswith("sim-")
-    )
+    fail = next(x for x in ev if x["event_type"] == "FAIL" and str(x["run_id"]).startswith("sim-"))
     assert "inputs" in fail["payload"]
     assert "principal" in fail["payload"]
 
@@ -116,8 +112,8 @@ def test_lineage_shadow_success_and_fail() -> None:
     ok = c.post(
         "/simulations/shadow",
         json={
-            "primary_drl": "rule a when $t : T ( true ) then result.d = \"a\"; end",
-            "shadow_drl": "rule b when $t : T ( true ) then result.d = \"b\"; end",
+            "primary_drl": 'rule a when $t : T ( true ) then result.d = "a"; end',
+            "shadow_drl": 'rule b when $t : T ( true ) then result.d = "b"; end',
             "fact": {"t": {}},
             "run_id": "shadow-ok",
         },
@@ -128,7 +124,7 @@ def test_lineage_shadow_success_and_fail() -> None:
         "/simulations/shadow",
         json={
             "primary_drl": "bad drl",
-            "shadow_drl": "rule b when $t : T ( true ) then result.d = \"b\"; end",
+            "shadow_drl": 'rule b when $t : T ( true ) then result.d = "b"; end',
             "fact": {"t": {}},
             "run_id": "shadow-bad",
         },

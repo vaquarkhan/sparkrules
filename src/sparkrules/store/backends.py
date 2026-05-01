@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import pickle
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
 
 from sparkrules.model.rule import Rule
-from sparkrules.store.metadata_store import InMemoryRuleMetadataStore, RuleFilter
+from sparkrules.store.metadata_store import InMemoryRuleMetadataStore
 
 
 class StoreUnavailableError(RuntimeError):

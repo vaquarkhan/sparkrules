@@ -96,9 +96,7 @@ def test_evaluate_expr_not_list_in() -> None:
         {"x": 1},
     )
     with pytest.raises(ValueError):
-        evaluate_expr(
-            CallExpr("nope", (Literal(1),)), {"x": 1}
-        )
+        evaluate_expr(CallExpr("nope", (Literal(1),)), {"x": 1})
 
 
 def test_drl_call_abs_nonnum() -> None:
@@ -114,11 +112,12 @@ def test_drl_call_abs_nonnum() -> None:
 def test_get_id_result_dotted() -> None:
     p = parse("rule t when $a : T (1==1) then end")
     from sparkrules.compiler import evaluate_rule
+
     m = evaluate_rule(
         p,
         {"a": 1, "result": {"p": {"q": 2}}},
     )
-    m  # not fired? rule when 1==1 
+    m  # not fired? rule when 1==1
     s = """
     rule t
     when

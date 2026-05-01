@@ -95,7 +95,13 @@ def test_dq_evaluate_critical_quarantine_and_dataset_checks() -> None:
             "fact_id": "f-1",
             "persist": True,
             "checks": [
-                {"kind": "table_counts_match", "field": "left_n", "other_field": "right_n", "severity": "critical", "scope": "relationship"},
+                {
+                    "kind": "table_counts_match",
+                    "field": "left_n",
+                    "other_field": "right_n",
+                    "severity": "critical",
+                    "scope": "relationship",
+                },
                 {"kind": "unique", "field": "id"},
                 {"kind": "sum_between", "field": "amt", "min_value": 0, "max_value": 10},
             ],

@@ -11,9 +11,7 @@ class MissingRuleSetVersionError(KeyError):
 
 @dataclass
 class ReplayService:
-    def replay(
-        self, run: RunRecord, expected_version: str
-    ) -> str:
+    def replay(self, run: RunRecord, expected_version: str) -> str:
         if run.rule_set_version != expected_version:
             raise MissingRuleSetVersionError(expected_version)
         return run.run_id

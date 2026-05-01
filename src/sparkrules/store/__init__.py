@@ -1,4 +1,10 @@
-from sparkrules.store.backends import DuckDBStore, IcebergStore, PostgresStore, StoreUnavailableError, create_rule_store
+from sparkrules.store.backends import (
+    DuckDBStore,
+    IcebergStore,
+    PostgresStore,
+    StoreUnavailableError,
+    create_rule_store,
+)
 from sparkrules.store.metadata_store import (
     ConflictError,
     InMemoryRuleMetadataStore,
