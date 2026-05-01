@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from sre.api.rulepack import FORMAT_ID, build_export_payload, parse_import_body, unified_diff_drl
+from sparkrules.api.rulepack import FORMAT_ID, build_export_payload, parse_import_body, unified_diff_drl
 
 
 def test_unified_diff_identical() -> None:

@@ -8,7 +8,7 @@ real HTTP, run uvicorn and open ``/docs`` (see [examples/README.md](../README.md
 
 from __future__ import annotations
 
-from sre.api import AppDeps, create_app
+from sparkrules.api import AppDeps, create_app
 
 
 def main() -> int:

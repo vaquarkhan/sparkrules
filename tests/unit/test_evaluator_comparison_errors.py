@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from sre.compiler import RuleEvaluationError, evaluate_rule
-from sre.parser import parse
+from sparkrules.compiler import RuleEvaluationError, evaluate_rule
+from sparkrules.parser import parse
 
 
 def test_compare_missing_binding_raises_rule_evaluation_error_not_typeerror() -> None:

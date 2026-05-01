@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from sre.compiler import evaluate_rule
-from sre.parser import parse
+from sparkrules.compiler import evaluate_rule
+from sparkrules.parser import parse
 
 
 def test_contains_list_is_membership_not_substring() -> None:

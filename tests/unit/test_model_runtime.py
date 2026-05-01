@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sre.runtime.model import StubModelProvider, invoke_model
+from sparkrules.runtime.model import StubModelProvider, invoke_model
 
 
 def test_invoke_model_is_deterministic() -> None:

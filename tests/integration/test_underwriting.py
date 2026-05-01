@@ -4,11 +4,11 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.compiler import evaluate_rule
-from sre.parser import parse
-from sre.runtime.batch import BatchEvaluator
-from sre.runtime.catalyst import CatalystConfigurer
+from sparkrules.api import AppDeps, create_app
+from sparkrules.compiler import evaluate_rule
+from sparkrules.parser import parse
+from sparkrules.runtime.batch import BatchEvaluator
+from sparkrules.runtime.catalyst import CatalystConfigurer
 
 pytestmark = pytest.mark.integration
 

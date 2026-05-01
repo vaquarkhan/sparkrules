@@ -4,14 +4,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from sre.model.rule_template import (
+from sparkrules.model.rule_template import (
     ExtraPlaceholderError,
     MissingPlaceholderError,
     RuleTemplate,
     _substitute,
     ast_from_template,
 )
-from sre.parser.ast import RuleAst
+from sparkrules.parser.ast import RuleAst
 
 
 def test_substitute_missing() -> None:

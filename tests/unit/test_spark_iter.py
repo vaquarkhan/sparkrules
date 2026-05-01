@@ -1,10 +1,10 @@
-"""Pure-Python tests for sre.spark (no JVM)."""
+"""Pure-Python tests for sparkrules.spark (no JVM)."""
 
 import json
 
 import pytest
 
-from sre.spark import iter_rule_rows
+from sparkrules.spark import iter_rule_rows
 
 _DRL = """
 rule r1

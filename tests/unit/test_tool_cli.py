@@ -7,7 +7,7 @@ import runpy
 
 import pytest
 
-from sre.tools import cli
+from sparkrules.tools import cli
 
 _DRL = "rule r when $t : T ( true ) then result.ok = true; end"
 
@@ -137,6 +137,6 @@ def test_cli_unknown_command_fallback(monkeypatch: pytest.MonkeyPatch, capsys) -
 def test_cli_runpy_as_main(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("sys.argv", ["sre-cli"])
     try:
-        runpy.run_module("sre.tools.cli", run_name="__main__")
+        runpy.run_module("sparkrules.tools.cli", run_name="__main__")
     except SystemExit as e:
         assert e.code == 1

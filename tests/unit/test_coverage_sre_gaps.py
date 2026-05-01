@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from sre.ai import AiService, StubAiProvider
-from sre.api import AppDeps, create_app
-from sre.compiler import RuleEvaluationError, evaluate_rule
-from sre.ide import lsp as lsp_mod
-from sre.parser import parse
-from sre.parser.ast import ParseError
-from sre.runtime.two_pass import TwoPassOrchestrator
+from sparkrules.ai import AiService, StubAiProvider
+from sparkrules.api import AppDeps, create_app
+from sparkrules.compiler import RuleEvaluationError, evaluate_rule
+from sparkrules.ide import lsp as lsp_mod
+from sparkrules.parser import parse
+from sparkrules.parser.ast import ParseError
+from sparkrules.runtime.two_pass import TwoPassOrchestrator
 
 
 def test_line_col_default_when_no_location_suffix() -> None:
@@ -70,12 +70,12 @@ def test_local_default_roles_grants_configured_role(
 def test_stub_explain_non_parse_error_from_parse(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from sre.ai.service import _stub_explain_from_drl
+    from sparkrules.ai.service import _stub_explain_from_drl
 
     def boom(_s: str) -> object:
         raise RuntimeError("parse blew up")
 
-    monkeypatch.setattr("sre.parser.parse", boom)
+    monkeypatch.setattr("sparkrules.parser.parse", boom)
     out = _stub_explain_from_drl({"drl": "anything"})
     assert "unexpected error" in out.lower() or "RuntimeError" in out
 

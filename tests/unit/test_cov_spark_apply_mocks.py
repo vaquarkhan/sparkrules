@@ -1,4 +1,4 @@
-"""Cover sre.spark.dataframe without a JVM (mock SparkSession / RDD)."""
+"""Cover sparkrules.spark.dataframe without a JVM (mock SparkSession / RDD)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import pytest
 
 pytest.importorskip("pyspark")
 
-from sre.spark.dataframe import apply_drl, iter_rule_rows, rows_from_session
+from sparkrules.spark.dataframe import apply_drl, iter_rule_rows, rows_from_session
 
 
 def test_apply_drl_with_mock_spark() -> None:

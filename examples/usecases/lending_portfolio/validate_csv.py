@@ -15,7 +15,7 @@ def _here() -> Path:
 def main() -> int:
     import json
 
-    from sre.spark.dataframe import iter_rule_rows
+    from sparkrules.spark.dataframe import iter_rule_rows
 
     sd = _here()
     drl = (sd / "drools_lending_premium.drl").read_text(encoding="utf-8")

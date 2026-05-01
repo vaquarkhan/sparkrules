@@ -1,8 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pytest
 
-from sre.runtime import EngineConfig, normalize_spark_version, runtime_conf, validate_zero_code_change
+from sparkrules.runtime import EngineConfig, normalize_spark_version, runtime_conf, validate_zero_code_change
 
 
 def test_spark_version_normalization() -> None:
@@ -18,8 +18,8 @@ def test_runtime_conf_platform_switching() -> None:
     base = EngineConfig()
     c = runtime_conf(base)
     assert c["spark.version.target"].startswith("3.")
-    assert c["sre.platform"] == "local"
-    assert c["sre.execution.stop_on_decline"] == "false"
+    assert c["sparkrules.platform"] == "local"
+    assert c["sparkrules.execution.stop_on_decline"] == "false"
 
     glue = runtime_conf(EngineConfig(platform="glue", glue_dpu=20))
     assert glue["spark.glue.dpu"] == "20"
@@ -34,10 +34,10 @@ def test_runtime_conf_platform_switching() -> None:
     assert az["spark.synapse.optimizeWrite"] == "true"
 
     ff = runtime_conf(EngineConfig(stop_on_decline=True))
-    assert ff["sre.execution.stop_on_decline"] == "true"
+    assert ff["sparkrules.execution.stop_on_decline"] == "true"
     g = runtime_conf(EngineConfig(graph_provider="in_memory", graph_mode="live"))
-    assert g["sre.graph.provider"] == "in_memory"
-    assert g["sre.graph.mode"] == "live"
+    assert g["sparkrules.graph.provider"] == "in_memory"
+    assert g["sparkrules.graph.mode"] == "live"
     dbt = runtime_conf(
         EngineConfig(
             dbt_project_dir="/opt/dbt",
@@ -45,9 +45,9 @@ def test_runtime_conf_platform_switching() -> None:
             dbt_target="prod",
         )
     )
-    assert dbt["sre.dbt.project_dir"] == "/opt/dbt"
-    assert dbt["sre.dbt.manifest_sha"] == "abc123"
-    assert dbt["sre.dbt.target"] == "prod"
+    assert dbt["sparkrules.dbt.project_dir"] == "/opt/dbt"
+    assert dbt["sparkrules.dbt.manifest_sha"] == "abc123"
+    assert dbt["sparkrules.dbt.target"] == "prod"
 
 
 def test_config_validation_errors() -> None:

@@ -4,10 +4,10 @@ from datetime import UTC, datetime
 
 import pytest
 
-from sre.governance import PromotionRegistry
-from sre.governance.promote_ops import sync_dev_from_active, validate_version_namespace
-from sre.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
-from sre.store import InMemoryRuleMetadataStore
+from sparkrules.governance import PromotionRegistry
+from sparkrules.governance.promote_ops import sync_dev_from_active, validate_version_namespace
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.store import InMemoryRuleMetadataStore
 
 
 def _rule(handle: str, ns: str) -> Rule:

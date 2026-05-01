@@ -7,10 +7,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from sre.compiler import RuleCompiler
-from sre.compiler.classifier import StrategyClassifier
-from sre.compiler.discrimination import DiscriminationNetwork
-from sre.model import (
+from sparkrules.compiler import RuleCompiler
+from sparkrules.compiler.classifier import StrategyClassifier
+from sparkrules.compiler.discrimination import DiscriminationNetwork
+from sparkrules.model import (
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -20,15 +20,15 @@ from sre.model import (
     dt_to_json,
     evaluate_decision_table,
 )
-from sre.model.rule import Rule, RuleDefinition, RuleFormat
-from sre.parser import parse, print_ast
-from sre.runtime.batch import BatchEvaluator
-from sre.runtime.cache import DerivedColumnCache
-from sre.runtime.iceberg_store import IcebergLikeTable
-from sre.runtime.streaming import StreamingRuleRefresher
-from sre.runtime.two_pass import TwoPassOrchestrator
-from sre.store import InMemoryRuleMetadataStore, RuleFilter
-from sre.transport.broadcaster import RuleBroadcaster
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat
+from sparkrules.parser import parse, print_ast
+from sparkrules.runtime.batch import BatchEvaluator
+from sparkrules.runtime.cache import DerivedColumnCache
+from sparkrules.runtime.iceberg_store import IcebergLikeTable
+from sparkrules.runtime.streaming import StreamingRuleRefresher
+from sparkrules.runtime.two_pass import TwoPassOrchestrator
+from sparkrules.store import InMemoryRuleMetadataStore, RuleFilter
+from sparkrules.transport.broadcaster import RuleBroadcaster
 
 
 def _g0_store(r: int) -> None:
@@ -182,10 +182,10 @@ def _g4_runtime(r: int) -> None:
 
 
 def _g5_executor_transport(r: int) -> None:
-    from sre.compiler import RuleCompiler
-    from sre.executor import order_activations, resolve_activation_groups
-    from sre.executor.rule_executor import RuleExecutor
-    from sre.transport.broadcaster import RuleBroadcaster
+    from sparkrules.compiler import RuleCompiler
+    from sparkrules.executor import order_activations, resolve_activation_groups
+    from sparkrules.executor.rule_executor import RuleExecutor
+    from sparkrules.transport.broadcaster import RuleBroadcaster
 
     if r == 0:
         assert order_activations([(1, "a", None, "x")]) == ["x"]
@@ -207,7 +207,7 @@ def _g5_executor_transport(r: int) -> None:
 
 
 def _g6_io_client_api(r: int) -> None:
-    from sre.api import create_app, AppDeps
+    from sparkrules.api import create_app, AppDeps
     from fastapi.testclient import TestClient
 
     if r == 0:
@@ -223,8 +223,8 @@ def _g6_io_client_api(r: int) -> None:
 
 
 def _g7_obs_connect(r: int) -> None:
-    from sre.connect import ConnectServer
-    from sre.obs.metrics import SreMetrics, metrics_endpoint_app
+    from sparkrules.connect import ConnectServer
+    from sparkrules.obs.metrics import SreMetrics, metrics_endpoint_app
 
     if r == 0:
         SreMetrics().rules_fired.labels("1").inc()
@@ -238,19 +238,19 @@ def _g7_obs_connect(r: int) -> None:
 
 def _g8_misc(r: int) -> None:
     if r == 0:
-        import sre
+        import sparkrules
 
-        assert sre.__doc__ is None or True
+        assert sparkrules.__doc__ is None or True
         return
     if r == 1:
-        from sre.client import SreClient
+        from sparkrules.client import SreClient
 
         SreClient("http://localhost")
         return
     if r == 2:
-        import sre
+        import sparkrules
 
-        assert sre.__version__ == "0.1.0"
+        assert sparkrules.__version__ == "1.0.0"
         return
     if r in range(3, 18):
         assert uuid.uuid4()

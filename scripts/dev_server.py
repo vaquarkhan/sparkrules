@@ -8,10 +8,10 @@ import sys
 def _main() -> None:
     port = int(os.environ.get("SPARKRULES_PORT", "8042"))
     try:
-        import sre.api.app  # noqa: F401
+        import sparkrules.api.app  # noqa: F401
     except ImportError as e:
         print(
-            "ERROR: cannot import sre. From the repository root run:\n"
+            "ERROR: cannot import sparkrules. From the repository root run:\n"
             f"  {sys.executable} -m pip install -e .\n"
             f"Import error: {e}",
             file=sys.stderr,
@@ -25,7 +25,7 @@ def _main() -> None:
     print("Health:     ", f"http://127.0.0.1:{port}/health")
     print("Stop:       Ctrl+C in this window.\n")
     uvicorn.run(
-        "sre.api.app:create_app",
+        "sparkrules.api.app:create_app",
         factory=True,
         host="127.0.0.1",
         port=port,

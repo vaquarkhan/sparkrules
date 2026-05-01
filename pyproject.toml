@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Drools-equivalent business rule engine reference implementation"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "LicenseRef-SparkRules-NC-1.0"
+license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = [
   "business-rules",
@@ -64,14 +64,14 @@ Issues = "https://github.com/vaquarkhan/sparkrules/issues"
 Repository = "https://github.com/vaquarkhan/sparkrules"
 
 [project.scripts]
-sre-drl-smoke = "sre.tools.smoke_drl:main"
-sre-cli = "sre.tools.cli:main"
+sparkrules-drl-smoke = "sparkrules.tools.smoke_drl:main"
+sparkrules-cli = "sparkrules.tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-sre = [
+sparkrules = [
   "api/static/workbench/index.html",
   "api/static/workbench/sparkrules-logo.png",
 ]
@@ -92,7 +92,7 @@ line-length = 100
 target-version = "py311"
 
 [tool.coverage.run]
-source = ["src/sre"]
+source = ["src/sparkrules"]
 branch = false
 
 [tool.coverage.report]

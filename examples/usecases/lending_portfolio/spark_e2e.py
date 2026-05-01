@@ -45,7 +45,7 @@ def main() -> int:
         return 1
 
     try:
-        from sre.spark import apply_drl
+        from sparkrules.spark import apply_drl
 
         sd = _here()
         drl = (sd / "drools_lending_premium.drl").read_text(encoding="utf-8")

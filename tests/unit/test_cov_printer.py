@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from sre.model.rule import DEFAULT_AGENDA_GROUP
-from sre.parser import parse, print_ast
-from sre.parser.ast import (
+from sparkrules.model.rule import DEFAULT_AGENDA_GROUP
+from sparkrules.parser import parse, print_ast
+from sparkrules.parser.ast import (
     Action,
     BinaryOp,
     BinaryOperator,

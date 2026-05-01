@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.runtime.lineage import InMemoryLineageSink, make_lineage_event
+from sparkrules.api import AppDeps, create_app
+from sparkrules.runtime.lineage import InMemoryLineageSink, make_lineage_event
 
 
 def test_make_lineage_event_and_sink() -> None:

@@ -5,7 +5,7 @@ import pytest
 pytest.importorskip("pyspark", reason="PySpark required")
 from pyspark.sql import Row  # noqa: E402
 
-from sre.spark import mpartition_rows  # noqa: E402
+from sparkrules.spark import mpartition_rows  # noqa: E402
 
 _DRL = "rule r when $x : T (1==1) then end"
 

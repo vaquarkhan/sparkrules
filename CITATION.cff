@@ -9,7 +9,7 @@ authors:
     given-names: "Vaquar"
 repository-code: "https://github.com/vaquarkhan/sparkrules"
 url: "https://github.com/vaquarkhan/sparkrules"
-license: "LicenseRef-SparkRules-NC-1.0"
+license: "Apache-2.0"
 version: "1.0.0"
 date-released: "2026-05-01"
 keywords:

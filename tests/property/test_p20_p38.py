@@ -8,9 +8,9 @@ from hypothesis import given, settings, strategies as st
 
 from hypo_settings import PROFILE
 
-from sre.compiler import evaluate_rule
-from sre.compiler.discrimination import DiscriminationNetwork
-from sre.model import (
+from sparkrules.compiler import evaluate_rule
+from sparkrules.compiler.discrimination import DiscriminationNetwork
+from sparkrules.model import (
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -21,17 +21,17 @@ from sre.model import (
     dt_to_json,
     evaluate_decision_table,
 )
-from sre.model.rule import now_utc
-from sre.runtime.batch import BatchEvaluator, RunRecord
-from sre.runtime.cache import DerivedColumnCache
-from sre.runtime.iceberg_store import IcebergLikeTable
-from sre.runtime.streaming import StreamingEvaluator, StreamingRuleRefresher
-from sre.runtime.two_pass import TwoPassOrchestrator
-from sre.parser import parse
-from sre.sim.ab import ABTestConfig, ABTestRunner, Variant
-from sre.sim.replay import MissingRuleSetVersionError, ReplayService
-from sre.sim.simulator import RuleSimulator
-from sre.executor.rule_executor import RuleExecutor
+from sparkrules.model.rule import now_utc
+from sparkrules.runtime.batch import BatchEvaluator, RunRecord
+from sparkrules.runtime.cache import DerivedColumnCache
+from sparkrules.runtime.iceberg_store import IcebergLikeTable
+from sparkrules.runtime.streaming import StreamingEvaluator, StreamingRuleRefresher
+from sparkrules.runtime.two_pass import TwoPassOrchestrator
+from sparkrules.parser import parse
+from sparkrules.sim.ab import ABTestConfig, ABTestRunner, Variant
+from sparkrules.sim.replay import MissingRuleSetVersionError, ReplayService
+from sparkrules.sim.simulator import RuleSimulator
+from sparkrules.executor.rule_executor import RuleExecutor
 
 DRL_P1 = """
 rule p1

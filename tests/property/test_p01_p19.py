@@ -11,12 +11,12 @@ from hypothesis import assume, given, settings, strategies as st
 
 from hypo_settings import PROFILE
 
-from sre.compiler.batcher import RuleBatcher
-from sre.compiler.classifier import Strategy, StrategyClassifier
-from sre.compiler.discrimination import DiscriminationNetwork
-from sre.ioxls import CellTypeError, DecisionTableExporter, DecisionTableImporter
-from sre.model import ast_from_template
-from sre.model.decision_table import (
+from sparkrules.compiler.batcher import RuleBatcher
+from sparkrules.compiler.classifier import Strategy, StrategyClassifier
+from sparkrules.compiler.discrimination import DiscriminationNetwork
+from sparkrules.ioxls import CellTypeError, DecisionTableExporter, DecisionTableImporter
+from sparkrules.model import ast_from_template
+from sparkrules.model.decision_table import (
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -26,16 +26,16 @@ from sre.model.decision_table import (
     Row,
     evaluate_decision_table,
 )
-from sre.model.rule import Rule, RuleDefinition, RuleFormat
-from sre.model.rule_template import MissingPlaceholderError, RuleTemplate
-from sre.parser import parse, print_ast
-from sre.parser.ast import ParseError
-from sre.parser.parser import DrlParser
-from sre.store import ConflictError, InMemoryRuleMetadataStore, RuleFilter
-from sre.transport.broadcaster import RuleBroadcaster
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat
+from sparkrules.model.rule_template import MissingPlaceholderError, RuleTemplate
+from sparkrules.parser import parse, print_ast
+from sparkrules.parser.ast import ParseError
+from sparkrules.parser.parser import DrlParser
+from sparkrules.store import ConflictError, InMemoryRuleMetadataStore, RuleFilter
+from sparkrules.transport.broadcaster import RuleBroadcaster
 
-from sre.executor import forward_chain, ChainingLimitExceededError
-from sre.executor import order_activations, resolve_activation_groups
+from sparkrules.executor import forward_chain, ChainingLimitExceededError
+from sparkrules.executor import order_activations, resolve_activation_groups
 
 DRL_SIMPLE = """
 rule t

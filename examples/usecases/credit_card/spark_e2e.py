@@ -57,7 +57,7 @@ def main() -> int:
         return 1
 
     try:
-        from sre.spark import apply_drl
+        from sparkrules.spark import apply_drl
 
         drl = (sd / "card_auth_rules.drl").read_text(encoding="utf-8")
         base = spark.createDataFrame(_rows(args.csv))

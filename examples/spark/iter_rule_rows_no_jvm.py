@@ -22,7 +22,7 @@ def _drl() -> str:
 
 
 def main() -> int:
-    from sre.spark.dataframe import iter_rule_rows
+    from sparkrules.spark.dataframe import iter_rule_rows
 
     drl = _drl()
     part = [

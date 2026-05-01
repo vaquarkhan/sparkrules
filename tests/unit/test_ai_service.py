@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 import pytest
 
-from sre.ai import AiService, StubAiProvider, redact_payload
+from sparkrules.ai import AiService, StubAiProvider, redact_payload
 
 
 def test_redact_payload() -> None:
@@ -41,7 +41,7 @@ def test_ai_store_get_missing() -> None:
 
 
 def test_stub_explain_distinct_messages_by_payload() -> None:
-    from sre.ai.service import _stub_explain_from_drl
+    from sparkrules.ai.service import _stub_explain_from_drl
 
     p = StubAiProvider()
     assert "JSON object" in _stub_explain_from_drl([])  # type: ignore[arg-type]

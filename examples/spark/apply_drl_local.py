@@ -49,7 +49,7 @@ def main() -> int:
         return 1
 
     try:
-        from sre.spark import apply_drl, rows_from_session
+        from sparkrules.spark import apply_drl, rows_from_session
 
         drl = _drl()
         # Two facts: first matches minimal.drl ($t.x == 1), second does not

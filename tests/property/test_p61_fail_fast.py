@@ -5,8 +5,8 @@ from hypothesis import given, settings, strategies as st
 
 from hypo_settings import PROFILE
 
-from sre.parser import parse_rules
-from sre.runtime.rule_chain import run_rule_chain
+from sparkrules.parser import parse_rules
+from sparkrules.runtime.rule_chain import run_rule_chain
 
 
 BASE = """

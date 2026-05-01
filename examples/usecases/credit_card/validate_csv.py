@@ -14,7 +14,7 @@ def _here() -> Path:
 
 
 def main() -> int:
-    from sre.spark.dataframe import iter_rule_rows
+    from sparkrules.spark.dataframe import iter_rule_rows
 
     sd = _here()
     drl = (sd / "card_auth_rules.drl").read_text(encoding="utf-8")

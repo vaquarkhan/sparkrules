@@ -6,10 +6,10 @@
 | `pytest tests` (default, `-m "not perf"`) | **521 passed**, 2 skipped, 1 deselected (perf) |
 | `pytest tests/perf -m perf` | 1 passed |
 | Python | 3.11+ |
-| `pytest tests --ignore=tests/spark --cov=src/sre` (line coverage) | **100%** (`fail_under=100` in `pyproject.toml`) |
-| PySpark | `src/sre/spark/` + `tests/unit/test_spark_iter.py` (no JVM); `tests/spark/` needs working Java+PySpark |
+| `pytest tests --ignore=tests/spark --cov=src/sparkrules` (line coverage) | **100%** (`fail_under=100` in `pyproject.toml`) |
+| PySpark | `src/sparkrules/spark/` + `tests/unit/test_spark_iter.py` (no JVM); `tests/spark/` needs working Java+PySpark |
 
-**521 passed, 2 skipped, 1 deselected** on the default test selection. Perf is excluded by default via `pyproject.toml` `addopts`. The `src/sre` 100% line gate is enforced on `tests/unit/` via `pytest tests/unit/ --cov=src/sre` (or equivalent).
+**521 passed, 2 skipped, 1 deselected** on the default test selection. Perf is excluded by default via `pyproject.toml` `addopts`. The `src/sparkrules` 100% line gate is enforced on `tests/unit/` via `pytest tests/unit/ --cov=src/sparkrules` (or equivalent).
 
 ### `idea-brainstrom.txt` §34.2 exit review
 

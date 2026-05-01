@@ -4,15 +4,15 @@ This project includes **harnesses** to reason about very large runtimes, not liv
 
 ## In-repo tools
 
-- `sre.runtime.perf.run_perf_harness` — measures elapsed time and rows/sec for a callable.
-- `sre.runtime.perf.scale_evidence` — produces a structured estimate (rows, rows/sec, target rows, estimated duration) for documentation and SLO planning.
-- `sre.obs.health` — classifies per-stage health from duration, shuffle volume, and task failures (for UI and ops dashboards).
+- `sparkrules.runtime.perf.run_perf_harness` — measures elapsed time and rows/sec for a callable.
+- `sparkrules.runtime.perf.scale_evidence` — produces a structured estimate (rows, rows/sec, target rows, estimated duration) for documentation and SLO planning.
+- `sparkrules.obs.health` — classifies per-stage health from duration, shuffle volume, and task failures (for UI and ops dashboards).
 
 ## Default API path: not distributed Spark
 
 For **default** HTTP simulations and the Workbench **Simulate** view, evaluation runs in **pure Python** in the API process: **`SparkSession.getActiveSession()` is typically `None`**, and there is **no** automatic `mapPartitions` / **broadcast** rule package on a **DataFrame**. That is **by design** for a simple integration surface; it is **not** evidence of billion-row Spark throughput.
 
-For the **claim vs reality** narrative, observed throughput bounds, and the **wiring** needed for real cluster execution (`mapPartitions`, `CompiledRulePackage` broadcast, `sre/spark/dataframe.py`), see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#spark-and-distributed-execution). For **when to choose Spark** vs staying on Python, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
+For the **claim vs reality** narrative, observed throughput bounds, and the **wiring** needed for real cluster execution (`mapPartitions`, `CompiledRulePackage` broadcast, `sparkrules/spark/dataframe.py`), see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#spark-and-distributed-execution). For **when to choose Spark** vs staying on Python, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
 
 ## What “production evidence” means
 

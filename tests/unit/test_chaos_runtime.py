@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sre.runtime import ChaosPolicy, run_chaos_scenario
+from sparkrules.runtime import ChaosPolicy, run_chaos_scenario
 
 
 def test_chaos_success_first_try() -> None:
