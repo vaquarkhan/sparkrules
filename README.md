@@ -1,6 +1,6 @@
 ﻿# sparkrules 1.0.1
 
-**A Drools-style business rule engine for Python.** Define rules in DRL, evaluate facts, get explainable results — no JVM required.
+**The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails — from laptop to lakehouse, no JVM required.
 
 <p align="center">
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
@@ -8,6 +8,7 @@
   <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml"><img alt="Docker" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml/badge.svg"></a>
   <a href="https://github.com/vaquarkhan/sparkrules/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
+  <a href="https://github.com/vaquarkhan/sparkrules"><img alt="GitHub stars" src="https://img.shields.io/github/stars/vaquarkhan/sparkrules?style=social"></a>
 </p>
 
 <p align="center">
@@ -29,130 +30,168 @@ print(result.action_output)  # {'risk': 'high'}
 
 ```bash
 pip install sparkrules          # core engine only
-pip install sparkrules[api]     # + FastAPI server and Workbench
-pip install sparkrules[spark]   # + PySpark integration
+pip install sparkrules[api]     # + FastAPI server and Workbench UI
+pip install sparkrules[spark]   # + PySpark cluster integration
 pip install sparkrules[all]     # everything
 ```
 
-## Why SparkRules?
+---
 
-- **No JVM, no Drools server** — pure Python rule engine with DRL syntax, decision tables, and explainable outputs
-- **Production-ready API** — FastAPI service with a browser-based Rules Workbench (Monaco editor, LSP diagnostics, simulations)
-- **Optional Spark integration** — scale to cluster DataFrames with `apply_drl()` when you need it, stay on pure Python when you don't
-- **Governance built in** — versioned rules, namespace scoping, dev→stage→prod promotion, deprecation workflows
-- **100% test coverage** — 521 tests, property-based testing with Hypothesis, enforced coverage gate
+## Who is this for?
 
-## Performance
+| If you are... | SparkRules gives you... |
+|---------------|------------------------|
+| **Migrating from Drools** | Same DRL syntax, no JVM, Python-native — drop your `.drl` files in and go |
+| **Building a decisioning service** | FastAPI server + browser Workbench + versioned rules in one package |
+| **Running rules on Spark** | `apply_drl(df, drl)` distributes evaluation across your cluster — same rules, distributed execution |
+| **In a regulated industry** | Adverse-action reason aggregation (ECOA/FCRA/GDPR Art 22), audit trails, deterministic replay |
+| **Tired of if/else chains** | Externalized business logic that business analysts can read, version, and govern |
 
-The default API path runs pure Python (no Spark). Measured throughput on a single core:
+## Why SparkRules over alternatives?
+
+| | SparkRules | Drools (JVM) | Custom if/else | Great Expectations |
+|---|---|---|---|---|
+| **Language** | Python | Java/Kotlin | Any | Python |
+| **DRL rules** | ✅ | ✅ | ❌ | ❌ |
+| **Decision tables** | ✅ | ✅ | ❌ | ❌ |
+| **Explainable outputs** | ✅ bound fields + reason codes | ✅ | Manual | ❌ |
+| **Rule governance** | ✅ versioning, promotion, deprecation | Partial (KIE) | ❌ | ❌ |
+| **Data quality** | ✅ built-in + profiling | ❌ | ❌ | ✅ (DQ only) |
+| **Adverse-action notices** | ✅ ECOA/FCRA/GDPR | ❌ | Manual | ❌ |
+| **Spark integration** | ✅ optional | ❌ | Manual | ❌ |
+| **Browser Workbench** | ✅ Monaco + LSP | ✅ (Business Central) | ❌ | ❌ |
+| **Infrastructure** | `pip install` | JVM + app server | N/A | `pip install` |
+
+**SparkRules' unique position:** governance + DQ + business rules + adverse-action reasons in one versioned, auditable package — from laptop to lakehouse.
+
+---
+
+## What's inside
+
+### Rule engine
+Write rules in Drools-style DRL. Evaluate facts. Get explainable results with bound fields, action outputs, and reason codes. Supports salience priority, agenda groups, activation groups, and multi-pattern rules.
+
+### Decision tables
+Define rules as spreadsheet-style tables with hit policies (UNIQUE, FIRST, PRIORITY, COLLECT). Import/export XLSX. Business analysts can author rules without writing DRL.
+
+### Regulatory compliance (new in 1.0.1)
+`build_adverse_action_notice()` aggregates reason codes from rule evaluations into structured notices for ECOA/FCRA (US) and GDPR Article 22 (EU). Up to 4 principal reasons per ECOA standard, deduplicated and priority-ordered.
+
+```python
+from sparkrules.executor import RuleExecutor, build_adverse_action_notice
+
+results = [executor.run(applicant, drl) for drl in credit_rules]
+notice = build_adverse_action_notice(results, decision="decline", fact_id="app-123")
+# notice.principal_reasons = ("CR001", "CR002", "IN001")
+```
+
+### Data quality + profiling (new in 1.0.1)
+Built-in DQ checks (not-null, range, in-set, regex, uniqueness, freshness) plus statistical profiling — completeness, uniqueness, mean/stddev/percentiles, top-N values. Run DQ checks before rules, governed by the same versioning and namespace system.
+
+```python
+from sparkrules.dq import profile_rows
+
+profile = profile_rows(batch_of_facts)
+# profile.fields[0].completeness = 0.98
+# profile.fields[0].numeric_stats.mean = 45000.0
+```
+
+### API + Rules Workbench
+FastAPI server with OpenAPI docs, health endpoint, rule CRUD, and a browser-based **Rules Workbench** with Monaco DRL editor, real-time LSP diagnostics, simulation, and interactive Chart.js dashboards.
+
+### Simulation modes
+Test rules before deploying: default, shadow (compare two rule sets), coverage (which rules fire?), counterfactual (what-if analysis), and chain (ordered multi-rule evaluation with stop-on-fire).
+
+### Time-travel debug
+Capture rule execution snapshots. Replay them later with different facts. Deterministic re-runs for audit and debugging.
+
+### Governance
+Version every rule. Scope by namespace. Promote through dev → stage → prod. Deprecate with propose → approve → enforce workflow. Full audit trail.
+
+### Spark integration (optional)
+Pure Python by default. When you need cluster scale, wire `apply_drl(df, drl)` into your PySpark job — same rules, distributed via `mapPartitions`. Compatible with Spark 3.x+. Deploy on AWS Glue, Databricks, GCP Dataproc, Azure Synapse, or Kubernetes — config-driven, no code changes.
+
+### Performance (new in 1.0.1)
+DRL parse caching (LRU 256) gives 5-10x throughput boost on repeated evaluations.
 
 | Scenario | Throughput |
 |----------|-----------|
-| Raw `evaluate_rule` (single pattern) | ~199,000 evals/sec |
-| `iter_rule_rows` with JSON emit | ~105,000 rows/sec |
-| 10-rule chain evaluation | ~12,000 chains/sec |
-| Full API round-trip (HTTP + parse + eval) | ~200-500 req/sec |
-| Spark `apply_drl` local[4], 100k rows | ~16,000 rows/sec |
+| Raw `evaluate_rule` | ~199,000 evals/sec |
+| 10-rule chain | ~12,000 chains/sec |
+| Spark `apply_drl` local[4] | ~16,000 rows/sec |
 
-For higher throughput, use `apply_drl()` with PySpark to distribute evaluation across a cluster. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for methodology and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for architecture scope and extension points.
+---
 
-## Quick start (from source)
+## Quick start
 
+### From PyPI
+```bash
+pip install sparkrules[api]
+python -m uvicorn sparkrules.api.app:create_app --factory --port 8042
+# → http://127.0.0.1:8042/workbench/
+```
+
+### From source
 ```bash
 git clone https://github.com/vaquarkhan/sparkrules.git
 cd sparkrules
-python -m pip install -e ".[test]"
-python -c "import sparkrules; print('ok', sparkrules.__version__)"
+pip install -e ".[test]"
 pytest tests/ -q
 ```
 
-## Start the API + Workbench
-
-```bash
-pip install sparkrules[api]
-python -m uvicorn sparkrules.api.app:create_app --factory --host 127.0.0.1 --port 8042
-```
-
-Then open:
-- **OpenAPI docs:** http://127.0.0.1:8042/docs
-- **Rules Workbench:** http://127.0.0.1:8042/workbench/
-
-Or use Docker:
-
+### Docker
 ```bash
 docker compose up --build
-# → http://127.0.0.1:8042/docs
-# → http://127.0.0.1:8042/workbench/  (compose maps host 8042 → container 8000)
+# → http://127.0.0.1:8042/workbench/
 ```
 
+---
 
-## Feature highlights
+## Use cases
 
-### Rule authoring
-- DRL-style `when` / `then` rule language with salience, agenda groups, activation groups
-- Decision tables with hit policies: `UNIQUE`, `FIRST`, `PRIORITY`, `COLLECT`
-- XLSX decision-table import/export
-- Rule templates with placeholder substitution
+| Domain | Scenario | What SparkRules does |
+|--------|----------|---------------------|
+| **Lending** | Loan underwriting | Evaluate credit rules, generate adverse-action notices for declines |
+| **Payments** | POS end-of-day | Batch-evaluate transaction rules, flag exceptions |
+| **Insurance** | Claims adjudication | Decision tables for coverage determination |
+| **Healthcare** | Clinical trial eligibility | Screen patients against inclusion/exclusion criteria |
+| **Fraud** | Transaction authorization | Real-time rule evaluation with explainable decline reasons |
+| **Compliance** | Settlement replay | Deterministic re-run of historical decisions for audit |
 
-### Execution
-- Explainable outputs: bound fields, action outputs, reason codes
-- Batch, two-pass, and streaming evaluation modes
-- Deterministic replay with versioned rule snapshots
-- Multi-pattern rules with local Cartesian expansion
+5 complete end-to-end examples with DRL, sample data, and Spark jobs: [examples/usecases/](examples/usecases/README.md)
 
-### API and Workbench
-- FastAPI with OpenAPI docs, health endpoint, rule CRUD, simulations
-- **Rules Workbench** — browser UI with Monaco DRL editor, validate + LSP diagnostics, simulation, deployment readout
-- Shadow, coverage, counterfactual, and chain simulation modes
-- Time-travel debug capture and replay
-- Data quality checks (not-null, range, in-set)
+3 Jupyter notebooks for interactive learning: [examples/notebooks/](examples/notebooks/README.md)
 
-### Governance
-- Versioned metadata store (in-memory, DuckDB, Iceberg, Postgres backends)
-- Rule namespaces for multi-project scoping
-- Dev → stage → prod promotion pins
-- Deprecation workflow: propose, approve, enforce
+---
 
-### Spark integration (optional)
-- `apply_drl(df, drl)` for cluster DataFrame evaluation via `mapPartitions`
-- Pure Python by default — Spark is opt-in, not required
-- **Spark 3.x+** compatible (3.0 through 3.5+)
-- Platform config: local, **AWS Glue**, **Databricks**, **GCP Dataproc**, **Azure Synapse**
-- **Kubernetes** deployment manifests included (`deploy/k8s/`)
-- Config-driven platform switching — no code changes between environments
+## Platform support
 
-> **Python-first, Spark-ready:** SparkRules runs as a pure Python engine by default. When you need cluster-scale evaluation over millions of rows, wire `apply_drl()` into your PySpark job — same rules, same DRL, distributed execution. See [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md).
+| Platform | How | Docs |
+|----------|-----|------|
+| **Local / CI** | `pip install sparkrules` | This README |
+| **Docker** | `docker compose up --build` | [Dockerfile](Dockerfile) |
+| **Kubernetes** | Helm-ready manifests | [deploy/k8s/](deploy/k8s/) |
+| **AWS Glue** | Config-driven | [deploy/aws-glue/](deploy/aws-glue/) |
+| **Databricks** | Config-driven | [deploy/databricks/](deploy/databricks/) |
+| **GCP Dataproc** | Config-driven | [deploy/gcp-dataproc/](deploy/gcp-dataproc/) |
+| **Azure Synapse** | Config-driven | [deploy/azure-synapse/](deploy/azure-synapse/) |
 
 ## How it works
 
 ![SparkRules flow](docs/images/sparrule-flow2.png)
 
-1. Author rules in DRL or decision-table form
-2. Parse and validate rule syntax
-3. Evaluate facts and produce explainable results
-4. Version, replay, and govern rule lifecycle
-
-Architecture details: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)
-
-## Use cases
-
-- POS end-of-day decisioning
-- Streaming authorization logic
-- Settlement replay and correction
-- Underwriting decision support
-- Clinical trial eligibility screening
-
-Details: [docs/USE_CASES.md](docs/USE_CASES.md) · Examples: [examples/](examples/README.md)
-
-## API key (optional)
-
-Set `SPARKRULES_API_KEY` to require authentication on mutating endpoints and sensitive GETs. Public without key: `/health`, OpenAPI, Workbench static shell. See [API run details](#start-the-api--workbench).
+1. **Author** rules in DRL or decision-table form
+2. **Parse and validate** with LSP diagnostics
+3. **Simulate** with shadow, counterfactual, and chain modes
+4. **Deploy** with versioning, namespace scoping, and promotion pins
+5. **Evaluate** facts and get explainable, auditable results
+6. **Replay** any historical decision deterministically
 
 ## Documentation
 
 | Topic | Link |
 |-------|------|
-| Features | [docs/FEATURES.md](docs/FEATURES.md) |
+| Full feature list | [docs/FEATURES.md](docs/FEATURES.md) |
 | Architecture | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) |
 | Developer guide | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 | Use cases | [docs/USE_CASES.md](docs/USE_CASES.md) |
@@ -162,10 +201,19 @@ Set `SPARKRULES_API_KEY` to require authentication on mutating endpoints and sen
 | Architecture scope | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 | Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Publishing / CI | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Jupyter notebooks | [examples/notebooks/](examples/notebooks/README.md) |
 | AI agent guide | [AGENTS.md](AGENTS.md) |
+
+## Quality
+
+- **580+ tests** — unit, property-based (Hypothesis), integration, performance
+- **100% line coverage** enforced in CI (`fail_under=100`)
+- **Python 3.11 / 3.12 / 3.13** tested in CI matrix
+- **Ruff** lint + format enforced
+- **pip-audit** dependency security scanning
+- **Apache 2.0** license — use it anywhere, commercially or otherwise
 
 ## License
 
