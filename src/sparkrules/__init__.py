@@ -1,6 +1,6 @@
 """SparkRules engine (reference Python implementation)."""
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 def _check_api_extras() -> None:
