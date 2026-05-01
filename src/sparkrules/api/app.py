@@ -39,6 +39,9 @@ from sparkrules.api.schemas import (
     SimulationChainResponse,
     SimulationRequest,
     SimulationResponse,
+    BatchSimulationRequest,
+    BatchSimulationResponse,
+    BatchSimulationResultItem,
     ShadowSimulationRequest,
     ShadowSimulationResponse,
     CoverageSimulationRequest,
@@ -401,6 +404,46 @@ def create_app(deps: AppDeps | None = None) -> Any:
             metrics={"facts_processed": 1, "rules_fired": 1 if f.fired else 0},
         )
         return SimulationResponse(fired=f.fired, action=f.action, bound=f.bound)
+
+    @app.post(
+        "/simulations/batch",
+        response_model=BatchSimulationResponse,
+        tags=["simulation"],
+    )
+    def sim_batch(req: Request, s: BatchSimulationRequest) -> BatchSimulationResponse:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {
+                "rule_reader",
+                "rule_author",
+                "rule_admin",
+                "run_operator",
+                "dq_steward",
+                "ai_reviewer",
+            },
+        )
+        results: list[BatchSimulationResultItem] = []
+        fired_count = 0
+        for i, fact in enumerate(s.facts):
+            try:
+                f = d.sim.run(s.drl, dict(fact))
+                if f.fired:
+                    fired_count += 1
+                results.append(
+                    BatchSimulationResultItem(
+                        index=i, fired=f.fired, action=f.action, bound=f.bound
+                    )
+                )
+            except Exception as e:  # noqa: BLE001
+                results.append(
+                    BatchSimulationResultItem(
+                        index=i, fired=False, error=str(e)
+                    )
+                )
+        return BatchSimulationResponse(
+            total=len(s.facts), fired_count=fired_count, results=results
+        )
 
     @app.post(
         "/simulations/shadow",

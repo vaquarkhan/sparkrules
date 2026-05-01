@@ -38,6 +38,25 @@ class SimulationResponse(BaseModel):
     bound: dict[str, object] = {}
 
 
+class BatchSimulationRequest(BaseModel):
+    drl: str
+    facts: list[dict[str, Any]]
+
+
+class BatchSimulationResultItem(BaseModel):
+    index: int
+    fired: bool
+    action: dict[str, object] = {}
+    bound: dict[str, object] = {}
+    error: str | None = None
+
+
+class BatchSimulationResponse(BaseModel):
+    total: int
+    fired_count: int
+    results: list[BatchSimulationResultItem]
+
+
 class ShadowSimulationRequest(BaseModel):
     primary_drl: str
     shadow_drl: str
