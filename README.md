@@ -10,6 +10,10 @@
   <a href="https://github.com/vaquarkhan/sparkrules/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
 </p>
 
+<p align="center">
+  <img src="docs/images/sparkrules-logo.png" alt="SparkRules logo" width="420">
+</p>
+
 ```python
 from sparkrules.executor import RuleExecutor
 
@@ -110,9 +114,12 @@ docker compose up --build
 ### Spark integration (optional)
 - `apply_drl(df, drl)` for cluster DataFrame evaluation via `mapPartitions`
 - Pure Python by default — Spark is opt-in, not required
-- Platform config: local, AWS Glue, Databricks, GCP Dataproc, Azure Synapse
+- **Spark 3.x+** compatible (3.0 through 3.5+)
+- Platform config: local, **AWS Glue**, **Databricks**, **GCP Dataproc**, **Azure Synapse**
+- **Kubernetes** deployment manifests included (`deploy/k8s/`)
+- Config-driven platform switching — no code changes between environments
 
-> **Spark vs Python:** the API and Workbench run pure Python. For cluster-scale evaluation, see [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md).
+> **Python-first, Spark-ready:** SparkRules runs as a pure Python engine by default. When you need cluster-scale evaluation over millions of rows, wire `apply_drl()` into your PySpark job — same rules, same DRL, distributed execution. See [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md).
 
 ## How it works
 
@@ -155,6 +162,8 @@ Set `SPARKRULES_API_KEY` to require authentication on mutating endpoints and sen
 | Publishing / CI | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Jupyter notebooks | [examples/notebooks/](examples/notebooks/README.md) |
+| AI agent guide | [AGENT.md](AGENT.md) |
 
 ## License
 
