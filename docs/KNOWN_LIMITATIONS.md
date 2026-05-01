@@ -1,4 +1,4 @@
-# Architecture Scope & Extension Points
+﻿# Architecture Scope & Extension Points
 
 This document describes SparkRules' architecture decisions and where to extend the system for your deployment. It complements [FEATURES.md](FEATURES.md) (capabilities) and [ROADMAP.md](ROADMAP.md) (planned work).
 
@@ -6,7 +6,7 @@ This document describes SparkRules' architecture decisions and where to extend t
 
 ## Design philosophy
 
-SparkRules is **Python-first, Spark-ready**. The core engine runs anywhere Python runs — laptops, CI, containers, serverless — with zero infrastructure dependencies. When you need cluster-scale evaluation, wire `apply_drl()` into your PySpark job. This separation is intentional: it keeps the development loop fast and the deployment flexible.
+SparkRules is **Python-first, Spark-ready**. The core engine runs anywhere Python runs  -  laptops, CI, containers, serverless  -  with zero infrastructure dependencies. When you need cluster-scale evaluation, wire `apply_drl()` into your PySpark job. This separation is intentional: it keeps the development loop fast and the deployment flexible.
 
 ---
 
@@ -18,7 +18,7 @@ SparkRules provides a flexible, layered authentication model designed to integra
 |------|----------|-------------|
 | **API key** (`SPARKRULES_API_KEY`) | Simple deployments | Single shared key for all mutating + sensitive endpoints |
 | **Header-based RBAC** | Gateway-fronted services | `X-Principal`, `X-Roles`, `X-Tenant-Id` headers from your gateway |
-| **OIDC** | Enterprise SSO | JWT parsing with issuer/audience checks — pair with your IdP gateway for full verification |
+| **OIDC** | Enterprise SSO | JWT parsing with issuer/audience checks  -  pair with your IdP gateway for full verification |
 | **mTLS** | Service mesh | Client cert subject from gateway header (`X-Client-Cert-Subject`) |
 | **Local dev** | Development/CI | `SPARKRULES_DEV_ALLOW_DEFAULT_SUPERUSER=true` for frictionless local work |
 
@@ -70,13 +70,13 @@ SparkRules ships with pluggable metadata backends:
 | `iceberg` | Planned | Lakehouse-native snapshot semantics |
 | `postgres` | Planned | Multi-instance deployments with shared state |
 
-> **Note:** The `create_rule_store("duckdb")` / `"iceberg"` / `"postgres"` factory currently returns a `PickleFileStore` (pickle-to-disk). Real database backends are on the roadmap. The API is stable — switching to a real backend will be a drop-in replacement.
+> **Note:** The `create_rule_store("duckdb")` / `"iceberg"` / `"postgres"` factory currently returns a `PickleFileStore` (pickle-to-disk). Real database backends are on the roadmap. The API is stable  -  switching to a real backend will be a drop-in replacement.
 
 **Extension point:** Implement the store interface for your preferred backend (Redis, DynamoDB, etc.).
 
 ### Output sinks
 
-Supported output formats: `iceberg`, `delta`, `hudi`, `parquet` — configured via `EngineConfig`, no code changes needed.
+Supported output formats: `iceberg`, `delta`, `hudi`, `parquet`  -  configured via `EngineConfig`, no code changes needed.
 
 ---
 
@@ -123,7 +123,7 @@ SparkRules runs on any platform that supports Python 3.11+:
 | **GCP Dataproc** | Config-driven | See `deploy/gcp-dataproc/` |
 | **Azure Synapse** | Config-driven | See `deploy/azure-synapse/` |
 
-Platform switching is configuration-only — no code changes between environments.
+Platform switching is configuration-only  -  no code changes between environments.
 
 ---
 

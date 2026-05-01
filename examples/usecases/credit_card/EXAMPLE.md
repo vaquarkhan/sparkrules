@@ -1,8 +1,8 @@
-**Author:** Vaquar Khan  
+﻿**Author:** Vaquar Khan  
 
-## Credit card — authorization rails
+## Credit card  -  authorization rails
 
-Demonstrates issuer-side **risk + policy overlays** atop authorization payloads: issuer ledger checks, prohibited or high-risk MCC catalogs, cryptographic merchant cross-border pairings—before standard approvals.
+Demonstrates issuer-side **risk + policy overlays** atop authorization payloads: issuer ledger checks, prohibited or high-risk MCC catalogs, cryptographic merchant cross-border pairings - before standard approvals.
 
 ### Fact shape (`c`)
 

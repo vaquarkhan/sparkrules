@@ -6,7 +6,7 @@ This documentation set is customer and developer focused.
 
 | Document | Purpose |
 |----------|---------|
-| [**SPARK_INTEGRATION.md**](SPARK_INTEGRATION.md) | **Start here for “when is Spark used?”** — default API is Python; `apply_drl` for clusters |
+| [**SPARK_INTEGRATION.md**](SPARK_INTEGRATION.md) | **Start here for “when is Spark used?”**  -  default API is Python; `apply_drl` for clusters |
 | [FEATURES.md](FEATURES.md) | Product capabilities, Workbench/Monaco, LSP, simulations, governance, coverage gate |
 | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | Architecture and execution flow |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Setup, run, test, and extension guidance |
@@ -17,7 +17,7 @@ This documentation set is customer and developer focused.
 | [PUBLISHING.md](PUBLISHING.md) | PyPI (incl. tag releases), GitHub Container Registry, CI |
 | [ROADMAP.md](ROADMAP.md) | Phases: workbench, governance, future scope |
 | [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) | Architecture scope, extension points, and deployment patterns |
-| [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md) | **When to use Spark vs pure Python** — optional PySpark wiring, `apply_drl`, no server “enable” flag |
+| [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md) | **When to use Spark vs pure Python**  -  optional PySpark wiring, `apply_drl`, no server “enable” flag |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment notes |
 
 ## Notes

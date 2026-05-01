@@ -1,4 +1,4 @@
-# Drools-style features in the lending example
+﻿# Drools-style features in the lending example
 
 **Author:** Vaquar Khan  
 
@@ -11,7 +11,7 @@ The reference DRL [**`examples/usecases/lending_portfolio/drools_lending_premium
 | **`agenda_group`**, **`activation_group`** | `underwriting`, `retail_2026` | Parsed; single-rule eval ignores **agenda** ordering. |
 | **`reason_codes`** | `[ "CREDIT", "CAPACITY", "COMPLIANCE" ]` | Parsed on the rule. |
 | **`stop_on_fire`** | `true` | Parsed; effect is with **multi-rule chains**, not one rule in `apply_drl`. |
-| **`when` / `then`** | Nested fact `$a : App ( ... $a.product in [ ... ] ... $a.state not in [ ... ] )` | **Core** semantics — **this** is what Spark partitions evaluate per row. |
+| **`when` / `then`** | Nested fact `$a : App ( ... $a.product in [ ... ] ... $a.state not in [ ... ] )` | **Core** semantics  -  **this** is what Spark partitions evaluate per row. |
 | **Boolean logic** | `and`, `or`, `in` / `not in`, comparisons | Evaluated in `evaluate_rule`. |
 | **`then` → `result.*`** | `result.tier`, `result.rate_class`, `result.program_id` | Written to `action_output` in JSON. |
 

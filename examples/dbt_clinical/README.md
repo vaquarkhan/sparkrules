@@ -1,4 +1,4 @@
-## dbt demo: clinical lab harmonization staging
+﻿## dbt demo: clinical lab harmonization staging
 
 **Author:** Vaquar Khan  
 
@@ -31,5 +31,5 @@ Ensure `profiles.yml` contains the snippet in [`profiles.yml.example`](profiles.
 
 ### Relation to SparkRules DRL
 
-- **Staging (dbt)** — normalization math / typed columns matching the enrichment layer.
-- **Rules (`examples/usecases/clinical_research/clinical_trials_rules.drl`)** — QA flags, harmonization picks, duplicate policy using `salience`, **`stop_on_fire`**, **`agenda_group`**, promoted to **`result.*`**.
+- **Staging (dbt)**  -  normalization math / typed columns matching the enrichment layer.
+- **Rules (`examples/usecases/clinical_research/clinical_trials_rules.drl`)**  -  QA flags, harmonization picks, duplicate policy using `salience`, **`stop_on_fire`**, **`agenda_group`**, promoted to **`result.*`**.

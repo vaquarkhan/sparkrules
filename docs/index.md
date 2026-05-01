@@ -1,8 +1,8 @@
-# SparkRules
+﻿# SparkRules
 
 **The business rule engine that Python was missing.**
 
-Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails — from laptop to lakehouse, no JVM required.
+Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails  -  from laptop to lakehouse, no JVM required.
 
 ## Quick install
 
@@ -28,12 +28,12 @@ print(result.action_output)  # {'risk': 'high'}
 
 ## Key capabilities
 
-- **Rule engine** — DRL syntax, decision tables, explainable outputs
-- **API + Workbench** — FastAPI server with browser-based Monaco editor
-- **Governance** — versioning, namespaces, dev→stage→prod promotion
-- **Regulatory compliance** — adverse-action notices (ECOA/FCRA/GDPR)
-- **Data quality** — built-in checks + statistical profiling
-- **Spark integration** — optional, config-driven, multi-platform
+- **Rule engine**  -  DRL syntax, decision tables, explainable outputs
+- **API + Workbench**  -  FastAPI server with browser-based Monaco editor
+- **Governance**  -  versioning, namespaces, dev→stage→prod promotion
+- **Regulatory compliance**  -  adverse-action notices (ECOA/FCRA/GDPR)
+- **Data quality**  -  built-in checks + statistical profiling
+- **Spark integration**  -  optional, config-driven, multi-platform
 
 ## Next steps
 

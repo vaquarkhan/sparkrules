@@ -1,8 +1,8 @@
-**Author:** Vaquar Khan  
+﻿**Author:** Vaquar Khan  
 
-## Point of sale — checkout orchestration
+## Point of sale  -  checkout orchestration
 
-This scenario routes **risk & compliance verdicts ahead of cashier UX hints**: synthetic fraud bursts, liquor/tobacco ID checks, unusually large cash tenders, NFC wallet adoption, boutique gift-card handling—all within one JSON-friendly fact keyed by **`txn_id`**.
+This scenario routes **risk & compliance verdicts ahead of cashier UX hints**: synthetic fraud bursts, liquor/tobacco ID checks, unusually large cash tenders, NFC wallet adoption, boutique gift-card handling - all within one JSON-friendly fact keyed by **`txn_id`**.
 
 ### Fact shape (`t`)
 
@@ -25,7 +25,7 @@ Ordered by **salience** (evaluate top-to-bottom):
 | **approve_value_desk** (46) | `CARD` luxury basket | Sends shoppers to concierge / value desks. |
 | **gift_card_escalation** (40) | `GIFT_CARD` payment | Specialized voucher handling workflows. |
 
-`stop_on_fire` encodes irreversible cashier decisions—you would wire those into POS peripherals or queue managers.
+`stop_on_fire` encodes irreversible cashier decisions - you would wire those into POS peripherals or queue managers.
 
 ### Scripts
 

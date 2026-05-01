@@ -1,4 +1,4 @@
-# Roadmap
+﻿# Roadmap
 
 ## Phase 3
 
@@ -16,7 +16,7 @@ Focus: **enterprise workbench and packaging**.
 - [x] **Workbench:** **Monaco** DRL editor, **Validate** + **LSP** (`/rules/validate`, `/ide/lsp/analyze`), light/dark theme
 - [x] **Simulations:** **counterfactual** (`/simulations/counterfactual`), **chain** (`/simulations/chain`) with DRL per-rule `stop_on_fire` and request/engine `stop_on_decline` policy
 - [x] **Debug:** time-travel **capture** / **replay** (`/debug/time-travel/*`) backed by a `debug_runs` table
-- [x] **Governance:** **deprecations** — propose, approve, list, **enforce** (deactivate version) under `/governance/deprecations*`
+- [x] **Governance:** **deprecations**  -  propose, approve, list, **enforce** (deactivate version) under `/governance/deprecations*`
 - [x] **Executor:** local `SQL_JOIN` / list-binding **Cartesian** expansion for multi-pattern rules (when enabled)
 - [x] **Store:** **append-only** option on Iceberg-like tables for selected internal use
 - [x] **Client / CLI:** `SparkRulesClient` and `sparkrules-cli` **counterfactual** and time-travel / deprecation **enforce** helpers
@@ -25,8 +25,8 @@ Focus: **enterprise workbench and packaging**.
 ## Phase 4 (complete)
 
 - [x] Multi-project **governance**: rule **`namespace`**, in-memory **environment pins** (`dev` / `stage` / `prod`), **sync dev** and **adjacent promote** API + Workbench. See [GOVERNANCE.md](GOVERNANCE.md).
-- [x] **Lakehouse benchmarks** — end-to-end checklist and methodology in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks). Numbers remain cluster-specific; the repo provides harnesses and documentation.
-- [x] **CEP, TMS, DMN** (deeper Drools-style features) — **deferred**; not required for the SparkRules product scope today. Revisit if you add CEP or DMN to the road map.
+- [x] **Lakehouse benchmarks**  -  end-to-end checklist and methodology in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks). Numbers remain cluster-specific; the repo provides harnesses and documentation.
+- [x] **CEP, TMS, DMN** (deeper Drools-style features)  -  **deferred**; not required for the SparkRules product scope today. Revisit if you add CEP or DMN to the road map.
 
 ## References
 
