@@ -604,7 +604,30 @@ end</pre>
           <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
-          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">Bulk load (CSV with header, JSON array, or JSONL). CSV supports quoted fields; nested lending-style facts can use wrap-as-<span class="mono">t</span>.</p>
+          <p style="color:var(--muted);font-size:0.82rem;margin:0.5rem 0 0.25rem">
+            <strong>Bulk load</strong> - upload a file with multiple facts. Supported formats:
+          </p>
+          <details style="margin-bottom:0.5rem;font-size:0.8rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">Format guide + sample files</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.4rem"><strong>CSV</strong> - header row + data rows. Values become fact fields:</p>
+              <pre class="mono" style="background:var(--input-bg);padding:0.4rem;border-radius:6px;font-size:0.75rem;margin:0 0 0.5rem">amount,region,credit_score,income
+1500,US,720,85000
+500,EU,580,32000</pre>
+              <p style="margin:0 0 0.4rem"><strong>JSON array</strong> - array of fact objects. Use binding key (e.g. <span class="mono">"t"</span>) to match your DRL:</p>
+              <pre class="mono" style="background:var(--input-bg);padding:0.4rem;border-radius:6px;font-size:0.75rem;margin:0 0 0.5rem">[
+  {"t": {"amount": 1500, "credit_score": 720}},
+  {"t": {"amount": 500, "credit_score": 580}}
+]</pre>
+              <p style="margin:0 0 0.4rem"><strong>JSONL</strong> - one JSON object per line (same format as JSON array items).</p>
+              <p style="margin:0.5rem 0 0.25rem"><strong>Download samples:</strong></p>
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                <a href="sample_facts.csv" download class="btn btn-sm btn-ghost" style="text-decoration:none;display:inline-block">sample_facts.csv</a>
+                <a href="sample_facts.json" download class="btn btn-sm btn-ghost" style="text-decoration:none;display:inline-block">sample_facts.json</a>
+              </div>
+              <p style="margin:0.5rem 0 0"><strong>Tip:</strong> Check <em>"Wrap each row as {"t":row}"</em> when using CSV so flat rows get wrapped in the binding key your DRL expects.</p>
+            </div>
+          </details>
           <div class="row" style="flex-wrap:wrap;align-items:center">
             <input type="file" id="fact-bulk-file" accept=".csv,.json,.jsonl,.txt,text/csv,application/json" />
             <label class="mono" style="font-size:0.8rem;color:var(--muted)">Row index</label>
