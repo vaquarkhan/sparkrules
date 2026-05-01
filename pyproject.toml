@@ -72,6 +72,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 sparkrules = [
+  "py.typed",
   "api/static/workbench/index.html",
   "api/static/workbench/sparkrules-logo.png",
 ]
