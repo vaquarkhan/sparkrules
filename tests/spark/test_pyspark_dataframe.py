@@ -5,7 +5,7 @@ import pytest
 pytest.importorskip("pyspark", reason="PySpark+JVM required for Spark tests")
 from pyspark.sql import SparkSession  # noqa: E402
 
-from sre.spark import apply_drl, rows_from_session  # noqa: E402
+from sparkrules.spark import apply_drl, rows_from_session  # noqa: E402
 
 pytestmark = pytest.mark.spark
 

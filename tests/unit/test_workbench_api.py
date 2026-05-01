@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
+from sparkrules.api import AppDeps, create_app
 
 
 def test_rules_assets_empty() -> None:
@@ -70,7 +70,7 @@ def test_deployment_status() -> None:
     j = r.json()
     assert j["status"] == "ok"
     assert "engine_config" in j
-    assert j["engine_config"]["sre.platform"] == "local"
+    assert j["engine_config"]["sparkrules.platform"] == "local"
 
 
 def test_guided_fields_default() -> None:

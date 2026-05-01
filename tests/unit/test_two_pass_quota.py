@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sre.runtime.two_pass import TwoPassOrchestrator
+from sparkrules.runtime.two_pass import TwoPassOrchestrator
 
 P1 = """
 rule p1

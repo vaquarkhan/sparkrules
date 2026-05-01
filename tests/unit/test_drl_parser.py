@@ -1,5 +1,5 @@
-from sre.parser import parse, print_ast
-from sre.parser.parser import DrlParser
+from sparkrules.parser import parse, print_ast
+from sparkrules.parser.parser import DrlParser
 
 
 def test_parse_minimal_and_round_trip() -> None:

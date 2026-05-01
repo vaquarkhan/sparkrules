@@ -9,13 +9,13 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.client import SreClient, SreClientError, install_transient_failure
-from sre.connect import ConnectServer
-from sre.obs import metrics
-from sre.obs.logging import bind_run_context, configure_logging, get_logger
-from sre.store import InMemoryRuleMetadataStore
-from sre.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.api import AppDeps, create_app
+from sparkrules.client import SreClient, SreClientError, install_transient_failure
+from sparkrules.connect import ConnectServer
+from sparkrules.obs import metrics
+from sparkrules.obs.logging import bind_run_context, configure_logging, get_logger
+from sparkrules.store import InMemoryRuleMetadataStore
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
 from datetime import UTC, datetime, timedelta
 
 
@@ -27,7 +27,7 @@ def test_sre_client_get_success() -> None:
         return_value=MagicMock(get=MagicMock(return_value=mock_resp))
     )
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         r = c.get("/health")
     assert r.status_code == 200
 
@@ -55,7 +55,7 @@ def test_sre_client_retry_injected() -> None:
     inner.get = gget
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         c.get("/x")
     assert g == 1
 
@@ -66,7 +66,7 @@ def test_sre_client_health() -> None:
     r = httpx.Response(200, json={"status": "ok"}, request=httpx.Request("GET", "http://example.com/health"))
     m.__enter__ = MagicMock(return_value=MagicMock(get=MagicMock(return_value=r)))
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         j = c.health()
     assert j["status"] == "ok"
 
@@ -94,7 +94,7 @@ def test_sre_client_post_validate_and_simulate() -> None:
     inner.post = ppost
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         v = c.validate_rule("rule r when $t : T ( true ) then end")
         s = c.simulate("rule r when $t : T ( true ) then end", {"t": {}})
     assert v["ok"] is True
@@ -115,7 +115,7 @@ def test_sre_client_post_direct_and_bad_method_path() -> None:
     )
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         assert c.post("/x", {"a": 1}).status_code == 200
     with pytest.raises(SreClientError, match="unsupported method"):
         c._request("PUT", "/x")
@@ -138,7 +138,7 @@ def test_sre_client_advanced_simulation_methods() -> None:
     inner.post = ppost
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
-    with patch("sre.client.sdk.httpx.Client", return_value=m):
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         assert c.counterfactual("rule r when $t : T ( true ) then end", {"t": {}}, {"t": {}})["drifted"] is True
         assert c.capture_time_travel("r1", "rule r when $t : T ( true ) then end", {"t": {}})["snapshot_id"] == 1
         assert c.replay_time_travel(1, "r1", {"t": {"x": 2}})["fired"] is True
@@ -198,6 +198,6 @@ def test_post_rule_422_on_bad_drl() -> None:
 
 
 def test_sre_init_module() -> None:
-    import sre
+    import sparkrules
 
-    assert hasattr(sre, "__version__")
+    assert hasattr(sparkrules, "__version__")

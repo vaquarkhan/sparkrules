@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
+from sparkrules.api import AppDeps, create_app
 
 
 _DRL = """

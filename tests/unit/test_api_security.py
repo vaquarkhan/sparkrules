@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
+from sparkrules.api import AppDeps, create_app
 
 _VALID_DRL = """
 rule t1

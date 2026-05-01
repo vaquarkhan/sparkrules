@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sre.runtime import DbtFactSourceAdapter, FactSourceSpec, dbt_manifest_sha, validate_fact_source
+from sparkrules.runtime import DbtFactSourceAdapter, FactSourceSpec, dbt_manifest_sha, validate_fact_source
 
 
 def test_dbt_manifest_sha_is_stable() -> None:

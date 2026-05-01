@@ -3,9 +3,9 @@ from uuid import uuid4
 
 import pytest
 
-from sre.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
-from sre.store import ConflictError, InMemoryRuleMetadataStore, RuleFilter, UnknownRuleError
-from sre.store import metadata_store as ms
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.store import ConflictError, InMemoryRuleMetadataStore, RuleFilter, UnknownRuleError
+from sparkrules.store import metadata_store as ms
 
 
 def _r(handle: str, v: int, start: datetime, end: datetime | None, active: bool) -> Rule:

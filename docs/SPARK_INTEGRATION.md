@@ -40,10 +40,10 @@ Use Spark when you need **distributed** execution over **large** row sets alread
 
 1. **Create** a `SparkSession` in **your** driver (EMR, Databricks, Dataproc, YARN, Kubernetes, etc.).
 2. **Load** facts as a `DataFrame` (e.g. from Parquet, Iceberg, Delta — your catalog and IAM).
-3. **Apply** DRL to that DataFrame using the helpers in `src/sre/spark/dataframe.py`:
+3. **Apply** DRL to that DataFrame using the helpers in `src/sparkrules/spark/dataframe.py`:
    - **`apply_drl(df, drl, ...)`** — `broadcast`’s the DRL string, uses **`mapPartitions`** over the DataFrame’s RDD, returns a new `DataFrame` of `fact_id`, `fired`, `out_json`.
    - Lower-level: **`iter_rule_rows`**, **`mpartition_rows`** for custom pipelines.
-4. **Optionally** combine with a **`CompiledRulePackage`** and **`sre/transport/broadcaster.py`** for **broadcasting** larger artifacts in advanced setups (see that module’s docstring and tests).
+4. **Optionally** combine with a **`CompiledRulePackage`** and **`sparkrules/transport/broadcaster.py`** for **broadcasting** larger artifacts in advanced setups (see that module’s docstring and tests).
 
 **Requirements on the workers:** JARs / Python environment must include this package, PySpark, and compatible Spark version — same as any other PySpark app.
 
@@ -62,8 +62,8 @@ For **claim-level** honesty about default paths and throughput, see [KNOWN_LIMIT
 
 | Component | Path |
 |-----------|------|
-| DataFrame DRL application | `sre/spark/dataframe.py` — `apply_drl`, `iter_rule_rows`, `rows_from_session` |
-| Broadcast bytes | `sre/transport/broadcaster.py` |
+| DataFrame DRL application | `sparkrules/spark/dataframe.py` — `apply_drl`, `iter_rule_rows`, `rows_from_session` |
+| Broadcast bytes | `sparkrules/transport/broadcaster.py` |
 | **Runnable E2E samples** | [`examples/usecases/`](../examples/usecases/README.md) domain packs + [`examples/spark/`](../examples/spark/README.md) harness (`apply_drl_local.py`, `iter_rule_rows_no_jvm.py`) |
 | Spark iterator tests (need JVM) | `tests/spark/`, `tests/unit/test_spark_iter.py` |
 
@@ -71,9 +71,9 @@ If you are unsure, start with **pure Python** simulations; add **Spark** when yo
 
 ---
 
-## Tests and line coverage (`src/sre/spark`)
+## Tests and line coverage (`src/sparkrules/spark`)
 
-The **`sre.spark`** package is covered to **100% line** coverage in CI style when you run:
+The **`sparkrules.spark`** package is covered to **100% line** coverage in CI style when you run:
 
 ```bash
 python -m pytest tests/unit/ -q --cov=src/sre

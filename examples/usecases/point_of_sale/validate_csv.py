@@ -30,7 +30,7 @@ def _row_dict(rec: dict[str, str]) -> dict[str, object]:
 
 def main() -> int:
     sd = _here()
-    from sre.spark.dataframe import iter_rule_rows
+    from sparkrules.spark.dataframe import iter_rule_rows
 
     drl = (sd / "pos_checkout_rules.drl").read_text(encoding="utf-8")
     csv_path = sd / "data" / "pos_checkout_sample.csv"

@@ -20,7 +20,7 @@ def main() -> int:
         sys.path.insert(0, str(sd))
 
     from staging import flatten_for_iter
-    from sre.spark.dataframe import iter_rule_rows
+    from sparkrules.spark.dataframe import iter_rule_rows
 
     drl = (sd / "clinical_trials_rules.drl").read_text(encoding="utf-8")
     csv_path = sd / "data" / "sample.csv"

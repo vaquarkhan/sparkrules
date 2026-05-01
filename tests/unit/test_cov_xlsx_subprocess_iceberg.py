@@ -10,10 +10,10 @@ from unittest.mock import patch, MagicMock
 import pytest
 from openpyxl import Workbook
 
-from sre.compiler import CompiledRulePackage
-from sre.ioxls import DecisionTableImporter
-from sre.ioxls.exporter import DecisionTableExporter
-from sre.model import (
+from sparkrules.compiler import CompiledRulePackage
+from sparkrules.ioxls import DecisionTableImporter
+from sparkrules.ioxls.exporter import DecisionTableExporter
+from sparkrules.model import (
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -21,9 +21,9 @@ from sre.model import (
     OutputColumn,
     Row,
 )
-from sre.model.rule import active_set_hash, Rule, RuleDefinition, RuleFormat, new_rule_id
-from sre.runtime.iceberg_store import IcebergLikeTable, UnknownSnapshotError
-from sre.store import InMemoryRuleMetadataStore, UnknownRuleError
+from sparkrules.model.rule import active_set_hash, Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.runtime.iceberg_store import IcebergLikeTable, UnknownSnapshotError
+from sparkrules.store import InMemoryRuleMetadataStore, UnknownRuleError
 
 
 def _write_min_xlsx(
@@ -208,7 +208,7 @@ def test_importer_bool_bad_cell() -> None:
         assert r.errors
 
 
-@patch("sre.ioxls.importer.load_workbook")
+@patch("sparkrules.ioxls.importer.load_workbook")
 def test_importer_no_active_sheet(mock_lw) -> None:
     wb = MagicMock()
     wb.active = None
@@ -218,7 +218,7 @@ def test_importer_no_active_sheet(mock_lw) -> None:
     assert r.errors
 
 
-@patch("sre.ioxls.exporter.Workbook")
+@patch("sparkrules.ioxls.exporter.Workbook")
 def test_exporter_workbook_no_active(mock_wb) -> None:
     w = MagicMock()
     w.active = None
@@ -253,7 +253,7 @@ def test_exporter_writes_real_workbook(tmp_path) -> None:
 
 def test_subprocess_module_main() -> None:
     r = subprocess.run(
-        [sys.executable, "-m", "sre.tools.smoke_drl"],
+        [sys.executable, "-m", "sparkrules.tools.smoke_drl"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
@@ -272,7 +272,7 @@ def test_smoke_drl_runpy_as_main(monkeypatch) -> None:
     try:
         sys.stdout = buf
         with pytest.raises(SystemExit) as ex:
-            runpy.run_module("sre.tools.smoke_drl", run_name="__main__")
+            runpy.run_module("sparkrules.tools.smoke_drl", run_name="__main__")
         assert ex.value.code == 0
     finally:
         sys.stdout = old

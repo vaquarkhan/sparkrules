@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sre.runtime.graph import (
+from sparkrules.runtime.graph import (
     GraphEnricher,
     InMemoryGraphSource,
     centrality_anomaly,

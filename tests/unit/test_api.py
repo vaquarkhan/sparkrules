@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.runtime import EngineConfig
+from sparkrules.api import AppDeps, create_app
+from sparkrules.runtime import EngineConfig
 
 
 def test_health() -> None:

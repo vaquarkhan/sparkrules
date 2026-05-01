@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sre.ide import analyze_drl_for_lsp
+from sparkrules.ide import analyze_drl_for_lsp
 
 
 def test_lsp_analysis_ok_has_no_errors_and_completions() -> None:

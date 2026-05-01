@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import UTC, datetime
 import pytest
 
-from sre.dq import (
+from sparkrules.dq import (
     DataQualityEngine,
     DqScope,
     DqSeverity,
@@ -17,7 +17,7 @@ from sre.dq import (
     ExpectUnique,
     FreshnessCheck,
 )
-from sre.dq.engine import checks_from_api, summarize_violations, to_violation_records
+from sparkrules.dq.engine import checks_from_api, summarize_violations, to_violation_records
 
 
 def test_dq_engine_happy() -> None:

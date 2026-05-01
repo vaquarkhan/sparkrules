@@ -7,16 +7,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sre.compiler.evaluator import _eval, _get_id, _set_result_path
-from sre.compiler.evaluator import evaluate_expr
-from sre.executor import RuleExecutor
-from sre.ioxls.importer import _coerce
-from sre.model import ColumnType
-from sre.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
-from sre.parser import parse, print_ast
-from sre.parser import ast as past
-from sre.parser.lexer import TokenKind, tokenize
-from sre.parser.ast import (
+from sparkrules.compiler.evaluator import _eval, _get_id, _set_result_path
+from sparkrules.compiler.evaluator import evaluate_expr
+from sparkrules.executor import RuleExecutor
+from sparkrules.ioxls.importer import _coerce
+from sparkrules.model import ColumnType
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.parser import parse, print_ast
+from sparkrules.parser import ast as past
+from sparkrules.parser.lexer import TokenKind, tokenize
+from sparkrules.parser.ast import (
     Action,
     BinaryOp,
     BinaryOperator,
@@ -28,21 +28,21 @@ from sre.parser.ast import (
     ParseError,
     RuleAst,
 )
-from sre.parser.lexer import Token
-from sre.parser.parser import DrlParser, _bind_root, _collect_idents, _unquote
-from sre.runtime.batch import RunRecord
-from sre.runtime.cache import DerivedColumnCache
-from sre.runtime.catalyst import CatalystConfigurer
-from sre.runtime.iceberg_store import IcebergLikeTable
-from sre.runtime.streaming import (
+from sparkrules.parser.lexer import Token
+from sparkrules.parser.parser import DrlParser, _bind_root, _collect_idents, _unquote
+from sparkrules.runtime.batch import RunRecord
+from sparkrules.runtime.cache import DerivedColumnCache
+from sparkrules.runtime.catalyst import CatalystConfigurer
+from sparkrules.runtime.iceberg_store import IcebergLikeTable
+from sparkrules.runtime.streaming import (
     StreamingEvaluator,
     StreamingRuleRefresher,
     default_executor_factory,
 )
-from sre.sim.ab import ABTestConfig, ABTestRunner, Variant
-from sre.sim.replay import MissingRuleSetVersionError, ReplayService
-from sre.store import InMemoryRuleMetadataStore, RuleFilter
-from sre.transport.broadcaster import RuleBroadcaster
+from sparkrules.sim.ab import ABTestConfig, ABTestRunner, Variant
+from sparkrules.sim.replay import MissingRuleSetVersionError, ReplayService
+from sparkrules.store import InMemoryRuleMetadataStore, RuleFilter
+from sparkrules.transport.broadcaster import RuleBroadcaster
 
 
 def test_get_id_branches() -> None:
@@ -253,7 +253,7 @@ def test_printer_fieldaccess_fallback_and_drl_printer() -> None:
     )
     out = print_ast(r)
     assert "y" in out or "FieldAccess" in out
-    from sre.parser.printer import DrlPrinter, _print_expr
+    from sparkrules.parser.printer import DrlPrinter, _print_expr
 
     assert "3" in _print_expr(Literal(3))
     assert '"' in _print_expr(Literal('a"b'))

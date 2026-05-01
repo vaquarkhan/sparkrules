@@ -1,6 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-from sre.obs import StageMetric, detect_runtime_issues, observability_ui_payload, summarize_runtime_health
+from sparkrules.obs import StageMetric, detect_runtime_issues, observability_ui_payload, summarize_runtime_health
 
 
 def test_detect_runtime_issues_for_slow_shuffle_and_failures() -> None:

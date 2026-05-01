@@ -19,8 +19,8 @@ Focus: **enterprise workbench and packaging**.
 - [x] **Governance:** **deprecations** — propose, approve, list, **enforce** (deactivate version) under `/governance/deprecations*`
 - [x] **Executor:** local `SQL_JOIN` / list-binding **Cartesian** expansion for multi-pattern rules (when enabled)
 - [x] **Store:** **append-only** option on Iceberg-like tables for selected internal use
-- [x] **Client / CLI:** `SreClient` and `sre-cli` **counterfactual** and time-travel / deprecation **enforce** helpers
-- [x] **Tests:** 100% **line** coverage on `src/sre` via `tests/unit/`
+- [x] **Client / CLI:** `SparkRulesClient` and `sparkrules-cli` **counterfactual** and time-travel / deprecation **enforce** helpers
+- [x] **Tests:** 100% **line** coverage on `src/sparkrules` via `tests/unit/`
 
 ## Phase 4 (complete)
 

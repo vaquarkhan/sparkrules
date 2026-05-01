@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from sre.compiler import evaluate_rule
-from sre.parser import parse, parse_rules
-from sre.parser.ast import ParseError
-from sre.runtime.rule_chain import ChainExecutionPolicy, run_rule_chain
-from sre.sim import RuleSimulator
+from sparkrules.compiler import evaluate_rule
+from sparkrules.parser import parse, parse_rules
+from sparkrules.parser.ast import ParseError
+from sparkrules.runtime.rule_chain import ChainExecutionPolicy, run_rule_chain
+from sparkrules.sim import RuleSimulator
 
 
 def test_parse_stop_on_fire() -> None:

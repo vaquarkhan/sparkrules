@@ -14,7 +14,7 @@ This document records **intentional honesty** about what is **not** production-c
 - **Reason:** shipping with anonymous full superuser was unsafe when `SPARKRULES_AUTH_MODE` defaults to `local`.
 
 **OIDC / SAML / full federation**  
-- The service supports **`SPARKRULES_API_KEY`**, `X-Principal` / `X-Tenant-Id` / `X-Roles` headers, and an **`SPARKRULES_AUTH_MODE`** switch (`local`, `oidc`, `mtls`, `iam`) in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sre/api/security.py).  
+- The service supports **`SPARKRULES_API_KEY`**, `X-Principal` / `X-Tenant-Id` / `X-Roles` headers, and an **`SPARKRULES_AUTH_MODE`** switch (`local`, `oidc`, `mtls`, `iam`) in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sparkrules/api/security.py).  
 - **OIDC mode** enforces optional issuer/audience checks on environment variables; the JWT payload is still parsed **without** full signature verification in the current helper path (suitable for dev/tests behind a trust boundary, not a complete IdP integration).  
 - **SAML** is **not** implemented.  
 - **mTLS** mode checks for a **header** `X-Client-Cert-Subject` (simulating a gateway-passed identity), not a real TLS client-cert stack inside this process by default.  
@@ -29,7 +29,7 @@ This document records **intentional honesty** about what is **not** production-c
 - **Reason:** true isolation requires a hosted catalog, IAM, and per-tenant table paths in your data plane.
 
 **Full RBAC “blueprint” enumeration**  
-- Authorization uses **string role names** in `require_any_role` (e.g. `rule_reader`, `rule_author`, `rule_admin`, `run_operator`, `dq_steward`, `ai_reviewer`, `pii_reveal`, plus **`platform_admin`** as superuser in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sre/api/security.py)).  
+- Authorization uses **string role names** in `require_any_role` (e.g. `rule_reader`, `rule_author`, `rule_admin`, `run_operator`, `dq_steward`, `ai_reviewer`, `pii_reveal`, plus **`platform_admin`** as superuser in [security.py](https://github.com/vaquarkhan/sparkrules/blob/main/src/sparkrules/api/security.py)).  
 - There is **no** public **`GET /roles`** or OpenAPI **enum** that lists “the eight roles” for operators; role sets are **distributed across route definitions** in `app.py`.  
 - **Reason:** the blueprint’s named role set should be **confirmed in your integration tests** and documentation runbooks, not assumed from a single central registry in this repo.
 
@@ -66,7 +66,7 @@ Example back-of-thevelope: if effective throughput were on the order of **~10² 
 | **“Scales to billions of rows in seconds”** | **Not shown** in-repo. Throughput on the pure-Python path is **process-local**; seconds-at-billion-row scale requires **partitioned** execution on a real cluster (and measured evidence). |
 | **Rule evaluation over Iceberg snapshots** | **Partial** — the **Iceberg-like** in-memory snapshot model and APIs work for tests and modeling; **live** Iceberg catalog integration is **environment-specific** and not proven by the default single-process benchmark. |
 
-**Honest summary:** The **rule semantics** and **store** behavior are **legitimate** for a Python-first Drools-style engine. The **“Spark”** in the product name is **aspirational** until you **wire** evaluation to **`mapPartitions`** (or equivalent) over a **DataFrame**, **broadcast** the `CompiledRulePackage` (see `sre/transport/broadcaster.py`), and run on a **real** Spark cluster. Primitives exist (`sre/spark/dataframe.py`, broadcaster, Iceberg-like store); **nothing** in the default **`/simulations`** or unwrapped **`RuleExecutor.run()`** path **invokes** them automatically.
+**Honest summary:** The **rule semantics** and **store** behavior are **legitimate** for a Python-first Drools-style engine. The **“Spark”** in the product name is **aspirational** until you **wire** evaluation to **`mapPartitions`** (or equivalent) over a **DataFrame**, **broadcast** the `CompiledRulePackage` (see `sparkrules/transport/broadcaster.py`), and run on a **real** Spark cluster. Primitives exist (`sparkrules/spark/dataframe.py`, broadcaster, Iceberg-like store); **nothing** in the default **`/simulations`** or unwrapped **`RuleExecutor.run()`** path **invokes** them automatically.
 
 ---
 
@@ -78,7 +78,7 @@ Example back-of-thevelope: if effective throughput were on the order of **~10² 
 - **Reason:** bulk upload would need streaming parsers, size limits, and error reporting—**not** implemented in the static shell.
 
 **Tier 2.3 — graph-based rule / agenda visualisation (e.g. React Flow)**  
-- There is **no** React Flow (or similar) **visual graph** in [workbench](https://github.com/vaquarkhan/sparkrules/tree/main/src/sre/api/static/workbench).  
+- There is **no** React Flow (or similar) **visual graph** in [workbench](https://github.com/vaquarkhan/sparkrules/tree/main/src/sparkrules/api/static/workbench).  
 - A **`POST /graph/enrich`** API exists for **enrichment** payloads, not a full interactive agenda designer.  
 - **Reason:** visual rule graphs are a **separate UI product**; not in scope of the current static Workbench.
 
@@ -95,10 +95,10 @@ SparkRules favors **correctness and a portable DRL subset** over Drools parity o
 | Topic | Severity | Reality today | Typical direction |
 |-------|----------|---------------|-------------------|
 | Interpreter-style eval (`_eval`) | Critical | Predicate evaluation walks the AST with `isinstance` checks per row—no bytecode compilation of predicates. | Compile hot paths to closures or bytecode; discriminator/caching layers. |
-| Spark `out_json` column | Critical | [`iter_rule_rows`](../src/sre/spark/dataframe.py) does `json.dumps({"action","bound"})`; **`bound`** repeats the effective fact footprint. Large facts × huge row counts multiply JSON CPU and bytes. | Typed structs / `MapType` columns; optional omit-`bound` mode; Catalyst-friendly schema. |
-| Rete / PHREAK / discrimination in production paths | High | [`DiscriminationNetwork`](../src/sre/compiler/discrimination.py) exists; [`run_rule_chain`](../src/sre/runtime/rule_chain.py) is a linear salience sweep with per-rule evaluation. Simulator does **not** route all traffic through alpha/beta nets. | Wire nets for hot rule sets or accept O(rules × rows) cost for moderate packs. |
-| Per-request parsing (HTTP / sim) | High | [`RuleSimulator.run_chain`](../src/sre/sim/simulator.py) calls `parse_rules(drl)` on each invocation. Spark path parses **once per partition** (OK). | LRU cache keyed by DRL hash; reuse `CompiledRulePackage` across calls. |
-| Broadcast = DRL text only | Medium | [`apply_drl`](../src/sre/spark/dataframe.py) broadcasts the **string**, not [`CompiledRulePackage`](../src/sre/compiler/compiler.py). Workers parse per partition startup (still far better than per row). | Broadcast serialized compiled pack + version id. |
+| Spark `out_json` column | Critical | [`iter_rule_rows`](../src/sparkrules/spark/dataframe.py) does `json.dumps({"action","bound"})`; **`bound`** repeats the effective fact footprint. Large facts × huge row counts multiply JSON CPU and bytes. | Typed structs / `MapType` columns; optional omit-`bound` mode; Catalyst-friendly schema. |
+| Rete / PHREAK / discrimination in production paths | High | [`DiscriminationNetwork`](../src/sparkrules/compiler/discrimination.py) exists; [`run_rule_chain`](../src/sparkrules/runtime/rule_chain.py) is a linear salience sweep with per-rule evaluation. Simulator does **not** route all traffic through alpha/beta nets. | Wire nets for hot rule sets or accept O(rules × rows) cost for moderate packs. |
+| Per-request parsing (HTTP / sim) | High | [`RuleSimulator.run_chain`](../src/sparkrules/sim/simulator.py) calls `parse_rules(drl)` on each invocation. Spark path parses **once per partition** (OK). | LRU cache keyed by DRL hash; reuse `CompiledRulePackage` across calls. |
+| Broadcast = DRL text only | Medium | [`apply_drl`](../src/sparkrules/spark/dataframe.py) broadcasts the **string**, not [`CompiledRulePackage`](../src/sparkrules/compiler/compiler.py). Workers parse per partition startup (still far better than per row). | Broadcast serialized compiled pack + version id. |
 | PySpark IPC / Scala | Medium | Row-at-a-time Python UDF-style work inherits executor ↔ Python worker latency. Scala/JVM evaluator would trade portability. | Larger partitions, predicate simplification; optional JVM evaluator is product-scale work. |
 | Per-row allocations | Medium | `asDict(recursive=True)` + dict comprehension per row in `iter_rule_rows`. Adds Python allocation pressure at extreme scale. | Columnar ingest path; reuse buffers; codegen where applicable. |
 | Vectorized batches | Low | No NumPy/PyArrow SIMD evaluation lane; one logical row per evaluator call today. | Optional batch backends for homogeneous schemas. |

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sre.sim import RuleSimulator
+from sparkrules.sim import RuleSimulator
 
 
 def test_coverage_analyzer_counts_and_rates() -> None:

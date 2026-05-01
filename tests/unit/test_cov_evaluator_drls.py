@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from sre.compiler import evaluate_expr, evaluate_rule
-from sre.parser import parse
-import sre.parser.ast as A
-from sre.parser.ast import Literal, Identifier, FieldAccess, CallExpr, Not, ListExpr, InExpr
+from sparkrules.compiler import evaluate_expr, evaluate_rule
+from sparkrules.parser import parse
+import sparkrules.parser.ast as A
+from sparkrules.parser.ast import Literal, Identifier, FieldAccess, CallExpr, Not, ListExpr, InExpr
 
 
 def test_drl_in_not_in() -> None:
@@ -18,7 +18,7 @@ def test_drl_in_not_in() -> None:
     end
     """
     )
-    from sre.compiler import evaluate_rule
+    from sparkrules.compiler import evaluate_rule
 
     assert evaluate_rule(r, {"x": 1}).fired
     m = parse(
@@ -113,7 +113,7 @@ def test_drl_call_abs_nonnum() -> None:
 
 def test_get_id_result_dotted() -> None:
     p = parse("rule t when $a : T (1==1) then end")
-    from sre.compiler import evaluate_rule
+    from sparkrules.compiler import evaluate_rule
     m = evaluate_rule(
         p,
         {"a": 1, "result": {"p": {"q": 2}}},

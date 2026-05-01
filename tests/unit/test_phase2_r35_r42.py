@@ -1,12 +1,12 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import UTC, datetime
 
 import pytest
 
-from sre.dq.engine import DataQualityEngine
-from sre.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
-from sre.runtime import (
+from sparkrules.dq.engine import DataQualityEngine
+from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
+from sparkrules.runtime import (
     EngineConfig,
     ExportService,
     FactSourceSpec,
@@ -25,9 +25,9 @@ from sre.runtime import (
     validate_fact_source,
     validate_zero_code_change,
 )
-from sre.runtime.fact_source import MissingFieldError
-from sre.store import create_rule_store
-from sre.store.backends import StoreUnavailableError, _PersistentInMemoryStore
+from sparkrules.runtime.fact_source import MissingFieldError
+from sparkrules.store import create_rule_store
+from sparkrules.store.backends import StoreUnavailableError, _PersistentInMemoryStore
 
 
 def _rule(handle: str) -> Rule:
@@ -194,7 +194,7 @@ def test_dq_between_non_numeric_branch() -> None:
     eng = DataQualityEngine()
     out = eng.evaluate({"a": "x"}, [])
     assert out == []
-    from sre.dq.engine import ExpectBetween
+    from sparkrules.dq.engine import ExpectBetween
 
     out2 = eng.evaluate({"a": "x"}, [ExpectBetween(field="a", min_value=1, max_value=2)])
     assert out2 and "not numeric" in out2[0].message

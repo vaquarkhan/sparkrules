@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from sre.compiler import CompiledRulePackage
-from sre.compiler.classifier import Strategy, StrategyClassifier
+from sparkrules.compiler import CompiledRulePackage
+from sparkrules.compiler.classifier import Strategy, StrategyClassifier
 
 
 def test_classifier_sql_join_two_patterns() -> None:
@@ -40,7 +40,7 @@ def test_deserialize_rejects_non_package() -> None:
 
 
 def test_serialize_deserialize_roundtrip() -> None:
-    from sre.compiler import RuleCompiler
+    from sparkrules.compiler import RuleCompiler
 
     pkg = RuleCompiler().compile({"a": "rule a when $t : T ( true ) then end"}, run_id="r1")
     pkg2 = CompiledRulePackage.deserialize(pkg.serialize())

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sre.executor.agenda import (
+from sparkrules.executor.agenda import (
     AgendaController,
     ChainingLimitExceededError,
     forward_chain,

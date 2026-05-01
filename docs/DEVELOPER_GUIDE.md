@@ -1,4 +1,4 @@
-Ôªø# Developer guide
+# Developer guide
 
 ## Prerequisites
 
@@ -19,13 +19,13 @@ pytest tests/ -q
 pytest tests/perf -m perf -q
 ```
 
-**`src/sre` line coverage (required for CI-style gate):**
+**`src/sparkrules` line coverage (required for CI-style gate):**
 
 ```bash
 pytest tests/unit/ -q --cov=src/sre
 ```
 
-`pyproject.toml` sets `fail_under=100` for the `src/sre` tree when coverage is run as above.
+`pyproject.toml` sets `fail_under=100` for the `src/sparkrules` tree when coverage is run as above.
 
 ## Local API
 
@@ -36,13 +36,13 @@ python -m pip install -e "."
 python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
-If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm the terminal is still running, the URL uses the **same port** as the command (8042 unless you changed it), and you are using `http://` not `https://`. On Windows, **`scripts\check_env.cmd`** runs `import sre` and prints `sys.executable` so you can align the same `python` as `pip install -e .` and Uvicorn (mismatched interpreters are a common cause of ‚Äúit works in the shell but not in the browser‚Äù). See [README.md](../README.md#api-run) for a longer checklist.
+If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm the terminal is still running, the URL uses the **same port** as the command (8042 unless you changed it), and you are using `http://` not `https://`. On Windows, **`scripts\check_env.cmd`** runs `import sparkrules` and prints `sys.executable` so you can align the same `python` as `pip install -e .` and Uvicorn (mismatched interpreters are a common cause of ìit works in the shell but not in the browserî). See [README.md](../README.md#api-run) for a longer checklist.
 
 ## Rules Workbench (browser)
 
 After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port) for rule assets, **Monaco** DRL editing, **Validate** (parse) plus **LSP** diagnostics, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
 
-**Spark vs Python:** the server does **not** ‚Äúenable Spark‚Äù with one flag. Simulations are **pure Python** by default. To run rules on a **cluster DataFrame**, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
+**Spark vs Python:** the server does **not** ìenable Sparkî with one flag. Simulations are **pure Python** by default. To run rules on a **cluster DataFrame**, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
 
 **Workbench and API:** **Rule pack** in the left nav, **version diff**, filters, and Phase 4 **Governance**. If **`SPARKRULES_API_KEY`** is set, send the key on API calls; sensitive rule and governance **GET**s require it as well. See [README.md](../README.md#api-run).
 
@@ -67,7 +67,7 @@ Uploads to the Python Package Index are org-specific: configure [trusted publish
 
 ## Project structure
 
-- `src/sre/` core package (includes `api/static/workbench/` for the Workbench UI, `governance/` for promotion pins)
+- `src/sparkrules/` core package (includes `api/static/workbench/` for the Workbench UI, `governance/` for promotion pins)
 - `tests/` unit, property, integration, perf
 - `examples/` runnable examples
 - `docs/` customer and developer documentation

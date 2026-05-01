@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from sre.tools import smoke_drl
+from sparkrules.tools import smoke_drl
 
 
 def test_smoke_main_default(monkeypatch: pytest.MonkeyPatch) -> None:

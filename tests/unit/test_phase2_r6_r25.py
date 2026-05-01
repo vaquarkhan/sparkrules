@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sre.executor.rule_executor import RuleExecutor
-from sre.model.decision_table import (
+from sparkrules.executor.rule_executor import RuleExecutor
+from sparkrules.model.decision_table import (
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -13,8 +13,8 @@ from sre.model.decision_table import (
     dt_from_json,
     dt_to_json,
 )
-from sre.model.rule_template import RuleTemplate
-from sre.runtime import (
+from sparkrules.model.rule_template import RuleTemplate
+from sparkrules.runtime import (
     StreamingOrchestrator,
     estimate_scale_runtime,
     guided_fields_from_template,
@@ -22,7 +22,7 @@ from sre.runtime import (
     run_perf_harness,
     scale_evidence,
 )
-from sre.runtime.streaming import StreamingRuleRefresher
+from sparkrules.runtime.streaming import StreamingRuleRefresher
 
 
 def test_r6_guided_template_fields() -> None:

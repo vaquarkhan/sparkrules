@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from sre.model.rule import now_utc
-from sre.runtime.batch import RunRecord
-from sre.sim.replay import MissingRuleSetVersionError, ReplayService
+from sparkrules.model.rule import now_utc
+from sparkrules.runtime.batch import RunRecord
+from sparkrules.sim.replay import MissingRuleSetVersionError, ReplayService
 
 pytestmark = pytest.mark.integration
 

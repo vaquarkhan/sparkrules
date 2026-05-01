@@ -4,9 +4,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.runtime.batch import BatchEvaluator
-from sre.runtime.two_pass import TwoPassOrchestrator
+from sparkrules.api import AppDeps, create_app
+from sparkrules.runtime.batch import BatchEvaluator
+from sparkrules.runtime.two_pass import TwoPassOrchestrator
 
 pytestmark = pytest.mark.integration
 

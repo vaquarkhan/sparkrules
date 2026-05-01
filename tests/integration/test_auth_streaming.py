@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import pytest
 
-from sre.api import create_app, AppDeps
+from sparkrules.api import create_app, AppDeps
 from fastapi.testclient import TestClient
-from sre.runtime.streaming import (
+from sparkrules.runtime.streaming import (
     StreamingEvaluator,
     StreamingRuleRefresher,
 )
-from sre.sim.ab import ABTestConfig, ABTestRunner, Variant
+from sparkrules.sim.ab import ABTestConfig, ABTestRunner, Variant
 
 pytestmark = pytest.mark.integration
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from sre.api import AppDeps, create_app
-from sre.runtime.graph import InMemoryGraphSource
+from sparkrules.api import AppDeps, create_app
+from sparkrules.runtime.graph import InMemoryGraphSource
 
 
 def test_graph_enrich_endpoint() -> None:

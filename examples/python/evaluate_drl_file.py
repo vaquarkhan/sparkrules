@@ -13,8 +13,8 @@ import json
 import sys
 from pathlib import Path
 
-from sre.compiler import evaluate_rule
-from sre.parser import parse
+from sparkrules.compiler import evaluate_rule
+from sparkrules.parser import parse
 
 # Example facts: use the bind name (without $) for each `when` pattern.
 # `rule r when $t : T ( ... )`  →  env key ``t`` holds the T fact.

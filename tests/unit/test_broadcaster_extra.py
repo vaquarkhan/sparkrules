@@ -1,4 +1,4 @@
-from sre.transport.broadcaster import RuleBroadcaster, rule_broadcast
+from sparkrules.transport.broadcaster import RuleBroadcaster, rule_broadcast
 
 
 def test_chunk_empty_payload() -> None:

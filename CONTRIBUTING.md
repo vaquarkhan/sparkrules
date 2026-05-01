@@ -19,11 +19,11 @@ pytest tests/ -q
 
 Performance benchmarks are opt-in: `pytest tests/perf -m perf -q`.
 
-Line coverage for `sre` is enforced at 100% in `pyproject.toml` when you run with `--cov=sre`.
+Line coverage for `sparkrules` is enforced at 100% in `pyproject.toml` when you run with `--cov=sparkrules`.
 
 ## Code layout
 
-- **Package:** `src/sre/`
+- **Package:** `src/sparkrules/`
 - **Tests:** `tests/` (unit, property, integration)
 - **Examples:** `examples/`
 - **Docs:** `docs/`

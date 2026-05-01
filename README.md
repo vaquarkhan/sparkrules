@@ -24,7 +24,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 >
 > **`/simulations`**, the **Workbench**, and typical API calls run rules in **one Python process** — they do **not** start `SparkSession` or distribute work across a cluster.
 >
-> To run rules on a **cluster `DataFrame`**, use **`apply_drl`** in your own PySpark job (`sre/spark/dataframe.py`). Full guide: **[docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md)** — there is **no** “enable Spark” flag on the HTTP server; you **wire Spark yourself** where you need scale.
+> To run rules on a **cluster `DataFrame`**, use **`apply_drl`** in your own PySpark job (`sparkrules/spark/dataframe.py`). Full guide: **[docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md)** — there is **no** “enable Spark” flag on the HTTP server; you **wire Spark yourself** where you need scale.
 
 ## Feature catalog
 
@@ -103,7 +103,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - Simulation endpoint, engine **deployment** readout, **template / guided fields** for Workbench
 - Data-quality evaluation endpoint (`/dq/evaluate`)
 - Optional **`SPARKRULES_API_KEY`**: mutating methods + **sensitive rule/governance `GET`s** (see [API run](#api-run))
-- Lightweight **Python** client (`SreClient`): validate, simulate, counterfactual, time-travel capture/replay, governance deprecation **enforce**; **`sre-cli`**: `validate`, `simulate`, `lsp-check`, `counterfactual-check`, `chaos-check`, `health` — in-process connect server dispatch module
+- Lightweight **Python** client (`SparkRulesClient`): validate, simulate, counterfactual, time-travel capture/replay, governance deprecation **enforce**; **`sparkrules-cli`**: `validate`, `simulate`, `lsp-check`, `counterfactual-check`, `chaos-check`, `health` — in-process connect server dispatch module
 
 ### Data quality
 
@@ -128,7 +128,7 @@ Repository: https://github.com/vaquarkhan/sparkrules
 - Property tests
 - Integration tests
 - Optional perf tests
-- **100% line coverage** on `src/sre` (enforced with `pytest tests/unit/ --cov=src/sre` and `fail_under=100` in `pyproject.toml`)
+- **100% line coverage** on `src/sparkrules` (enforced with `pytest tests/unit/ --cov=src/sparkrules` and `fail_under=100` in `pyproject.toml`)
 
 ## How it works
 
@@ -157,7 +157,7 @@ Details: [docs/USE_CASES.md](docs/USE_CASES.md)
 git clone https://github.com/vaquarkhan/sparkrules.git
 cd sparkrules
 python -m pip install -e ".[test]"
-python -c "import sre; print('ok', sre.__version__)"
+python -c "import sparkrules; print('ok', sparkrules.__version__)"
 pytest tests/ -q
 ```
 
@@ -171,7 +171,7 @@ Use the same interpreter for install and run commands.
 
 ```bash
 python -m pip install -e "."
-python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
+python -m uvicorn sparkrules.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
 Open http://127.0.0.1:8042/docs
@@ -181,7 +181,7 @@ Open http://127.0.0.1:8042/docs
 1. **Start the server** and leave the terminal open (`scripts\dev_server.cmd` on Windows, or `uvicorn` as above).
 2. **Match the port** in the URL to the port the process prints (default **8042** unless you set `SPARKRULES_PORT` or a different `--port`).
 3. Use **`http://`**, not `https://`, for local dev unless you use a reverse proxy.
-4. Run **`scripts\check_env.cmd`** from the repo: it runs `import sre` and prints `sys.executable` so you can confirm the same Python you use for **`python -m pip install -e .`**. If that import fails, install into that interpreter; if it passes but the server still fails, you are almost certainly using a **different** `python` to start Uvicorn than the one you installed into.
+4. Run **`scripts\check_env.cmd`** from the repo: it runs `import sparkrules` and prints `sys.executable` so you can confirm the same Python you use for **`python -m pip install -e .`**. If that import fails, install into that interpreter; if it passes but the server still fails, you are almost certainly using a **different** `python` to start Uvicorn than the one you installed into.
 5. **Docker:** use the **host** port you mapped (e.g. `8042` with `-p 8042:8000`), not the container’s internal 8000, in the browser.
 
 **API key (`SPARKRULES_API_KEY`):** when set, the same key must be sent as **`X-API-Key`** or **`Authorization: Bearer …`** for **`POST`/`PUT`/`PATCH`/`DELETE`**, and for **sensitive `GET`/`HEAD`** routes: `/rules` and under `/rules/…` (list, assets, diff, export, etc.), `/system/deployment`, and `/governance/…`. **Public without key:** `GET /health`, OpenAPI static routes (`/docs`, `/openapi.json`, …), `OPTIONS` (CORS preflight), and the Workbench static shell under `/workbench/…` (the UI still uses your key for API `fetch` calls). **OIDC** for browser SSO is not implemented; use a reverse proxy or network policy if you need that. The Workbench can store the API key in the browser (header bar) for both reads and writes.
@@ -232,8 +232,6 @@ High-level platform steps (Glue, Databricks, Dataproc, Synapse) and example JSON
 
 ## License
 
-SparkRules Non-Commercial Citation License 1.0.
+Licensed under the [Apache License, Version 2.0](LICENSE).
 
-- Citation is mandatory for use and redistribution.
-- Commercial publishing/sale is not permitted without prior written permission.
-- Full terms: [LICENSE](LICENSE)
+Copyright 2026 Vaquar Khan. See [CITATION.cff](CITATION.cff) for citation details.

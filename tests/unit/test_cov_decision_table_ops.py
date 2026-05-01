@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sre.model import (
+from sparkrules.model import (
     ColumnType,
     DecisionTable,
     HitPolicy,

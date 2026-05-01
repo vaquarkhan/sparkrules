@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from sre.api.security import (
+from sparkrules.api.security import (
     _bearer_token,
     _decode_jwt_claims_unverified,
     principal_from_request,

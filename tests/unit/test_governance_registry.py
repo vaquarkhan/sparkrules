@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sre.governance import PromotionRegistry
+from sparkrules.governance import PromotionRegistry
 
 
 def test_set_get_pin() -> None:
