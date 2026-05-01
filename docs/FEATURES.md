@@ -49,7 +49,7 @@
 
 - Versioned rule metadata lifecycle operations
 - Active window overlap detection and conflict protection
-- Pluggable store backends (`in_memory`, `duckdb`, `iceberg`, `postgres`)
+- Pluggable store backends (`in_memory` production-ready; `pickle_file` for persistent local storage; DuckDB, Iceberg, and Postgres backends planned)
 
 ## Observability
 
@@ -61,5 +61,5 @@
 ## Delivery quality
 
 - Full test suite with unit, property, and integration coverage
-- **100% line coverage** gate on `src/sparkrules` (`pytest tests/unit/ --cov=src/sre`, `fail_under=100` in `pyproject.toml`)
+- **100% line coverage** gate on `src/sparkrules` (`pytest tests/unit/ --cov=src/sparkrules`, `fail_under=100` in `pyproject.toml`)
 - Architecture scope and extension points: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)

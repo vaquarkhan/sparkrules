@@ -1,7 +1,5 @@
 from sparkrules.store.backends import (
-    DuckDBStore,
-    IcebergStore,
-    PostgresStore,
+    PickleFileStore,
     StoreUnavailableError,
     create_rule_store,
 )
@@ -15,10 +13,8 @@ from sparkrules.store.metadata_store import (
 
 __all__ = [
     "ConflictError",
-    "DuckDBStore",
-    "IcebergStore",
     "InMemoryRuleMetadataStore",
-    "PostgresStore",
+    "PickleFileStore",
     "RuleFilter",
     "RuleMetadataStore",
     "StoreUnavailableError",

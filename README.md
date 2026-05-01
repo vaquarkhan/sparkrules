@@ -44,13 +44,15 @@ pip install sparkrules[all]     # everything
 
 ## Performance
 
-The default API path runs pure Python (no Spark). Typical throughput on a single core:
+The default API path runs pure Python (no Spark). Measured throughput on a single core:
 
 | Scenario | Throughput |
 |----------|-----------|
-| Simple single-pattern rule | ~5,000-10,000 evals/sec |
-| Multi-condition rules with actions | ~1,000-5,000 evals/sec |
+| Raw `evaluate_rule` (single pattern) | ~199,000 evals/sec |
+| `iter_rule_rows` with JSON emit | ~105,000 rows/sec |
+| 10-rule chain evaluation | ~12,000 chains/sec |
 | Full API round-trip (HTTP + parse + eval) | ~200-500 req/sec |
+| Spark `apply_drl` local[4], 100k rows | ~16,000 rows/sec |
 
 For higher throughput, use `apply_drl()` with PySpark to distribute evaluation across a cluster. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for methodology and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for architecture scope and extension points.
 

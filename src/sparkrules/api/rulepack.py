@@ -20,7 +20,7 @@ def build_export_payload(rules: list[dict[str, Any]]) -> str:
     body = {
         "format": FORMAT_ID,
         "exported_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
-        "rules": rules,
+        "items": rules,
     }
     return json.dumps(body, indent=2, sort_keys=True)
 

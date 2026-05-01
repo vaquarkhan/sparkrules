@@ -47,44 +47,23 @@ class _PersistentInMemoryStore(InMemoryRuleMetadataStore):
 
 
 @dataclass
-class DuckDBStore(_PersistentInMemoryStore):
-    db_path: str = "duckdb_rules.db"
+class PickleFileStore(_PersistentInMemoryStore):
+    db_path: str = "rules.pickle"
 
     def __post_init__(self) -> None:
         self.path = Path(self.db_path)
         self._load()
 
 
-@dataclass
-class IcebergStore(_PersistentInMemoryStore):
-    store_path: str = "iceberg_rules.snapshot"
-
-    def __post_init__(self) -> None:
-        self.path = Path(self.store_path)
-        self._load()
-
-
-@dataclass
-class PostgresStore(_PersistentInMemoryStore):
-    dsn: str = "postgres://local"
-    state_path: str = "postgres_rules.snapshot"
-
-    def __post_init__(self) -> None:
-        self.path = Path(self.state_path)
-        self._load()
-
-
 def create_rule_store(backend: str, **kwargs: object) -> InMemoryRuleMetadataStore:
+    # TODO: implement real DuckDB/Iceberg/Postgres backends
     b = backend.lower()
     if b == "in_memory":
         return InMemoryRuleMetadataStore()
     if b == "duckdb":
-        return DuckDBStore(db_path=str(kwargs.get("db_path", "duckdb_rules.db")))
+        return PickleFileStore(db_path=str(kwargs.get("db_path", "duckdb_rules.pickle")))
     if b == "iceberg":
-        return IcebergStore(store_path=str(kwargs.get("store_path", "iceberg_rules.snapshot")))
+        return PickleFileStore(db_path=str(kwargs.get("store_path", "iceberg_rules.pickle")))
     if b == "postgres":
-        return PostgresStore(
-            dsn=str(kwargs.get("dsn", "postgres://local")),
-            state_path=str(kwargs.get("state_path", "postgres_rules.snapshot")),
-        )
+        return PickleFileStore(db_path=str(kwargs.get("state_path", "postgres_rules.pickle")))
     raise ValueError(f"unknown backend: {backend!r}")

@@ -34,11 +34,13 @@ SparkRules provides a flexible, layered authentication model designed to integra
 
 The API server, Workbench, and simulations run in a single Python process. This is the fast-feedback path for rule authoring, validation, and testing.
 
+**Important:** On the default API path, `SparkSession.getActiveSession()` is `None`. No Spark cluster is involved. PySpark may be installed as a library dependency, but the engine does not create a session or distribute work unless you explicitly wire `apply_drl()` in your own PySpark job.
+
 | Characteristic | Detail |
 |---------------|--------|
 | Runtime | Single CPython process (uvicorn) |
-| Throughput | ~1,000–10,000 evals/sec per core |
-| Best for | Development, CI, low-volume APIs, rule authoring |
+| Throughput | ~199k raw `evaluate_rule`/sec; ~12k 10-rule chain/sec; ~200-500 API req/sec |
+| Best for | Development, CI, low-volume APIs, rule authoring, batch jobs under 1M rows |
 
 ### Spark path (opt-in)
 
@@ -63,9 +65,12 @@ SparkRules ships with pluggable metadata backends:
 | Backend | Status | Use case |
 |---------|--------|----------|
 | `in_memory` | Production-ready | Development, testing, single-process deployments |
-| `duckdb` | Production-ready | Persistent local storage, embedded analytics |
-| `iceberg` | Modeling/test | Iceberg-style snapshot semantics for replay workflows |
-| `postgres` | Production-ready | Multi-instance deployments with shared state |
+| `pickle_file` | Production-ready | Persistent local storage, single-replica deployments |
+| `duckdb` | Planned | Embedded SQL storage with query support |
+| `iceberg` | Planned | Lakehouse-native snapshot semantics |
+| `postgres` | Planned | Multi-instance deployments with shared state |
+
+> **Note:** The `create_rule_store("duckdb")` / `"iceberg"` / `"postgres"` factory currently returns a `PickleFileStore` (pickle-to-disk). Real database backends are on the roadmap. The API is stable — switching to a real backend will be a drop-in replacement.
 
 **Extension point:** Implement the store interface for your preferred backend (Redis, DynamoDB, etc.).
 
