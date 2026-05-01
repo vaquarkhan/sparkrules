@@ -1,4 +1,4 @@
-﻿# sparkrules 1.0.0
+﻿# sparkrules 1.0.1
 
 **A Drools-style business rule engine for Python.** Define rules in DRL, evaluate facts, get explainable results — no JVM required.
 

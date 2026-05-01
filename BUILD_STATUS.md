@@ -2,7 +2,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Last updated | 2026-04-27 (docs aligned with workbench, governance deprecations, sim/debug APIs) |
+| Last updated | 2026-05-01 (v1.0.1: parse caching, adverse-action, data profiling, bug fixes) |
 | `pytest tests` (default, `-m "not perf"`) | **560+ passed**, 2 skipped, 1 deselected (perf) |
 | `pytest tests/perf -m perf` | 1 passed |
 | Python | 3.11+ |

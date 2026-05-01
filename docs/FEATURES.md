@@ -62,4 +62,19 @@
 
 - Full test suite with unit, property, and integration coverage
 - **100% line coverage** gate on `src/sparkrules` (`pytest tests/unit/ --cov=src/sparkrules`, `fail_under=100` in `pyproject.toml`)
+- **DRL parse caching** (LRU 256) for repeated evaluations
 - Architecture scope and extension points: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
+
+## Regulatory compliance
+
+- **Adverse-action reason aggregation** — `build_adverse_action_notice()` collects reason codes from rule chain evaluations into structured notices for ECOA/FCRA (US) and GDPR Art 22 (EU)
+- Principal reasons capped at 4 per ECOA standard
+- Deduplicated, priority-ordered reason codes with audit metadata
+
+## Data profiling
+
+- **`profile_rows()`** — per-field statistics over a batch of rows
+- Completeness (% non-null), uniqueness (% distinct)
+- Numeric: mean, stddev, min, max, p25, p50, p75
+- Categorical: top-N value counts
+- Structured `DataProfile` with `.to_dict()` for API/JSON output

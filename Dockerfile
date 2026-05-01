@@ -1,4 +1,4 @@
-# Runtime image for SparkRules 1.0.0 API + Workbench UI
+# Runtime image for SparkRules 1.0.1 API + Workbench UI
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
@@ -22,7 +22,7 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 LABEL org.opencontainers.image.title="sparkrules" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version="1.0.1" \
       org.opencontainers.image.description="Drools-style business rule engine for Python" \
       org.opencontainers.image.source="https://github.com/vaquarkhan/sparkrules" \
       org.opencontainers.image.licenses="Apache-2.0"
