@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 from sparkrules.model.rule import DEFAULT_AGENDA_GROUP
 from sparkrules.parser.ast import (
     Action,
@@ -397,9 +399,18 @@ class DrlParser:
         return Identifier(name)
 
 
+_PARSE_CACHE_SIZE = 256
+
+
+@functools.lru_cache(maxsize=_PARSE_CACHE_SIZE)
 def parse(text: str) -> RuleAst:
     return DrlParser().parse(text)
 
 
+@functools.lru_cache(maxsize=_PARSE_CACHE_SIZE)
+def _parse_rules_cached(text: str) -> tuple[RuleAst, ...]:
+    return tuple(DrlParser().parse_rules(text))
+
+
 def parse_rules(text: str) -> list[RuleAst]:
-    return DrlParser().parse_rules(text)
+    return list(_parse_rules_cached(text))

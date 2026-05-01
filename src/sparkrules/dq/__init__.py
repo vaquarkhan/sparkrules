@@ -16,8 +16,10 @@ from sparkrules.dq.engine import (
     summarize_violations,
     to_violation_records,
 )
+from sparkrules.dq.profile import DataProfile, FieldProfile, NumericStats, profile_rows
 
 __all__ = [
+    "DataProfile",
     "DataQualityEngine",
     "DqScope",
     "DqSeverity",
@@ -26,12 +28,15 @@ __all__ = [
     "ExpectRowCountWithin",
     "ExpectTableCountsToMatch",
     "ExpectUnique",
+    "FieldProfile",
     "FreshnessCheck",
     "DqViolation",
     "DqViolationRecord",
     "ExpectBetween",
     "ExpectInSet",
     "ExpectNotNull",
+    "NumericStats",
+    "profile_rows",
     "summarize_violations",
     "to_violation_records",
 ]

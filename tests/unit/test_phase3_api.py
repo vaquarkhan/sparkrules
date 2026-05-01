@@ -109,7 +109,7 @@ def test_rules_diff_and_export_import() -> None:
     assert ex.status_code == 200
     pack = ex.json()
     assert pack["format"] == "sparkrules-rulepack-1"
-    assert len(pack["rules"]) >= 1
+    assert len(pack["items"]) >= 1
 
     app2 = create_app(AppDeps())
     c2 = TestClient(app2)

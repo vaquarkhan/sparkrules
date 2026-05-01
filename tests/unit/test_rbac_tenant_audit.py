@@ -120,16 +120,16 @@ def test_export_and_diff_enforce_tenant_access() -> None:
     h1 = {"X-Roles": "rule_reader", "X-Tenant-Id": "t1"}
     h2 = {"X-Roles": "rule_reader", "X-Tenant-Id": "t2"}
     j1 = c.get("/rules/export", headers=h1).json()
-    assert all(x["namespace"] == "t1" for x in j1["rules"])
+    assert all(x["namespace"] == "t1" for x in j1["items"])
     j2 = c.get("/rules/export", headers=h2).json()
-    assert all(x["namespace"] == "t2" for x in j2["rules"])
+    assert all(x["namespace"] == "t2" for x in j2["items"])
     denied = c.get(
         "/rules/diff", params={"handle": "r2", "version_a": 1, "version_b": 1}, headers=h1
     )
     assert denied.status_code == 403
     scoped = c.get("/rules/export", params={"namespace": "t1"}, headers=h1)
     assert scoped.status_code == 200
-    assert all(x["namespace"] == "t1" for x in scoped.json()["rules"])
+    assert all(x["namespace"] == "t1" for x in scoped.json()["items"])
 
 
 def test_role_matrix_blocks_unknown_role_on_secured_endpoints() -> None:
