@@ -1,4 +1,4 @@
-# Examples
+﻿# Examples
 
 **Author:** Vaquar Khan  
 
@@ -19,8 +19,8 @@ On Windows, if `import sre` fails, use the **same** interpreter for `pip` and `p
 | [decision_table/first_match.json](decision_table/first_match.json) | `DecisionTable` as JSON (load with `sre.model.decision_table.dt_from_json`). |
 | [python/evaluate_drl_file.py](python/evaluate_drl_file.py) | Parse a `.drl` file and run `evaluate_rule` on sample facts. |
 | [python/api_inprocess.py](python/api_inprocess.py) | Build the FastAPI app and print OpenAPI path keys (in-process, no `uvicorn`). |
-| [usecases/README.md](usecases/README.md) | **SparkRules domain packs** — lending, clinical research, POS, credit card, loyalty: each has **DRL**, **CSV**, **`validate_csv.py`**, **`spark_e2e.py`**, **`EXAMPLE.md`**. |
-| [spark/README.md](spark/README.md) | **Thin PySpark harness** — `apply_drl_local`, `iter_rule_rows_no_jvm`, `DROOLS_FEATURES.md`. |
+| [usecases/README.md](usecases/README.md) | **SparkRules domain packs**  -  lending, clinical research, POS, credit card, loyalty: each has **DRL**, **CSV**, **`validate_csv.py`**, **`spark_e2e.py`**, **`EXAMPLE.md`**. |
+| [spark/README.md](spark/README.md) | **Thin PySpark harness**  -  `apply_drl_local`, `iter_rule_rows_no_jvm`, `DROOLS_FEATURES.md`. |
 | [dbt_clinical/README.md](dbt_clinical/README.md) | **dbt + DuckDB** staging mirror of `examples/usecases/clinical_research/staging.py` (same seed CSV; optional SQL-side QA). |
 
 ### PySpark (cluster-style rule runs)

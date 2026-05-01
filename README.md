@@ -1,6 +1,6 @@
 ﻿# sparkrules 1.0.1
 
-**The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails — from laptop to lakehouse, no JVM required.
+**The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails  -  from laptop to lakehouse, no JVM required.
 
 <p align="center">
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
@@ -42,9 +42,9 @@ pip install sparkrules[all]     # everything
 
 | If you are... | SparkRules gives you... |
 |---------------|------------------------|
-| **Migrating from Drools** | Same DRL syntax, no JVM, Python-native — drop your `.drl` files in and go |
+| **Migrating from Drools** | Same DRL syntax, no JVM, Python-native  -  drop your `.drl` files in and go |
 | **Building a decisioning service** | FastAPI server + browser Workbench + versioned rules in one package |
-| **Running rules on Spark** | `apply_drl(df, drl)` distributes evaluation across your cluster — same rules, distributed execution |
+| **Running rules on Spark** | `apply_drl(df, drl)` distributes evaluation across your cluster  -  same rules, distributed execution |
 | **In a regulated industry** | Adverse-action reason aggregation (ECOA/FCRA/GDPR Art 22), audit trails, deterministic replay |
 | **Tired of if/else chains** | Externalized business logic that business analysts can read, version, and govern |
 
@@ -63,7 +63,7 @@ pip install sparkrules[all]     # everything
 | **Browser Workbench** | ✅ Monaco + LSP | ✅ (Business Central) | ❌ | ❌ |
 | **Infrastructure** | `pip install` | JVM + app server | N/A | `pip install` |
 
-**SparkRules' unique position:** governance + DQ + business rules + adverse-action reasons in one versioned, auditable package — from laptop to lakehouse.
+**SparkRules' unique position:** governance + DQ + business rules + adverse-action reasons in one versioned, auditable package  -  from laptop to lakehouse.
 
 ---
 
@@ -87,7 +87,7 @@ notice = build_adverse_action_notice(results, decision="decline", fact_id="app-1
 ```
 
 ### Data quality + profiling (new in 1.0.1)
-Built-in DQ checks (not-null, range, in-set, regex, uniqueness, freshness) plus statistical profiling — completeness, uniqueness, mean/stddev/percentiles, top-N values. Run DQ checks before rules, governed by the same versioning and namespace system.
+Built-in DQ checks (not-null, range, in-set, regex, uniqueness, freshness) plus statistical profiling  -  completeness, uniqueness, mean/stddev/percentiles, top-N values. Run DQ checks before rules, governed by the same versioning and namespace system.
 
 ```python
 from sparkrules.dq import profile_rows
@@ -110,7 +110,7 @@ Capture rule execution snapshots. Replay them later with different facts. Determ
 Version every rule. Scope by namespace. Promote through dev → stage → prod. Deprecate with propose → approve → enforce workflow. Full audit trail.
 
 ### Spark integration (optional)
-Pure Python by default. When you need cluster scale, wire `apply_drl(df, drl)` into your PySpark job — same rules, distributed via `mapPartitions`. Compatible with Spark 3.x+. Deploy on AWS Glue, Databricks, GCP Dataproc, Azure Synapse, or Kubernetes — config-driven, no code changes.
+Pure Python by default. When you need cluster scale, wire `apply_drl(df, drl)` into your PySpark job  -  same rules, distributed via `mapPartitions`. Compatible with Spark 3.x+. Deploy on AWS Glue, Databricks, GCP Dataproc, Azure Synapse, or Kubernetes  -  config-driven, no code changes.
 
 ### Performance (new in 1.0.1)
 DRL parse caching (LRU 256) gives 5-10x throughput boost on repeated evaluations.
@@ -211,12 +211,12 @@ docker compose up --build
 
 ## Quality
 
-- **580+ tests** — unit, property-based (Hypothesis), integration, performance
+- **580+ tests**  -  unit, property-based (Hypothesis), integration, performance
 - **100% line coverage** enforced in CI (`fail_under=100`)
 - **Python 3.11 / 3.12 / 3.13** tested in CI matrix
 - **Ruff** lint + format enforced
 - **pip-audit** dependency security scanning
-- **Apache 2.0** license — use it anywhere, commercially or otherwise
+- **Apache 2.0** license  -  use it anywhere, commercially or otherwise
 
 ## License
 

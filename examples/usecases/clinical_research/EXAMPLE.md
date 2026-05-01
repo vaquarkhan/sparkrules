@@ -1,8 +1,8 @@
-**Author:** Vaquar Khan  
+﻿**Author:** Vaquar Khan  
 
-## Clinical research — lab harmonization and dedupe
+## Clinical research  -  lab harmonization and dedupe
 
-This pack models a **EDC / lab ingestion** lane: heterogeneous units arrive from sites, longitudinal draws produce repeat records, deterministic dupes sneak in upstream, and DQ must flag unfinished protein panels—before analytics or submissions.
+This pack models a **EDC / lab ingestion** lane: heterogeneous units arrive from sites, longitudinal draws produce repeat records, deterministic dupes sneak in upstream, and DQ must flag unfinished protein panels - before analytics or submissions.
 
 ### Fact shape (`f`)
 
@@ -21,7 +21,7 @@ Rules run as a **`parse_rules` chain** (see `apply_drl` / `run_rule_chain`).
 | Pass-through tiers (~35‑50) | Already SI labs | Copies numeric when units need no transformation (kg, mg/dl, …). |
 | **pass_prot_measured** (~25) | Accepted ratio rows | Rows with PROT quantification + unit (e.g. ratio). |
 
-`stop_on_fire` on duplicate rules prevents wasteful normalization on rows you will discard anyway—a pattern you would mirror operationally via agenda controls.
+`stop_on_fire` on duplicate rules prevents wasteful normalization on rows you will discard anyway - a pattern you would mirror operationally via agenda controls.
 
 ### Scripts
 

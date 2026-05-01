@@ -1,4 +1,4 @@
-# Publishing (PyPI, containers, CI)
+﻿# Publishing (PyPI, containers, CI)
 
 ## Source builds (sdist + wheel)
 
@@ -10,7 +10,7 @@ The **Release build** workflow (`.github/workflows/release-sdist.yml`, name: *Re
 It always **builds** and uploads a **`dist/`** workflow artifact. **PyPI upload** runs when either:
 
 1. **Manual run** with the input **“Upload dist/ to PyPI”** enabled, or  
-2. **A tag push** `v*` (same as a release), so a tagged release **also publishes to PyPI** (after you set up trusted publishing — see below).
+2. **A tag push** `v*` (same as a release), so a tagged release **also publishes to PyPI** (after you set up trusted publishing  -  see below).
 
 To publish only a build (no upload), use **Run workflow** and leave the checkbox off. To publish without auto-upload on every tag, do not create the `pypi` environment or adjust the workflow; for most teams, **tag = release to PyPI** is desired.
 
@@ -82,6 +82,6 @@ Open http://127.0.0.1:8042/workbench/ (container listens on **8000**).
 
 ## Related docs
 
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) — local install and the `httpx` / TestClient version note
-- [ROADMAP.md](ROADMAP.md) — release and phase notes
-- [README.md](../README.md#docker) — Docker quick start
+- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)  -  local install and the `httpx` / TestClient version note
+- [ROADMAP.md](ROADMAP.md)  -  release and phase notes
+- [README.md](../README.md#docker)  -  Docker quick start

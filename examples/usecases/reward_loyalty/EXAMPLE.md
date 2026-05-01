@@ -1,6 +1,6 @@
-**Author:** Vaquar Khan  
+﻿**Author:** Vaquar Khan  
 
-## Reward / loyalty — earn & burn adjudication
+## Reward / loyalty  -  earn & burn adjudication
 
 The demo focuses on **tier-based guardrails**, not full earn math: freezes, redemption burst caps, differentiated experiences for GOLD vs PLATINUM portfolios, Bronze earn paths, insufficient balance handling.
 
@@ -21,7 +21,7 @@ Statuses include **`ACTIVE`** versus **`FROZEN`** (marketing holds, AML/KYC free
 | **silver_standard_catalog / bronze_baseline_grant** | Accessible tiers | Standard catalog unlocking + Bronze onboarding path. |
 | **gold_catalog_non_dining** | Catch-all retail redemptions after dining exclusivity | GOLD + **`GENERAL_MERCH`**. |
 
-`stop_on_fire` ensures compliance freezes and ledger denials preempt marketing bonuses—you would replicate that with BPM or microservice orchestrators.
+`stop_on_fire` ensures compliance freezes and ledger denials preempt marketing bonuses - you would replicate that with BPM or microservice orchestrators.
 
 ### Scripts
 

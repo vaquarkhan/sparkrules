@@ -1,12 +1,12 @@
-# Scale and benchmarks
+﻿# Scale and benchmarks
 
 This project includes **harnesses** to reason about very large runtimes, not live billion-row runs checked into Git.
 
 ## In-repo tools
 
-- `sparkrules.runtime.perf.run_perf_harness` — measures elapsed time and rows/sec for a callable.
-- `sparkrules.runtime.perf.scale_evidence` — produces a structured estimate (rows, rows/sec, target rows, estimated duration) for documentation and SLO planning.
-- `sparkrules.obs.health` — classifies per-stage health from duration, shuffle volume, and task failures (for UI and ops dashboards).
+- `sparkrules.runtime.perf.run_perf_harness`  -  measures elapsed time and rows/sec for a callable.
+- `sparkrules.runtime.perf.scale_evidence`  -  produces a structured estimate (rows, rows/sec, target rows, estimated duration) for documentation and SLO planning.
+- `sparkrules.obs.health`  -  classifies per-stage health from duration, shuffle volume, and task failures (for UI and ops dashboards).
 
 ## Default API path: not distributed Spark
 
@@ -36,7 +36,7 @@ python -m pytest tests/unit/ --cov=src/sre
 
 Opt-in performance tests (if present) use `pytest -m perf`.
 
-## Phase 4 — lakehouse benchmarks
+## Phase 4  -  lakehouse benchmarks
 
 For **governance and promotion** (see [GOVERNANCE.md](GOVERNANCE.md)), the repository documents behavior only; your **lakehouse** is where you prove **latency and cost** for rule evaluation at scale.
 

@@ -1,10 +1,10 @@
-# PySpark infrastructure examples
+﻿# PySpark infrastructure examples
 
 **Author:** Vaquar Khan  
 
 Read first: [docs/SPARK_INTEGRATION.md](../../docs/SPARK_INTEGRATION.md).
 
-**Domain demos (lending, clinical, POS, cards, loyalty)** now live under **[`examples/usecases/`](../usecases/README.md)** — each folder has its own **DRL**, **`data/*.csv`**, **`validate_csv.py`** (no JVM), **`spark_e2e.py`**, and **`EXAMPLE.md`** with full rule walkthroughs.
+**Domain demos (lending, clinical, POS, cards, loyalty)** now live under **[`examples/usecases/`](../usecases/README.md)**  -  each folder has its own **DRL**, **`data/*.csv`**, **`validate_csv.py`** (no JVM), **`spark_e2e.py`**, and **`EXAMPLE.md`** with full rule walkthroughs.
 
 This directory keeps **small, generic** PySpark smoke tests:
 

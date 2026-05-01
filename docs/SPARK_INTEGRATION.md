@@ -1,13 +1,13 @@
-# Spark: optional by design
+﻿# Spark: optional by design
 
 ---
 
-> **TL;DR — where Spark actually runs**
+> **TL;DR  -  where Spark actually runs**
 >
 > | You are here | Spark used? |
 > |--------------|-------------|
-> | `POST /simulations`, Workbench **Simulate**, most **REST** traffic | **No** — pure **Python** in the API process (`SparkSession.getActiveSession()` is usually `None`). |
-> | Your **PySpark job** calling **`apply_drl(df, drl)`** on a **`DataFrame`** | **Yes** — work is distributed by **Spark** (your cluster, your `SparkSession`). |
+> | `POST /simulations`, Workbench **Simulate**, most **REST** traffic | **No**  -  pure **Python** in the API process (`SparkSession.getActiveSession()` is usually `None`). |
+> | Your **PySpark job** calling **`apply_drl(df, drl)`** on a **`DataFrame`** | **Yes**  -  work is distributed by **Spark** (your cluster, your `SparkSession`). |
 >
 > **No server environment variable flips the API into Spark mode.** Integrate in code; see **`apply_drl`** below.
 
@@ -26,7 +26,7 @@ There is **no** single `SPARKRULES_ENABLE_SPARK=true` switch that turns the **HT
 
 ## When you do **not** need Spark
 
-- Authoring, validating, and simulating rules via **`/rules/validate`**, **`/ide/lsp/analyze`**, **`/simulations`**, and the **Workbench** — all use the **in-process** engine.
+- Authoring, validating, and simulating rules via **`/rules/validate`**, **`/ide/lsp/analyze`**, **`/simulations`**, and the **Workbench**  -  all use the **in-process** engine.
 - Unit tests and most integration tests.
 - Scenarios where **one machine** and **Python throughput** are enough.
 
@@ -39,13 +39,13 @@ This is **normal** and **expected**; it does not mean the product is “broken.�
 Use Spark when you need **distributed** execution over **large** row sets already in the Spark ecosystem:
 
 1. **Create** a `SparkSession` in **your** driver (EMR, Databricks, Dataproc, YARN, Kubernetes, etc.).
-2. **Load** facts as a `DataFrame` (e.g. from Parquet, Iceberg, Delta — your catalog and IAM).
+2. **Load** facts as a `DataFrame` (e.g. from Parquet, Iceberg, Delta  -  your catalog and IAM).
 3. **Apply** DRL to that DataFrame using the helpers in `src/sparkrules/spark/dataframe.py`:
-   - **`apply_drl(df, drl, ...)`** — `broadcast`’s the DRL string, uses **`mapPartitions`** over the DataFrame’s RDD, returns a new `DataFrame` of `fact_id`, `fired`, `out_json`.
+   - **`apply_drl(df, drl, ...)`**  -  `broadcast`’s the DRL string, uses **`mapPartitions`** over the DataFrame’s RDD, returns a new `DataFrame` of `fact_id`, `fired`, `out_json`.
    - Lower-level: **`iter_rule_rows`**, **`mpartition_rows`** for custom pipelines.
 4. **Optionally** combine with a **`CompiledRulePackage`** and **`sparkrules/transport/broadcaster.py`** for **broadcasting** larger artifacts in advanced setups (see that module’s docstring and tests).
 
-**Requirements on the workers:** JARs / Python environment must include this package, PySpark, and compatible Spark version — same as any other PySpark app.
+**Requirements on the workers:** JARs / Python environment must include this package, PySpark, and compatible Spark version  -  same as any other PySpark app.
 
 ---
 
@@ -62,7 +62,7 @@ For architecture scope and execution paths, see [KNOWN_LIMITATIONS.md](KNOWN_LIM
 
 | Component | Path |
 |-----------|------|
-| DataFrame DRL application | `sparkrules/spark/dataframe.py` — `apply_drl`, `iter_rule_rows`, `rows_from_session` |
+| DataFrame DRL application | `sparkrules/spark/dataframe.py`  -  `apply_drl`, `iter_rule_rows`, `rows_from_session` |
 | Broadcast bytes | `sparkrules/transport/broadcaster.py` |
 | **Runnable E2E samples** | [`examples/usecases/`](../examples/usecases/README.md) domain packs + [`examples/spark/`](../examples/spark/README.md) harness (`apply_drl_local.py`, `iter_rule_rows_no_jvm.py`) |
 | Spark iterator tests (need JVM) | `tests/spark/`, `tests/unit/test_spark_iter.py` |
@@ -86,6 +86,6 @@ How that is achieved:
 | `tests/unit/test_spark_iter.py` | `iter_rule_rows` with **dict** rows and row-like `asDict()` (no JVM). |
 | `tests/unit/test_cov_spark_apply_mocks.py` | `apply_drl` with a **mock** `DataFrame` / `SparkSession` (no JVM), `rows_from_session`, and non-dict partition elements. |
 | `tests/unit/test_cov_spark_mpartition.py` | `mpartition_rows` with real **PySpark** `Row` (imports `pyspark`; skipped if import fails). |
-| `tests/spark/test_pyspark_dataframe.py` | Optional **end-to-end** with `SparkSession` (`local[1]`) — **requires JVM**; marked `spark`, not in default `pytest` selection if you exclude the directory. |
+| `tests/spark/test_pyspark_dataframe.py` | Optional **end-to-end** with `SparkSession` (`local[1]`)  -  **requires JVM**; marked `spark`, not in default `pytest` selection if you exclude the directory. |
 
 You get **full** `sre/spark` coverage from **unit** tests alone (mocks + `importorskip` PySpark for `mpartition_rows`); the `tests/spark/` file is for **real** Spark smoke runs in environments with Java.

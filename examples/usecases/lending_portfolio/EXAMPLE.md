@@ -1,6 +1,6 @@
-**Author:** Vaquar Khan  
+﻿**Author:** Vaquar Khan  
 
-## Lending portfolio — prime underwriting tier
+## Lending portfolio  -  prime underwriting tier
 
 A single underwriting rule expresses **composite retail policy**: credit (`fico`), capacity (`dti`, `annual_income`), behaviors (`delinq_90d_12m`), product whitelist, geography blacklist, orchestrated with Drools metadata that SparkRules parses even when only **one rule** fires per invocation.
 

@@ -1,4 +1,4 @@
-# Governance (Phase 4)
+﻿# Governance (Phase 4)
 
 ## Namespaces
 
@@ -17,10 +17,10 @@ Runtime engines do **not** read these pins automatically; connect them in your d
 
 The **in-memory** `DeprecationRegistry` (per API process) supports a workflow to retire rules:
 
-- **Propose** — record intent to deprecate a rule handle in a **namespace** (`POST /governance/deprecations/propose`)
-- **Approve** — mark the proposal approved (`POST /governance/deprecations/approve`)
-- **List** — list deprecation records (`GET /governance/deprecations?namespace=…`)
-- **Enforce** — set matching **active** rule versions in the store to **inactive** (`POST /governance/deprecations/enforce`) — use with RBAC/audit in production
+- **Propose**  -  record intent to deprecate a rule handle in a **namespace** (`POST /governance/deprecations/propose`)
+- **Approve**  -  mark the proposal approved (`POST /governance/deprecations/approve`)
+- **List**  -  list deprecation records (`GET /governance/deprecations?namespace=…`)
+- **Enforce**  -  set matching **active** rule versions in the store to **inactive** (`POST /governance/deprecations/enforce`)  -  use with RBAC/audit in production
 
 ## API (pins and governance)
 

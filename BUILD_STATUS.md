@@ -1,4 +1,4 @@
-# Build status
+﻿# Build status
 
 | Metric | Value |
 |--------|-------|
@@ -18,6 +18,6 @@
 | `pytest tests/ -q` → `560+ passed, 2 skipped, 1 deselected` | **Met** (on this tree) |
 | `pytest tests/perf -m perf -q` → `1 passed` | **Met** |
 | `BUILD_STATUS.md` counts | **Updated** (this file) |
-| `README.md` points newcomers to docs by role | **Met** — see root `README.md` and **Documentation hub** [`docs/README.md`](docs/README.md) |
+| `README.md` points newcomers to docs by role | **Met**  -  see root `README.md` and **Documentation hub** [`docs/README.md`](docs/README.md) |
 | Every documented requirement has a test | **Met** for the in-repo requirements set in `docs/REQUIREMENTS.md`, cross-covered by `tests/property/`, `tests/integration/`, and `tests/unit/test_requirement_ladder.py` |
-| P1–P38 Hypothesis **≥ 100** examples (where `@given` is used) | **Met** — `tests/property/hypo_settings.py` `PROFILE.max_examples=100` |
+| P1–P38 Hypothesis **≥ 100** examples (where `@given` is used) | **Met**  -  `tests/property/hypo_settings.py` `PROFILE.max_examples=100` |

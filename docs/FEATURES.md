@@ -1,4 +1,4 @@
-# Features
+﻿# Features
 
 ## Core engine
 
@@ -67,13 +67,13 @@
 
 ## Regulatory compliance
 
-- **Adverse-action reason aggregation** — `build_adverse_action_notice()` collects reason codes from rule chain evaluations into structured notices for ECOA/FCRA (US) and GDPR Art 22 (EU)
+- **Adverse-action reason aggregation**  -  `build_adverse_action_notice()` collects reason codes from rule chain evaluations into structured notices for ECOA/FCRA (US) and GDPR Art 22 (EU)
 - Principal reasons capped at 4 per ECOA standard
 - Deduplicated, priority-ordered reason codes with audit metadata
 
 ## Data profiling
 
-- **`profile_rows()`** — per-field statistics over a batch of rows
+- **`profile_rows()`**  -  per-field statistics over a batch of rows
 - Completeness (% non-null), uniqueness (% distinct)
 - Numeric: mean, stddev, min, max, p25, p50, p75
 - Categorical: top-N value counts
