@@ -16,7 +16,7 @@ This documentation set is customer and developer focused.
 | [GOVERNANCE.md](GOVERNANCE.md) | Phase 4 namespaces, promotion pins, and API |
 | [PUBLISHING.md](PUBLISHING.md) | PyPI (incl. tag releases), GitHub Container Registry, CI |
 | [ROADMAP.md](ROADMAP.md) | Phases: workbench, governance, future scope |
-| [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) | Blueprint gaps: identity, Spark scale, Workbench UI tiers, RBAC discovery |
+| [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) | Architecture scope, extension points, and deployment patterns |
 | [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md) | **When to use Spark vs pure Python** — optional PySpark wiring, `apply_drl`, no server “enable” flag |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment notes |
 

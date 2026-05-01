@@ -52,7 +52,7 @@ The default API path runs pure Python (no Spark). Typical throughput on a single
 | Multi-condition rules with actions | ~1,000-5,000 evals/sec |
 | Full API round-trip (HTTP + parse + eval) | ~200-500 req/sec |
 
-For higher throughput, use `apply_drl()` with PySpark to distribute evaluation across a cluster. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for methodology and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for honest scope boundaries.
+For higher throughput, use `apply_drl()` with PySpark to distribute evaluation across a cluster. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for methodology and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for architecture scope and extension points.
 
 ## Quick start (from source)
 
@@ -157,13 +157,13 @@ Set `SPARKRULES_API_KEY` to require authentication on mutating endpoints and sen
 | Spark integration | [docs/SPARK_INTEGRATION.md](docs/SPARK_INTEGRATION.md) |
 | Governance | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 | Benchmarks | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
-| Known limitations | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
+| Architecture scope | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 | Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Publishing / CI | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 | Jupyter notebooks | [examples/notebooks/](examples/notebooks/README.md) |
-| AI agent guide | [AGENT.md](AGENT.md) |
+| AI agent guide | [AGENTS.md](AGENTS.md) |
 
 ## License
 

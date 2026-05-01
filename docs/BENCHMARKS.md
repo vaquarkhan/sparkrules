@@ -12,7 +12,7 @@ This project includes **harnesses** to reason about very large runtimes, not liv
 
 For **default** HTTP simulations and the Workbench **Simulate** view, evaluation runs in **pure Python** in the API process: **`SparkSession.getActiveSession()` is typically `None`**, and there is **no** automatic `mapPartitions` / **broadcast** rule package on a **DataFrame**. That is **by design** for a simple integration surface; it is **not** evidence of billion-row Spark throughput.
 
-For the **claim vs reality** narrative, observed throughput bounds, and the **wiring** needed for real cluster execution (`mapPartitions`, `CompiledRulePackage` broadcast, `sparkrules/spark/dataframe.py`), see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#spark-and-distributed-execution). For **when to choose Spark** vs staying on Python, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
+For architecture scope, execution paths, and the wiring needed for real cluster execution (`mapPartitions`, `CompiledRulePackage` broadcast, `sparkrules/spark/dataframe.py`), see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#execution-architecture). For **when to choose Spark** vs staying on Python, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
 
 ## What “production evidence” means
 

@@ -30,5 +30,5 @@ This policy covers the SparkRules Python package (`sparkrules`) and its API surf
 
 - Dependencies are monitored via Dependabot and pip-audit
 - The API supports optional API key authentication (`SPARKRULES_API_KEY`)
-- RBAC is enforced via role-based header checks (see [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for scope)
+- RBAC is enforced via role-based header checks (see [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for architecture scope)
 - No secrets are stored in the repository
