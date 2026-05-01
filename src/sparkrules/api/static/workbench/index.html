@@ -401,6 +401,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header>
@@ -450,14 +451,33 @@
       <p id="message" role="status" aria-live="polite"></p>
       <section id="view-overview" class="view">
         <div class="stat-cards" id="stat-cards">
-          <div class="stat-card"><span class="ic" aria-hidden="true">◈</span><div class="l">Rule versions</div><div class="n" id="st-versions">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">✓</span><div class="l">Active</div><div class="n" id="st-active" style="color:var(--ok)">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">○</span><div class="l">Inactive</div><div class="n" id="st-inactive" style="color:var(--muted)">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">◇</span><div class="l">Handles (distinct)</div><div class="n" id="st-handles">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">📦</span><div class="l">Rule versions</div><div class="n" id="st-versions">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">✅</span><div class="l">Active</div><div class="n" id="st-active" style="color:var(--ok)">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">⏸</span><div class="l">Inactive</div><div class="n" id="st-inactive" style="color:var(--muted)">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">🏷</span><div class="l">Handles</div><div class="n" id="st-handles">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">📂</span><div class="l">Groups</div><div class="n" id="st-groups">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">🌐</span><div class="l">Namespaces</div><div class="n" id="st-namespaces">0</div></div>
         </div>
         <div class="charts-grid">
           <div class="panel" style="margin:0">
+            <h2>Active vs Inactive</h2>
+            <div style="max-width:220px;margin:0 auto"><canvas id="chart-active-donut"></canvas></div>
+          </div>
+          <div class="panel" style="margin:0">
             <h2>By group</h2>
+            <canvas id="chart-groups-bar" style="max-height:220px"></canvas>
+            <div id="chart-groups" style="min-height:2rem"></div>
+          </div>
+          <div class="panel" style="margin:0">
+            <h2>By namespace</h2>
+            <canvas id="chart-ns-bar" style="max-height:220px"></canvas>
+            <div id="chart-namespaces" style="min-height:2rem"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:1rem">
+          <h2>Version activity</h2>
+          <div id="chart-active" style="min-height:2rem"></div>
+        </div>
             <div id="chart-groups" style="min-height:2rem"></div>
           </div>
           <div class="panel" style="margin:0">
@@ -1039,6 +1059,27 @@
       });
       el.innerHTML = h;
     }
+    var _chartInstances = {};
+    function renderChartJs(canvasId, type, labels, dataArr, colors) {
+      if (typeof Chart === "undefined") return;
+      var canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      if (_chartInstances[canvasId]) { _chartInstances[canvasId].destroy(); }
+      var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      var gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+      var textColor = isDark ? "#8b9cb3" : "#5c6b7f";
+      var cfg = {
+        type: type,
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderWidth: type === "doughnut" ? 2 : 0, borderColor: isDark ? "#070a0f" : "#ffffff", hoverOffset: 8 }] },
+        options: {
+          responsive: true, maintainAspectRatio: type === "doughnut",
+          plugins: { legend: { display: type === "doughnut", position: "bottom", labels: { color: textColor, font: { size: 11 } } } },
+          scales: type === "bar" ? { x: { ticks: { color: textColor, font: { size: 11 } }, grid: { display: false } }, y: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } } } : {}
+        }
+      };
+      _chartInstances[canvasId] = new Chart(canvas, cfg);
+    }
+    var _chartColors = ["#3b82f6","#8b5cf6","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#a855f7"];
     async function loadDashboard() {
       const data = await getJson("/rules/assets");
       const handles = {};
@@ -1057,8 +1098,24 @@
       document.getElementById("st-active").textContent = String(ac);
       document.getElementById("st-inactive").textContent = String(iac);
       document.getElementById("st-handles").textContent = String(Object.keys(handles).length);
+      var gEl = document.getElementById("st-groups"); if (gEl) gEl.textContent = String(Object.keys(byG).length);
+      var nEl = document.getElementById("st-namespaces"); if (nEl) nEl.textContent = String(Object.keys(byN).length);
       renderBarChart("chart-groups", byG);
       renderBarChart("chart-namespaces", byN);
+      /* Chart.js doughnut for active/inactive */
+      if (ac + iac > 0) {
+        renderChartJs("chart-active-donut", "doughnut", ["Active","Inactive"], [ac, iac], ["#22c55e","#64748b"]);
+      }
+      /* Chart.js bar for groups */
+      var gKeys = Object.keys(byG).sort(function(a,b){return byG[b]-byG[a];});
+      if (gKeys.length) {
+        renderChartJs("chart-groups-bar", "bar", gKeys, gKeys.map(function(k){return byG[k];}), gKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
+      }
+      /* Chart.js bar for namespaces */
+      var nKeys = Object.keys(byN).sort(function(a,b){return byN[b]-byN[a];});
+      if (nKeys.length) {
+        renderChartJs("chart-ns-bar", "bar", nKeys, nKeys.map(function(k){return byN[k];}), nKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
+      }
       renderFireSamples(data.length || 58);
       const tot = ac + iac;
       const elA = document.getElementById("chart-active");
