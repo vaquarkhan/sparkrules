@@ -428,7 +428,7 @@
       <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
-        <span class="link-quiet" style="padding:0 0.2rem;pointer-events:none">·</span>
+        <span class="link-quiet" style="padding:0 0.2rem;pointer-events:none">&middot;</span>
         <a class="link-quiet" href="/health" target="_blank" rel="noopener">Health</a>
       </span>
     </div>
@@ -496,7 +496,7 @@
             Every rule fired at the rate expected from the synthetic distribution, validating predicate execution correctness.
           </p>
           <div class="spark-callout" id="spark-callout">
-            Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package — see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
+            Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package  -  see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
           </div>
         </div>
       </section>
@@ -538,7 +538,7 @@
             <input type="text" id="in-group" placeholder="group (default)" value="default" style="max-width:160px" />
             <input type="text" id="in-namespace" placeholder="namespace" value="default" style="max-width:140px" title="Project / org scope for governance" />
           </div>
-          <p class="mono" style="color:var(--muted);font-size:0.8rem;margin:0.35rem 0 0.5rem">Monaco DRL editor · Validate runs parse + LSP diagnostics</p>
+          <p class="mono" style="color:var(--muted);font-size:0.8rem;margin:0.35rem 0 0.5rem">Monaco DRL editor &middot; Validate runs parse + LSP diagnostics</p>
           <div id="monaco-drl-new" class="monaco-wrap" role="region" aria-label="DRL editor"></div>
           <div class="row" style="margin-top:0.5rem">
             <button class="btn" type="button" id="btn-validate">Validate</button>
@@ -587,9 +587,9 @@
         </div>
       </section>
       <section id="view-advanced" class="view hidden">
-        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled — graph response is JSON only.</p>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled  -  graph response is JSON only.</p>
         <details class="adv-panel" open>
-          <summary>AI rule suggestions (stub — not a full NL pipeline)</summary>
+          <summary>AI rule suggestions (stub  -  not a full NL pipeline)</summary>
           <div class="adv-body">
             <p class="wb-subtle">This calls <span class="mono">POST /ai/suggest-rules</span> with optional <strong>sample facts</strong> only. The bundled provider is a <strong>stub</strong> (no real NL→DRL model). For your own prompts/audit trail you can add fields inside each fact object, e.g. <span class="mono">[{"intent":"Decline when DPD &gt; 90"}]</span>.</p>
             <div class="row">
@@ -625,7 +625,7 @@
               <label class="mono" style="font-size:0.75rem"><input type="checkbox" id="adv-chain-sod" /> stop_on_decline</label>
               <button type="button" class="btn" id="btn-adv-chain">POST /simulations/chain</button>
             </div>
-            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Shadow — primary DRL:</p>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Shadow  -  primary DRL:</p>
             <textarea id="adv-sh-primary" style="min-height:72px;width:100%">rule a when $t : T ( true ) then result.d = "p"; end</textarea>
             <p class="mono" style="font-size:0.75rem;color:var(--muted)">Shadow DRL:</p>
             <textarea id="adv-sh-shadow" style="min-height:72px;width:100%">rule b when $t : T ( true ) then result.d = "s"; end</textarea>
@@ -633,7 +633,7 @@
             <input id="adv-sh-run" placeholder="run_id" value="shadow-ui" style="max-width:200px" />
             <textarea id="adv-sh-fact" style="min-height:44px;width:100%;margin-top:0.35rem">{"t":{}}</textarea>
             <button type="button" class="btn" id="btn-adv-shadow">POST /simulations/shadow</button>
-            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Counterfactual — same DRL, two facts:</p>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Counterfactual  -  same DRL, two facts:</p>
             <textarea id="adv-cf-drl" style="min-height:72px;width:100%">rule r when $t : T ( $t.x > 5 ) then result.v = 1; end</textarea>
             <p class="mono" style="font-size:0.75rem">baseline_fact</p>
             <textarea id="adv-cf-base" style="min-height:40px;width:100%">{"t":{"x":1}}</textarea>
@@ -646,12 +646,12 @@
         <details class="adv-panel">
           <summary>Time travel (capture / replay)</summary>
           <div class="adv-body">
-            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Capture — run_id, DRL, fact:</p>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">Capture  -  run_id, DRL, fact:</p>
             <input id="adv-tt-run" placeholder="run_id" style="max-width:220px;margin-bottom:0.35rem" />
             <textarea id="adv-tt-drl" style="min-height:80px;width:100%">rule r when $t : T ( true ) then result.ok = true; end</textarea>
             <textarea id="adv-tt-fact" style="min-height:44px;width:100%">{"t":{"x":1}}</textarea>
             <button type="button" class="btn" id="btn-adv-tt-cap">POST /debug/time-travel/capture</button>
-            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Replay — snapshot_id from capture response, same run_id:</p>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.65rem">Replay  -  snapshot_id from capture response, same run_id:</p>
             <input id="adv-tt-snap" type="number" placeholder="snapshot_id" style="max-width:120px" />
             <input id="adv-tt-replay-run" placeholder="run_id" style="max-width:220px" />
             <textarea id="adv-tt-override" style="min-height:36px;width:100%;margin-top:0.35rem" placeholder='optional fact_override JSON (or leave {})'></textarea>
@@ -677,7 +677,7 @@
         <details class="adv-panel">
           <summary>Graph enrich (structured + JSON)</summary>
           <div class="adv-body">
-            <p class="wb-subtle">Not a graph designer — server returns enriched JSON. Summary below; raw under the fold.</p>
+            <p class="wb-subtle">Not a graph designer  -  server returns enriched JSON. Summary below; raw under the fold.</p>
             <textarea id="adv-graph-fact" style="min-height:56px;width:100%">{"entity_id": "e1", "related": []}</textarea>
             <div class="row">
               <input id="adv-graph-entity" value="entity_id" style="max-width:140px" />
@@ -691,7 +691,7 @@
         <details class="adv-panel">
           <summary>Lineage events (run history table)</summary>
           <div class="adv-body">
-            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events — typically needs <span class="mono">platform_admin</span>. Table is newest-first; open Raw for full payloads.</p>
+            <p style="color:var(--muted);font-size:0.8rem">GET /lineage/events  -  typically needs <span class="mono">platform_admin</span>. Table is newest-first; open Raw for full payloads.</p>
             <div class="row">
               <input id="adv-lin-run" placeholder="filter run_id (optional)" style="max-width:220px" />
               <button type="button" class="btn" id="btn-adv-lin">Load events</button>
@@ -1040,7 +1040,7 @@
         });
         applyWorkbenchMonacoTheme();
         var h = document.getElementById("lsp-hint");
-        if (h) h.textContent = "Ctrl+Space: completions (LSP) · Validate: parse + diagnostics.";
+        if (h) h.textContent = "Ctrl+Space: completions (LSP) &middot; Validate: parse + diagnostics.";
         window.addEventListener("resize", function () { layoutDrlMonaco(); });
       });
     })();
@@ -1048,7 +1048,7 @@
       const el = document.getElementById(containerId);
       if (!el) return;
       const keys = Object.keys(mapObj).sort(function (a, b) { return mapObj[b] - mapObj[a]; });
-      if (!keys.length) { el.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>◇</span>No data for this view yet.</div>"; return; }
+      if (!keys.length) { el.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>&#9671;</span>No data for this view yet.</div>"; return; }
       const counts = keys.map(function (k) { return mapObj[k]; });
       const max = Math.max.apply(null, counts.concat([1]));
       let h = "";
@@ -1081,6 +1081,7 @@
     }
     var _chartColors = ["#3b82f6","#8b5cf6","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#a855f7"];
     async function loadDashboard() {
+      try {
       const data = await getJson("/rules/assets");
       const handles = {};
       const byG = {};
@@ -1102,32 +1103,33 @@
       var nEl = document.getElementById("st-namespaces"); if (nEl) nEl.textContent = String(Object.keys(byN).length);
       renderBarChart("chart-groups", byG);
       renderBarChart("chart-namespaces", byN);
-      /* Chart.js doughnut for active/inactive */
-      if (ac + iac > 0) {
-        renderChartJs("chart-active-donut", "doughnut", ["Active","Inactive"], [ac, iac], ["#22c55e","#64748b"]);
-      }
-      /* Chart.js bar for groups */
-      var gKeys = Object.keys(byG).sort(function(a,b){return byG[b]-byG[a];});
-      if (gKeys.length) {
-        renderChartJs("chart-groups-bar", "bar", gKeys, gKeys.map(function(k){return byG[k];}), gKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
-      }
-      /* Chart.js bar for namespaces */
-      var nKeys = Object.keys(byN).sort(function(a,b){return byN[b]-byN[a];});
-      if (nKeys.length) {
-        renderChartJs("chart-ns-bar", "bar", nKeys, nKeys.map(function(k){return byN[k];}), nKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
-      }
+      /* Chart.js charts - wrapped in try/catch so failures don't break the dashboard */
+      try {
+        if (ac + iac > 0) {
+          renderChartJs("chart-active-donut", "doughnut", ["Active","Inactive"], [ac, iac], ["#22c55e","#64748b"]);
+        }
+        var gKeys = Object.keys(byG).sort(function(a,b){return byG[b]-byG[a];});
+        if (gKeys.length) {
+          renderChartJs("chart-groups-bar", "bar", gKeys, gKeys.map(function(k){return byG[k];}), gKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
+        }
+        var nKeys = Object.keys(byN).sort(function(a,b){return byN[b]-byN[a];});
+        if (nKeys.length) {
+          renderChartJs("chart-ns-bar", "bar", nKeys, nKeys.map(function(k){return byN[k];}), nKeys.map(function(_,i){return _chartColors[i % _chartColors.length];}));
+        }
+      } catch (chartErr) { console.warn("Chart.js render skipped:", chartErr); }
       renderFireSamples(data.length || 58);
       const tot = ac + iac;
       const elA = document.getElementById("chart-active");
       if (elA) {
-        if (!tot) elA.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>◇</span>No rule versions in store.</div>";
+        if (!tot) elA.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>&#9671;</span>No rule versions in store.</div>";
         else {
           const pa = Math.round(100 * ac / tot);
           const pi = 100 - pa;
           elA.innerHTML = "<div class='bar-row'><span class='label'>Active</span><div class='bar-track'><div class='bar-fill' style='width:" + pa + "%;background:linear-gradient(90deg,var(--ok),#4ade80)'></div></div><span class='mono'>" + ac + " (" + pa + "%)</span></div><div class='bar-row'><span class='label'>Inactive</span><div class='bar-track'><div class='bar-fill' style='width:" + pi + "%;background:linear-gradient(90deg,#64748b,#94a3b8)'></div></div><span class='mono'>" + iac + " (" + pi + "%)</span></div>";
         }
       }
-      setMessage("Dashboard updated.", "ok");
+      setMessage("Dashboard: " + data.length + " rules, " + ac + " active, " + iac + " inactive.", "ok");
+      } catch (e) { setMessage("Dashboard error: " + e.message, "err"); console.error("loadDashboard:", e); }
     }
     function assetQuery() {
       const q = document.getElementById("filter-q");
@@ -1262,7 +1264,7 @@
     function renderGraphPanel(j) {
       var host = document.getElementById("adv-graph-panel");
       if (!host) return;
-      var snap = j.snapshot_id != null ? escapeHtml(String(j.snapshot_id)) : "—";
+      var snap = j.snapshot_id != null ? escapeHtml(String(j.snapshot_id)) : " - ";
       var fact = j.fact || {};
       var keys = Object.keys(fact).slice(0, 12);
       var khtml = keys.map(function (k) {
@@ -1298,7 +1300,7 @@
       }
       var parts = rows.slice(0, 3).map(function (s, idx) {
         var drl = (s.drl || "").slice(0, 200);
-        return "<div style='margin-top:" + (idx ? "0.5rem" : "0") + ";padding-top:" + (idx ? "0.5rem" : "0") + ";border-top:" + (idx ? "1px solid var(--border)" : "none") + "'><span class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id || "") + "</span> · <strong>" + escapeHtml(s.rule_handle || "") + "</strong><pre class='mono' style='font-size:0.72rem;max-height:72px;overflow:auto;margin:0.25rem 0 0'>" + escapeHtml(drl) + (s.drl && s.drl.length > 200 ? "…" : "") + "</pre></div>";
+        return "<div style='margin-top:" + (idx ? "0.5rem" : "0") + ";padding-top:" + (idx ? "0.5rem" : "0") + ";border-top:" + (idx ? "1px solid var(--border)" : "none") + "'><span class='mono' style='font-size:0.72rem'>" + escapeHtml(s.id || "") + "</span> &middot; <strong>" + escapeHtml(s.rule_handle || "") + "</strong><pre class='mono' style='font-size:0.72rem;max-height:72px;overflow:auto;margin:0.25rem 0 0'>" + escapeHtml(drl) + (s.drl && s.drl.length > 200 ? "…" : "") + "</pre></div>";
       });
       host.innerHTML = "<strong>Suggestions (preview)</strong>" + parts.join("");
       host.style.display = "block";
@@ -1359,7 +1361,7 @@
       host.innerHTML = h;
       var sc = document.getElementById("spark-callout");
       if (sc) {
-        sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None — no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
+        sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None  -  no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
       }
     }
     function renderAssetsTablePaged() {
@@ -1367,7 +1369,7 @@
       if (!host) return;
       var all = assetsState.all || [];
       if (!all.length) {
-        host.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>◇</span>No rules yet.</div>";
+        host.innerHTML = "<div class='empty-state'><span class='empty-icon' aria-hidden='true'>&#9671;</span>No rules yet.</div>";
         var mm = document.getElementById("assets-page-meta");
         if (mm) mm.textContent = "No rows";
         return;
@@ -1636,7 +1638,7 @@
           rawWrap.style.display = "block";
           var st = window._simBatchAbort ? "stopped early" : "complete";
           sumEl.style.display = "block";
-          sumEl.innerHTML = "<strong>Batch " + st + "</strong> · rows sent: " + results.length + " · <span style='color:var(--ok)'>ok " + okCount + "</span> · <span style='color:var(--err)'>fail " + failCount + "</span>";
+          sumEl.innerHTML = "<strong>Batch " + st + "</strong> &middot; rows sent: " + results.length + " &middot; <span style='color:var(--ok)'>ok " + okCount + "</span> &middot; <span style='color:var(--err)'>fail " + failCount + "</span>";
           setMessage("Batch simulation " + st + " (" + results.length + " row(s)).", okCount && !failCount ? "ok" : "warn");
           return;
         }
