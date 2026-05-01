@@ -8,7 +8,34 @@ version = "1.0.0"
 description = "Drools-equivalent business rule engine reference implementation"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE" }
+license = "LicenseRef-SparkRules-NC-1.0"
+license-files = ["LICENSE"]
+keywords = [
+  "business-rules",
+  "rule-engine",
+  "drools",
+  "drl",
+  "decision-table",
+  "spark",
+  "fastapi",
+  "pyspark",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: FastAPI",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Intended Audience :: Healthcare Industry",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Topic :: Office/Business",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: OS Independent",
+  "Typing :: Typed",
+]
 dependencies = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -28,6 +55,13 @@ test = [
   "pytest-cov>=4.0",
   "pyspark>=3.5.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vaquarkhan/sparkrules"
+Documentation = "https://sparkrules.readthedocs.io"
+Changelog = "https://github.com/vaquarkhan/sparkrules/blob/main/CHANGELOG.md"
+Issues = "https://github.com/vaquarkhan/sparkrules/issues"
+Repository = "https://github.com/vaquarkhan/sparkrules"
 
 [project.scripts]
 sre-drl-smoke = "sre.tools.smoke_drl:main"
