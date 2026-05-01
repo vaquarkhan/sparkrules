@@ -1,0 +1,7 @@
+[
+  {"t": {"amount": 1500, "region": "US", "credit_score": 720}},
+  {"t": {"amount": 500, "region": "EU", "credit_score": 580}},
+  {"t": {"amount": 3000, "region": "US", "credit_score": 650}},
+  {"t": {"amount": 200, "region": "APAC", "credit_score": 800}},
+  {"t": {"amount": 7500, "region": "US", "credit_score": 550}}
+]

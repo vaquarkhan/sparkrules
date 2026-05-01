@@ -84,6 +84,9 @@ sparkrules = [
   "py.typed",
   "api/static/workbench/index.html",
   "api/static/workbench/sparkrules-logo.png",
+  "api/static/workbench/favicon.ico",
+  "api/static/workbench/sample_facts.csv",
+  "api/static/workbench/sample_facts.json",
 ]
 
 [tool.pytest.ini_options]
