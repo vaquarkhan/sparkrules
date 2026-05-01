@@ -35,6 +35,18 @@ pip install sparkrules
 - **Governance built in** — versioned rules, namespace scoping, dev→stage→prod promotion, deprecation workflows
 - **100% test coverage** — 521 tests, property-based testing with Hypothesis, enforced coverage gate
 
+## Performance
+
+The default API path runs pure Python (no Spark). Typical throughput on a single core:
+
+| Scenario | Throughput |
+|----------|-----------|
+| Simple single-pattern rule | ~5,000-10,000 evals/sec |
+| Multi-condition rules with actions | ~1,000-5,000 evals/sec |
+| Full API round-trip (HTTP + parse + eval) | ~200-500 req/sec |
+
+For higher throughput, use `apply_drl()` with PySpark to distribute evaluation across a cluster. See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for methodology and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for honest scope boundaries.
+
 ## Quick start (from source)
 
 ```bash
