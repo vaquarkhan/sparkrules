@@ -19,7 +19,7 @@ python -m pip install -e ".[test]"
 ## Testing
 
 ```bash
-# Full suite (521 tests, 100% coverage gate)
+# Full suite (560+ tests, 100% coverage gate)
 pytest tests/ -q
 
 # Unit tests only (fast)
@@ -61,7 +61,7 @@ src/sparkrules/           # main package
   dq/                     # data quality engine
   obs/                    # logging, metrics, health
 tests/
-  unit/                   # ~480 unit tests
+  unit/                   # ~500 unit tests
   property/               # Hypothesis property-based tests
   integration/            # end-to-end use case tests
   perf/                   # opt-in benchmarks

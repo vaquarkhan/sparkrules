@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simulation modes: default, shadow, coverage, counterfactual, chain
 - Time-travel debug capture and replay
 - Data quality engine (not-null, range, in-set checks)
-- Versioned metadata store with pluggable backends (in_memory, duckdb, iceberg, postgres)
+- Versioned metadata store with pluggable backends (in_memory production-ready, pickle_file for persistence; DuckDB/Iceberg/Postgres planned)
 - Rule governance: namespaces, dev/stage/prod promotion pins, deprecation workflow
 - Optional PySpark integration via `apply_drl()` for cluster DataFrame evaluation
 - Platform configuration: local, AWS Glue, Databricks, GCP Dataproc, Azure Synapse
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional API key authentication for mutating and sensitive endpoints
 - Docker support with Dockerfile and docker-compose
 - CI/CD: GitHub Actions for tests, PyPI release (trusted publishing), Docker image push
-- 521 tests with 100% line coverage gate, property-based testing with Hypothesis
+- 560+ tests with 100% line coverage gate, property-based testing with Hypothesis
 - Comprehensive documentation: features, architecture, use cases, benchmarks, governance
 
 ### Changed
