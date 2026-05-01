@@ -1,4 +1,4 @@
-﻿# sparkrules
+﻿# sparkrules 1.0.0
 
 **A Drools-style business rule engine for Python.** Define rules in DRL, evaluate facts, get explainable results — no JVM required.
 
@@ -24,7 +24,10 @@ print(result.action_output)  # {'risk': 'high'}
 ## Install
 
 ```bash
-pip install sparkrules
+pip install sparkrules          # core engine only
+pip install sparkrules[api]     # + FastAPI server and Workbench
+pip install sparkrules[spark]   # + PySpark integration
+pip install sparkrules[all]     # everything
 ```
 
 ## Why SparkRules?
@@ -60,7 +63,7 @@ pytest tests/ -q
 ## Start the API + Workbench
 
 ```bash
-pip install sparkrules
+pip install sparkrules[api]
 python -m uvicorn sparkrules.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
@@ -72,7 +75,8 @@ Or use Docker:
 
 ```bash
 docker compose up --build
-# → http://127.0.0.1:8042/workbench/
+# → http://127.0.0.1:8042/docs
+# → http://127.0.0.1:8042/workbench/  (compose maps host 8042 → container 8000)
 ```
 
 
