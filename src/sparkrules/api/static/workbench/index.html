@@ -450,13 +450,26 @@
     <main>
       <p id="message" role="status" aria-live="polite"></p>
       <section id="view-overview" class="view">
+        <div class="panel" style="background:linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(139,92,246,0.1) 100%); border-left:4px solid var(--accent); margin-bottom:1rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+            <div>
+              <h2 style="margin:0;font-size:1rem;text-transform:none;letter-spacing:0;color:var(--text)">Welcome to SparkRules Workbench</h2>
+              <p style="margin:0.25rem 0 0;font-size:0.82rem;color:var(--muted)">Author rules, simulate decisions, govern promotions - all from your browser.</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <span class="badge badge-on" id="health-badge" style="font-size:0.72rem">Checking...</span>
+              <span class="badge" id="spark-badge" style="background:rgba(148,163,184,0.35);color:var(--muted);font-size:0.72rem">Spark: N/A</span>
+              <span class="badge" id="engine-badge" style="background:rgba(59,130,246,0.2);color:var(--accent);font-size:0.72rem">Python engine</span>
+            </div>
+          </div>
+        </div>
         <div class="stat-cards" id="stat-cards">
-          <div class="stat-card"><span class="ic" aria-hidden="true">📦</span><div class="l">Rule versions</div><div class="n" id="st-versions">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">✅</span><div class="l">Active</div><div class="n" id="st-active" style="color:var(--ok)">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">⏸</span><div class="l">Inactive</div><div class="n" id="st-inactive" style="color:var(--muted)">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">🏷</span><div class="l">Handles</div><div class="n" id="st-handles">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">📂</span><div class="l">Groups</div><div class="n" id="st-groups">0</div></div>
-          <div class="stat-card"><span class="ic" aria-hidden="true">🌐</span><div class="l">Namespaces</div><div class="n" id="st-namespaces">0</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x1F4E6;</span><div class="l">Rule versions</div><div class="n" id="st-versions">-</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x2705;</span><div class="l">Active</div><div class="n" id="st-active" style="color:var(--ok)">-</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x23F8;</span><div class="l">Inactive</div><div class="n" id="st-inactive" style="color:var(--muted)">-</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x1F3F7;</span><div class="l">Handles</div><div class="n" id="st-handles">-</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x1F4C2;</span><div class="l">Groups</div><div class="n" id="st-groups">-</div></div>
+          <div class="stat-card"><span class="ic" aria-hidden="true">&#x1F310;</span><div class="l">Namespaces</div><div class="n" id="st-namespaces">-</div></div>
         </div>
         <div class="charts-grid">
           <div class="panel" style="margin:0">
@@ -464,12 +477,12 @@
             <div style="max-width:220px;margin:0 auto"><canvas id="chart-active-donut"></canvas></div>
           </div>
           <div class="panel" style="margin:0">
-            <h2>By group</h2>
+            <h2>Rules by group</h2>
             <canvas id="chart-groups-bar" style="max-height:220px"></canvas>
             <div id="chart-groups" style="min-height:2rem"></div>
           </div>
           <div class="panel" style="margin:0">
-            <h2>By namespace</h2>
+            <h2>Rules by namespace</h2>
             <canvas id="chart-ns-bar" style="max-height:220px"></canvas>
             <div id="chart-namespaces" style="min-height:2rem"></div>
           </div>
@@ -477,6 +490,15 @@
         <div class="panel" style="margin-top:1rem">
           <h2>Version activity</h2>
           <div id="chart-active" style="min-height:2rem"></div>
+        </div>
+        <div class="panel">
+          <h2>Quick actions</h2>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button class="btn" type="button" onclick="showView('author')">Create a rule</button>
+            <button class="btn btn-ghost" type="button" onclick="showView('sim')">Run simulation</button>
+            <button class="btn btn-ghost" type="button" onclick="showView('assets')">Browse assets</button>
+            <button class="btn btn-ghost" type="button" onclick="window.open('/docs','_blank')">API docs</button>
+          </div>
         </div>
         <div class="panel">
           <h2 id="fire-sample-title">Sample rule-fire results (top 20)</h2>
@@ -1118,6 +1140,17 @@
         }
       }
       setMessage("Dashboard: " + data.length + " rules, " + ac + " active, " + iac + " inactive.", "ok");
+      /* Health + Spark status badges */
+      try {
+        var hb = document.getElementById("health-badge");
+        var health = await getJson("/health");
+        if (hb) { hb.textContent = "API: " + (health.status || "ok"); hb.className = "badge badge-on"; }
+      } catch (he) {
+        var hb2 = document.getElementById("health-badge");
+        if (hb2) { hb2.textContent = "API: error"; hb2.className = "badge badge-off"; }
+      }
+      var sb = document.getElementById("spark-badge");
+      if (sb) { sb.textContent = "Spark: not active (pure Python)"; sb.style.background = "rgba(148,163,184,0.35)"; }
       } catch (e) { setMessage("Dashboard error: " + e.message, "err"); console.error("loadDashboard:", e); }
     }
     function assetQuery() {
