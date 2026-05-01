@@ -424,7 +424,7 @@
       <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark">Light</button>
       <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
-      <input type="text" id="hdr-roles" placeholder="X-Roles (default: rule_author)" style="max-width:220px" title="Comma-separated RBAC roles. Blank uses rule_author so Overview &amp; API calls work without 403." />
+      <input type="text" id="hdr-roles" placeholder="X-Roles (default: platform_admin)" style="max-width:220px" title="Comma-separated RBAC roles. Blank uses platform_admin so Overview shows all rules across namespaces." />
       <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
@@ -878,7 +878,7 @@
     function roleHeaders() {
       var o = {};
       var r = document.getElementById("hdr-roles");
-      var rv = r && r.value.trim() ? r.value.trim() : "rule_author";
+      var rv = r && r.value.trim() ? r.value.trim() : "platform_admin";
       o["X-Roles"] = rv;
       var t = document.getElementById("hdr-tenant");
       o["X-Tenant-Id"] = t && t.value.trim() ? t.value.trim() : "default";
