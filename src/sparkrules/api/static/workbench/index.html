@@ -514,6 +514,15 @@
       <section id="view-assets" class="view hidden">
         <div class="panel">
           <h2>Registered rules</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use this tab</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.5rem">Browse all versioned rules in the store. Use filters to search by handle, group, or namespace.</p>
+              <p style="margin:0 0 0.5rem"><strong>Activate/Deactivate:</strong> Toggle a rule version's active status. Only active rules are used in evaluations.</p>
+              <p style="margin:0 0 0.5rem"><strong>Download pack:</strong> Export all rules as a JSON pack for backup or migration.</p>
+              <p style="margin:0">Create new rules in the <strong>Author / validate</strong> tab.</p>
+            </div>
+          </details>
           <div class="row">
             <input type="search" id="filter-q" placeholder="Search handle or DRL…" style="max-width:240px" />
             <input type="text" id="filter-ns" placeholder="namespace" style="max-width:120px" title="Filter by exact namespace" />
@@ -544,6 +553,25 @@
       <section id="view-author" class="view hidden">
         <div class="panel">
           <h2>Create rule</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use this tab</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.5rem"><strong>1.</strong> Enter a <strong>rule_handle</strong> (unique name), group, and namespace.</p>
+              <p style="margin:0 0 0.5rem"><strong>2.</strong> Write your DRL rule in the Monaco editor below. Example:</p>
+              <pre class="mono" style="background:var(--input-bg);padding:0.5rem;border-radius:6px;font-size:0.78rem;margin:0 0 0.5rem">rule "high-value"
+  salience 10
+  reason_codes ["HV001"]
+  when
+    $order : Order( $order.amount > 1000 )
+  then
+    result.risk = "high";
+    result.review = true;
+end</pre>
+              <p style="margin:0 0 0.5rem"><strong>3.</strong> Click <strong>Validate</strong> to check syntax + get LSP diagnostics in the editor.</p>
+              <p style="margin:0 0 0.5rem"><strong>4.</strong> Click <strong>Save to repository</strong> to create a versioned rule.</p>
+              <p style="margin:0">Use <strong>Ctrl+Space</strong> in the editor for keyword completions.</p>
+            </div>
+          </details>
           <div class="row">
             <input type="text" id="in-handle" placeholder="rule_handle" style="max-width:200px" />
             <input type="text" id="in-group" placeholder="group (default)" value="default" style="max-width:160px" />
@@ -562,6 +590,17 @@
       <section id="view-sim" class="view hidden">
         <div class="panel">
           <h2>Simulation (dry run)</h2>
+          <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
+            <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use this tab</summary>
+            <div style="padding:0.5rem 0 0;line-height:1.6">
+              <p style="margin:0 0 0.5rem"><strong>1.</strong> Paste or write DRL in the editor (one or more rules).</p>
+              <p style="margin:0 0 0.5rem"><strong>2.</strong> Enter a fact as JSON. The binding name in your DRL (e.g. <span class="mono">$t</span>) becomes the key:</p>
+              <pre class="mono" style="background:var(--input-bg);padding:0.5rem;border-radius:6px;font-size:0.78rem;margin:0 0 0.5rem">{"t": {"amount": 1500, "region": "US"}}</pre>
+              <p style="margin:0 0 0.5rem"><strong>3.</strong> Click <strong>Run simulation</strong> to evaluate the rule against the fact.</p>
+              <p style="margin:0 0 0.5rem"><strong>Batch:</strong> Upload a CSV/JSON file, set max rows, and click <strong>Run batch</strong> to evaluate many facts at once.</p>
+              <p style="margin:0">Results show fired status, action outputs, and bound fields.</p>
+            </div>
+          </details>
           <div id="monaco-drl-sim" class="monaco-wrap" style="min-height:200px;height:min(40vh,300px)" role="region" aria-label="Simulation DRL"></div>
           <p class="mono">Fact JSON (object):</p>
           <textarea id="fact-json" style="min-height:80px" placeholder='{"t":{"x":1}}'></textarea>
