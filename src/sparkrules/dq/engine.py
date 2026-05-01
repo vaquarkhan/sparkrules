@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -338,7 +338,11 @@ class DataQualityEngine:
             if isinstance(c, ExpectTableCountsToMatch):
                 a = fact.get(c.field_a)
                 b = fact.get(c.field_b)
-                ok = isinstance(a, (int, float)) and isinstance(b, (int, float)) and float(a) == float(b)
+                ok = (
+                    isinstance(a, (int, float))
+                    and isinstance(b, (int, float))
+                    and float(a) == float(b)
+                )
                 fail = 0 if ok else 1
                 if _should_emit(1, fail, c.tolerance):
                     out.append(

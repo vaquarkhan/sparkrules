@@ -33,9 +33,7 @@ class QuotaAggregate:
 class TwoPassResult:
     pass1_fired: list[str] = field(default_factory=list)
     pass2_fired: list[str] = field(default_factory=list)
-    aggregates: list[QuotaAggregate] = field(
-        default_factory=list
-    )
+    aggregates: list[QuotaAggregate] = field(default_factory=list)
 
 
 @dataclass

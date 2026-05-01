@@ -146,10 +146,7 @@ def test_parse_empty_when_constraint() -> None:
 
 
 def test_parse_false_null_float_literals() -> None:
-    s = (
-        "rule z when $t : T ( true ) then result.x = false; "
-        "result.y = null; result.z = 2.5; end"
-    )
+    s = "rule z when $t : T ( true ) then result.x = false; result.y = null; result.z = 2.5; end"
     r = parse(s)
     o = print_ast(r)
     assert "false" in o and "null" in o
@@ -183,9 +180,7 @@ def test_parse_primary_unexpected_token() -> None:
 
 
 def test_parse_fn_args_and_bad_primary() -> None:
-    parse(
-        "rule c when $t : T ( $t.x in [1, 2] ) then result.a = f(1, 2); end"
-    )
+    parse("rule c when $t : T ( $t.x in [1, 2] ) then result.a = f(1, 2); end")
     with pytest.raises(ValueError, match="Unexpected"):
         tokenize("?")
     p = DrlParser()
@@ -206,9 +201,7 @@ def test_lexer_single_quoted_string() -> None:
 
 
 def test_lexer_comment_le_ge_unclosed() -> None:
-    toks = tokenize(
-        '// c\nrule x when $t : T ( $t.a <= 1 and $t.b >= 2 ) then end'
-    )
+    toks = tokenize("// c\nrule x when $t : T ( $t.a <= 1 and $t.b >= 2 ) then end")
     assert TokenKind.LE in [x.kind for x in toks]
     assert TokenKind.GE in [x.kind for x in toks]
     with pytest.raises(ValueError, match="unclosed"):
@@ -289,10 +282,7 @@ def test_runtime_and_sim() -> None:
     assert default_executor_factory() == "in_process"
 
     ab = ABTestRunner()
-    assert (
-        ab.assign("u", ABTestConfig("k", (Variant("A", 0), Variant("Z", 0))))
-        == "Z"
-    )
+    assert ab.assign("u", ABTestConfig("k", (Variant("A", 0), Variant("Z", 0)))) == "Z"
     assert ab.assign("k2", ABTestConfig("f", (Variant("A", 1), Variant("B", 1)))) in (
         "A",
         "B",
@@ -437,7 +427,5 @@ def test_replay_match() -> None:
 
 
 def test_parse_rule_reason_codes_list_with_comma() -> None:
-    s = DrlParser().parse(
-        'rule r reason_codes [ "a", "b" ] when $t : T ( true ) then end'
-    )
+    s = DrlParser().parse('rule r reason_codes [ "a", "b" ] when $t : T ( true ) then end')
     assert s.reason_codes == ("a", "b")

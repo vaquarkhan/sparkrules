@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from sparkrules.runtime import EngineConfig, normalize_spark_version, runtime_conf, validate_zero_code_change
+from sparkrules.runtime import (
+    EngineConfig,
+    normalize_spark_version,
+    runtime_conf,
+    validate_zero_code_change,
+)
 
 
 def test_spark_version_normalization() -> None:

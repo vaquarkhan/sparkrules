@@ -1,4 +1,5 @@
 """Auth / streaming path (ladder: idea-brainstrom §8)."""
+
 from __future__ import annotations
 
 import pytest
@@ -44,5 +45,3 @@ def test_api_simulate_authz_rule() -> None:
         },
     )
     assert r.status_code == 200
-
-

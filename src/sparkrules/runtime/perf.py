@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -25,7 +25,9 @@ def estimate_scale_runtime(rows: int, rows_per_sec: float) -> timedelta:
     return timedelta(seconds=seconds)
 
 
-def scale_evidence(rows: int, rows_per_sec: float, *, target_rows: int = 1_000_000_000) -> dict[str, str]:
+def scale_evidence(
+    rows: int, rows_per_sec: float, *, target_rows: int = 1_000_000_000
+) -> dict[str, str]:
     eta = estimate_scale_runtime(target_rows, rows_per_sec)
     return {
         "observed_rows": str(rows),

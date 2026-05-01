@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sparkrules.governance.registry import PromotionRegistry
 from sparkrules.store import InMemoryRuleMetadataStore, UnknownRuleError
 
 

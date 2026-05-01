@@ -72,9 +72,7 @@ class DecisionTableImporter:
         wb = load_workbook(p, data_only=True)
         ws = wb.active
         if ws is None:
-            return ImportResult(
-                None, [CellTypeError("no active sheet", row=0, col=0)]
-            )
+            return ImportResult(None, [CellTypeError("no active sheet", row=0, col=0)])
         name = str(ws["C1"].value or "table")
         b2 = str(ws["B2"].value or "UNIQUE").strip().upper()
         try:
@@ -116,36 +114,23 @@ class DecisionTableImporter:
             c += 1
         n_in, n_out = len(in_cols), len(out_cols)
         if n_in + n_out == 0:
-            return ImportResult(
-                None, [CellTypeError("no columns in sheet", row=3, col=0)]
-            )
+            return ImportResult(None, [CellTypeError("no columns in sheet", row=3, col=0)])
         rows: list[Row] = []
         r = 8
         while r < 100_000:
-            parts = [
-                ws.cell(r, j).value
-                for j in range(1, n_in + n_out + 1)
-            ]
+            parts = [ws.cell(r, j).value for j in range(1, n_in + n_out + 1)]
             if all(x in (None, "") for x in parts):
                 break
             cells: list[Any] = []
             for j in range(1, n_in + 1):
                 try:
-                    cells.append(
-                        _coerce(
-                            ws.cell(r, j).value, in_cols[j - 1].col_type, r, j
-                        )
-                    )
+                    cells.append(_coerce(ws.cell(r, j).value, in_cols[j - 1].col_type, r, j))
                 except CellTypeError as e:
                     errors.append(e)
             for j in range(n_in + 1, n_in + n_out + 1):
                 oi = j - n_in - 1
                 try:
-                    cells.append(
-                        _coerce(
-                            ws.cell(r, j).value, out_cols[oi].col_type, r, j
-                        )
-                    )
+                    cells.append(_coerce(ws.cell(r, j).value, out_cols[oi].col_type, r, j))
                 except CellTypeError as e:
                     errors.append(e)
             pri_v = ws.cell(r, n_in + n_out + 1).value

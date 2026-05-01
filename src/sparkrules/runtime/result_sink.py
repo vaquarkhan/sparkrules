@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
@@ -28,7 +28,9 @@ class _FileSink(ResultSink):
         body = json.dumps(rows, sort_keys=True)
         self.path.write_text(body, encoding="utf-8")
         if self.fmt == "parquet":
-            sid = hashlib.sha256(f"{self.path.name}:{self.path.stat().st_size}".encode()).hexdigest()
+            sid = hashlib.sha256(
+                f"{self.path.name}:{self.path.stat().st_size}".encode()
+            ).hexdigest()
         else:
             sid = hashlib.sha256(body.encode()).hexdigest()
         return SinkWriteResult(format=self.fmt, snapshot_id=sid)

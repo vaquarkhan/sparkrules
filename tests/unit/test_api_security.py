@@ -17,9 +17,7 @@ end
 def test_no_api_key_middleware_allows_post() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
-    r = c.post(
-        "/rules/validate", json={"drl": _VALID_DRL}
-    )
+    r = c.post("/rules/validate", json={"drl": _VALID_DRL})
     assert r.status_code == 200
 
 

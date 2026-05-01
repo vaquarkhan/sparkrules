@@ -78,9 +78,7 @@ def test_rules_import_validation_422() -> None:
 def test_rules_diff_404() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
-    r = c.get(
-        "/rules/diff", params={"handle": "nope", "version_a": 1, "version_b": 2}
-    )
+    r = c.get("/rules/diff", params={"handle": "nope", "version_a": 1, "version_b": 2})
     assert r.status_code == 404
 
 
@@ -100,9 +98,7 @@ def test_rules_diff_and_export_import() -> None:
         "/rules",
         json={"rule_handle": "h", "group": "g", "drl": d2},
     )
-    diff = c.get(
-        "/rules/diff", params={"handle": "h", "version_a": 1, "version_b": 2}
-    )
+    diff = c.get("/rules/diff", params={"handle": "h", "version_a": 1, "version_b": 2})
     assert diff.status_code == 200
     j = diff.json()
     assert j["version_a"] == 1

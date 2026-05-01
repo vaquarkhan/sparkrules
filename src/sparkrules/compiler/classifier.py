@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from sparkrules.parser import parse
@@ -33,5 +33,3 @@ class StrategyClassifier:
 
     def _is_simple(self, c: Any) -> bool:  # noqa: ANN401
         return True
-
-

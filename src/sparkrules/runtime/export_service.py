@@ -4,9 +4,8 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
-from sparkrules.runtime.iceberg_store import IcebergLikeTable, UnknownSnapshotError
+from sparkrules.runtime.iceberg_store import IcebergLikeTable
 
 
 @dataclass(frozen=True, slots=True)

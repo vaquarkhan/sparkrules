@@ -25,19 +25,16 @@ def _stub_explain_from_drl(payload: dict[str, Any]) -> str:
 
     if not isinstance(payload, dict):
         return (
-            "Explain-rule expects a JSON object with a string \"drl\" field "
+            'Explain-rule expects a JSON object with a string "drl" field '
             "(stub provider; no LLM is called)."
         )
     raw = payload.get("drl")
     if raw is not None and not isinstance(raw, str):
-        return (
-            'Field "drl" must be a string of DRL source '
-            "(stub provider; no LLM is called)."
-        )
+        return 'Field "drl" must be a string of DRL source (stub provider; no LLM is called).'
     drl = str(raw or "").strip()
     if not drl:
         return (
-            "No DRL text was provided: send a non-empty \"drl\" string "
+            'No DRL text was provided: send a non-empty "drl" string '
             "(stub provider; no LLM is called)."
         )
     try:

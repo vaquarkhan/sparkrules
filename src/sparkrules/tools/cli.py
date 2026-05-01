@@ -89,9 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     if args.command == "chaos-check":
-        attempts = tuple(
-            int(x.strip()) for x in str(args.fail_attempts).split(",") if x.strip()
-        )
+        attempts = tuple(int(x.strip()) for x in str(args.fail_attempts).split(",") if x.strip())
         out = run_chaos_scenario(
             lambda: {"status": "ok"},
             ChaosPolicy(fail_on_attempts=attempts, max_retries=max(0, int(args.max_retries))),

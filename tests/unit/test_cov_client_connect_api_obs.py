@@ -23,9 +23,7 @@ def test_sre_client_get_success() -> None:
     c = SreClient("http://example.com")
     mock_resp = httpx.Response(200, json={"status": "ok", "a": 1})
     m = MagicMock()
-    m.__enter__ = MagicMock(
-        return_value=MagicMock(get=MagicMock(return_value=mock_resp))
-    )
+    m.__enter__ = MagicMock(return_value=MagicMock(get=MagicMock(return_value=mock_resp)))
     m.__exit__ = MagicMock(return_value=False)
     with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
         r = c.get("/health")
@@ -63,7 +61,9 @@ def test_sre_client_retry_injected() -> None:
 def test_sre_client_health() -> None:
     c = SreClient("http://example.com")
     m = MagicMock()
-    r = httpx.Response(200, json={"status": "ok"}, request=httpx.Request("GET", "http://example.com/health"))
+    r = httpx.Response(
+        200, json={"status": "ok"}, request=httpx.Request("GET", "http://example.com/health")
+    )
     m.__enter__ = MagicMock(return_value=MagicMock(get=MagicMock(return_value=r)))
     m.__exit__ = MagicMock(return_value=False)
     with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
@@ -139,8 +139,18 @@ def test_sre_client_advanced_simulation_methods() -> None:
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
     with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
-        assert c.counterfactual("rule r when $t : T ( true ) then end", {"t": {}}, {"t": {}})["drifted"] is True
-        assert c.capture_time_travel("r1", "rule r when $t : T ( true ) then end", {"t": {}})["snapshot_id"] == 1
+        assert (
+            c.counterfactual("rule r when $t : T ( true ) then end", {"t": {}}, {"t": {}})[
+                "drifted"
+            ]
+            is True
+        )
+        assert (
+            c.capture_time_travel("r1", "rule r when $t : T ( true ) then end", {"t": {}})[
+                "snapshot_id"
+            ]
+            == 1
+        )
         assert c.replay_time_travel(1, "r1", {"t": {"x": 2}})["fired"] is True
         assert c.enforce_deprecations("default", "h1")["enforced_rules"] == 1
 

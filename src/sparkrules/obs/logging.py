@@ -7,9 +7,7 @@ def configure_logging(*, json_only: bool = True) -> None:
     structlog.configure(
         processors=[
             structlog.processors.TimeStamper(key="ts", utc=True),
-            structlog.processors.JSONRenderer()
-            if json_only
-            else structlog.dev.ConsoleRenderer(),
+            structlog.processors.JSONRenderer() if json_only else structlog.dev.ConsoleRenderer(),
         ]
     )
 

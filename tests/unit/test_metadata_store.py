@@ -27,12 +27,8 @@ def test_insert_versioning_disjunct_windows() -> None:
     s = InMemoryRuleMetadataStore()
     t0 = datetime(2020, 1, 1, tzinfo=UTC)
     t1 = t0 + timedelta(days=1)
-    a = s.insert(
-        _r("h1", 0, t0, t1, True)
-    )
-    b = s.insert(
-        _r("h1", 0, t1, None, True)
-    )
+    a = s.insert(_r("h1", 0, t0, t1, True))
+    b = s.insert(_r("h1", 0, t1, None, True))
     assert a.version == 1
     assert b.version == 2
 
@@ -72,12 +68,8 @@ def test_update_unknown_handle_and_version() -> None:
 def test_list_filter_namespace() -> None:
     s = InMemoryRuleMetadataStore()
     t0 = datetime(2020, 1, 1, tzinfo=UTC)
-    a = s.insert(
-        _r("a1", 0, t0, None, True).with_updates(namespace="X")
-    )
-    b = s.insert(
-        _r("b1", 0, t0, None, True).with_updates(namespace="Y")
-    )
+    a = s.insert(_r("a1", 0, t0, None, True).with_updates(namespace="X"))
+    b = s.insert(_r("b1", 0, t0, None, True).with_updates(namespace="Y"))
     assert a.rule_handle == "a1" and b.rule_handle == "b1"
     x = s.list(RuleFilter(namespace="X"))
     assert len(x) == 1
@@ -112,11 +104,7 @@ def test_get_activate_list_filters() -> None:
     with pytest.raises(UnknownRuleError):
         s.get_by_id(uuid4())
     at = t0 + timedelta(minutes=5)
-    z = s.list(
-        RuleFilter(
-            rule_handle="hz", at_time=at, is_active=True
-        )
-    )
+    z = s.list(RuleFilter(rule_handle="hz", at_time=at, is_active=True))
     assert len(z) == 1
     assert not s.list(RuleFilter(rule_group="nope"))
     s.active_set_version(at)
@@ -155,8 +143,16 @@ def test_resolve_and_list_time_filters() -> None:
     assert s.resolve("k", t0) is None
     s.insert(
         Rule(
-            new_rule_id(), "j", 0, "g", 0, t0, t1, True,
-            RuleDefinition("q", RuleFormat.DRL), None,
+            new_rule_id(),
+            "j",
+            0,
+            "g",
+            0,
+            t0,
+            t1,
+            True,
+            RuleDefinition("q", RuleFormat.DRL),
+            None,
         )
     )
     t_mid = t0 + timedelta(hours=12)
@@ -165,7 +161,5 @@ def test_resolve_and_list_time_filters() -> None:
     assert not s.list(RuleFilter(rule_handle="j", is_active=True, at_time=t_after))
     a2 = s.get("j", 1)
     s.update("j", a2.with_updates(is_active=False, version=1))
-    inactive_only = s.list(
-        RuleFilter(rule_handle="j", is_active=False, at_time=t_mid)
-    )
+    inactive_only = s.list(RuleFilter(rule_handle="j", is_active=False, at_time=t_mid))
     assert all(not x.is_active for x in inactive_only)

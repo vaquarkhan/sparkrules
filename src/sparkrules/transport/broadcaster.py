@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pickle
-from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -28,18 +28,12 @@ class RuleBroadcaster:
         if len(package_bytes) <= self.size_threshold:
             return [BroadcastChunk(0, package_bytes, 1)]
         out: list[BroadcastChunk] = []
-        for i, start in enumerate(
-            range(0, len(package_bytes), self.size_threshold)
-        ):
-            b = package_bytes[
-                start : start + self.size_threshold
-            ]
+        for i, start in enumerate(range(0, len(package_bytes), self.size_threshold)):
+            b = package_bytes[start : start + self.size_threshold]
             out.append(BroadcastChunk(i, b, i + 1))
         return out
 
-    def round_trip(
-        self, data: object
-    ) -> object:
+    def round_trip(self, data: object) -> object:
         b = pickle.dumps(data, protocol=4)
         ch = self.chunk(b)
         merged = b"".join(c.payload for c in ch)

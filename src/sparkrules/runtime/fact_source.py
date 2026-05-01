@@ -1,7 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 import hashlib
 import json
 from typing import Any
@@ -40,9 +39,7 @@ def validate_fact_source(spec: FactSourceSpec, required_fields: set[str]) -> Non
         raise ValueError(f"unsupported fact source: {spec.source_type!r}")
     missing = sorted(x for x in required_fields if x not in spec.schema)
     if missing:
-        raise MissingFieldError(
-            ", ".join(missing)
-        )
+        raise MissingFieldError(", ".join(missing))
     if t in {"kafka", "kinesis"}:
         if not spec.watermark_field:
             raise ValueError("streaming source requires watermark_field")

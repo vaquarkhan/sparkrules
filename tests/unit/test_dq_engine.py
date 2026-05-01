@@ -179,7 +179,9 @@ def test_dq_edge_paths_for_coverage() -> None:
         checks_from_api([{"kind": "table_counts_match", "field": "a"}])
 
     # row_count_between parse branch in checks_from_api
-    c = checks_from_api([{"kind": "row_count_between", "field": "x", "min_count": 1, "max_count": 2}])
+    c = checks_from_api(
+        [{"kind": "row_count_between", "field": "x", "min_count": 1, "max_count": 2}]
+    )
     assert len(c) == 1
 
     # invalid timestamp string to hit parser ValueError branch

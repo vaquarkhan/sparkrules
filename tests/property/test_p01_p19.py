@@ -1,4 +1,5 @@
 """Property tests P1–P19 (idea-brainstrom.txt §7)."""
+
 from __future__ import annotations
 
 import tempfile
@@ -60,8 +61,7 @@ def _ref_list_fixed(store: InMemoryRuleMetadataStore, f: RuleFilter) -> list:
             if f.at_time is not None:
                 at = f.at_time
                 if not (
-                    r.effective_from <= at
-                    and (r.effective_to is None or at <= r.effective_to)
+                    r.effective_from <= at and (r.effective_to is None or at <= r.effective_to)
                 ):
                     continue
             out.append(r)

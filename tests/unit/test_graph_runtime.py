@@ -25,7 +25,9 @@ def test_graph_enricher_snapshot_and_redaction() -> None:
 
 def test_graph_enricher_pii_reveal() -> None:
     src = InMemoryGraphSource(data={"u1": {"pii_node_id": "abc"}})
-    e = GraphEnricher(source=src, entity_field="entity", redacted_fields={"pii_node_id"}, pii_reveal=True)
+    e = GraphEnricher(
+        source=src, entity_field="entity", redacted_fields={"pii_node_id"}, pii_reveal=True
+    )
     out = e.enrich({"entity": "u1"})
     assert out.enriched_fact["graph_features"]["pii_node_id"] == "abc"
 

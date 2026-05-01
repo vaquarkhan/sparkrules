@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -39,7 +39,8 @@ class UserDefinedFunctionRegistry:
 
     def resolve_at_time(self, name: str, t: datetime) -> UdfDefinition:
         arr = [
-            x for x in self._by_name.get(name, [])
+            x
+            for x in self._by_name.get(name, [])
             if x.active and (x.activated_at is None or x.activated_at <= t)
         ]
         if not arr:

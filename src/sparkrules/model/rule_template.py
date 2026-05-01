@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import ClassVar, Mapping
+from typing import TYPE_CHECKING, ClassVar, Mapping
 
 from sparkrules.parser.ast import RuleAst
+
+if TYPE_CHECKING:
+    from sparkrules.parser.parser import DrlParser
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,9 +19,7 @@ class RuleTemplate:
 
     @classmethod
     def from_pattern(cls, name: str, pattern: str) -> RuleTemplate:
-        return cls(
-            name=name, pattern=pattern, placeholders=frozenset(_extract_slots(pattern))
-        )
+        return cls(name=name, pattern=pattern, placeholders=frozenset(_extract_slots(pattern)))
 
 
 def _extract_slots(pattern: str) -> frozenset[str]:
@@ -46,7 +47,9 @@ def _substitute(pattern: str, values: Mapping[str, str], declared: frozenset[str
     return RuleTemplate._slot_re.sub(repl, pattern)
 
 
-def ast_from_template(template: RuleTemplate, values: Mapping[str, str], *, _parser: DrlParser | None = None) -> RuleAst:  # noqa: E501
+def ast_from_template(
+    template: RuleTemplate, values: Mapping[str, str], *, _parser: DrlParser | None = None
+) -> RuleAst:  # noqa: E501
     declared = template.placeholders
     for k in values:
         if k not in declared:

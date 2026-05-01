@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sparkrules.compiler import CompiledRulePackage
+
 
 @dataclass
 class StatefulContext:
@@ -42,9 +43,7 @@ class StreamingRuleRefresher:
 class StreamingEvaluator:
     ttl: timedelta = field(default=timedelta(seconds=30))
 
-    def check_ttl(
-        self, t: datetime, last: datetime | None
-    ) -> bool:
+    def check_ttl(self, t: datetime, last: datetime | None) -> bool:
         if last is None:
             return True
         return t - last > self.ttl

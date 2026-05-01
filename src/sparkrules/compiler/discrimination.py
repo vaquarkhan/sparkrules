@@ -28,9 +28,7 @@ class DiscriminationNetwork:
             dn.by_rule[rid] = parse(source)
         return dn
 
-    def evaluate(
-        self, rule_id: str, facts: MutableMapping[str, Any]
-    ) -> bool:
+    def evaluate(self, rule_id: str, facts: MutableMapping[str, Any]) -> bool:
         r = self.by_rule[rule_id]
         m = evaluate_rule(r, facts)
         self.eval_counter += 1

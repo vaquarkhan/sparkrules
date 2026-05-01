@@ -18,9 +18,7 @@ def test_forward_chain_stops_on_empty_and_caps_depth() -> None:
 
 
 def test_resolve_activation_groups_skips_dup_group() -> None:
-    o = resolve_activation_groups(
-        [("a", "G"), ("b", "G"), ("c", None)]
-    )
+    o = resolve_activation_groups([("a", "G"), ("b", "G"), ("c", None)])
     assert o == ["a", "c"]
 
 

@@ -1,4 +1,5 @@
 """P61 — fail-fast / stop_on_fire determinism (Phase 2k)."""
+
 from __future__ import annotations
 
 from hypothesis import given, settings, strategies as st

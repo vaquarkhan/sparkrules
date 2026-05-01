@@ -1,4 +1,5 @@
 """Property tests P20–P38 (idea-brainstrom.md §7)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -178,9 +179,7 @@ def test_p26_decision_table_json_rt() -> None:
     s = dt_to_json(dt)
     dt2 = dt_from_json(s)
     assert dt2.name == dt.name
-    assert evaluate_decision_table(dt, {"a": "x"}) == evaluate_decision_table(
-        dt2, {"a": "x"}
-    )
+    assert evaluate_decision_table(dt, {"a": "x"}) == evaluate_decision_table(dt2, {"a": "x"})
 
 
 def test_p27_error_isolation_per_run() -> None:

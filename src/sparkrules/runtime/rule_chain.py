@@ -73,9 +73,7 @@ def run_rule_chain(
                     False,
                     True,
                     f"agenda_group:{gmode}",
-                    dict(work.get("result") or {})
-                    if isinstance(work.get("result"), dict)
-                    else {},
+                    dict(work.get("result") or {}) if isinstance(work.get("result"), dict) else {},
                 )
             )
             continue
@@ -86,15 +84,11 @@ def run_rule_chain(
                     False,
                     True,
                     "activation_group",
-                    dict(work.get("result") or {})
-                    if isinstance(work.get("result"), dict)
-                    else {},
+                    dict(work.get("result") or {}) if isinstance(work.get("result"), dict) else {},
                 )
             )
             continue
-        m = evaluate_rule(
-            r, work, carry_result=(evaluated > 0)
-        )
+        m = evaluate_rule(r, work, carry_result=(evaluated > 0))
         evaluated += 1
         sk: str | None = None
         work["result"] = dict(m.action_output)
@@ -125,11 +119,7 @@ def run_rule_chain(
             out.stop_reason = f"stop_on_fire:{r.name}"
             out.final_bound = {k: v for k, v in work.items() if k != "result"}
             return out
-        if (
-            m.fired
-            and pol.stop_on_decline
-            and _declined(dict(m.action_output))
-        ):
+        if m.fired and pol.stop_on_decline and _declined(dict(m.action_output)):
             out.stop_reason = "stop_on_decline"
             out.final_bound = {k: v for k, v in work.items() if k != "result"}
             return out

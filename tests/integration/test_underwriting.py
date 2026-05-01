@@ -1,4 +1,5 @@
 """Underwriting / risk rules (ladder: idea-brainstrom §8)."""
+
 from __future__ import annotations
 
 import pytest

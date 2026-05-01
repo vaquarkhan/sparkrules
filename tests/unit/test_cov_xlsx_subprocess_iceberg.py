@@ -55,6 +55,7 @@ def _write_min_xlsx(
 
 def test_importer_happy() -> None:
     import tempfile
+
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "t.xlsx"
         _write_min_xlsx(p, b2="COLLECT", cell_row8_col1=1)
@@ -65,6 +66,7 @@ def test_importer_happy() -> None:
 
 def test_importer_bad_policy() -> None:
     import tempfile
+
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "t2.xlsx"
         _write_min_xlsx(p, b2="NOTAPOLICY")
@@ -74,6 +76,7 @@ def test_importer_bad_policy() -> None:
 
 def test_importer_type_error_int_cell() -> None:
     import tempfile
+
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "t3.xlsx"
         _write_min_xlsx(p, cell_row8_col1="notint")
@@ -287,8 +290,16 @@ def test_active_set_hash_fn() -> None:
     t0 = datetime(2019, 1, 1, tzinfo=UTC)
     s.insert(
         Rule(
-            new_rule_id(), "a", 0, "g", 0, t0, None, True,
-            RuleDefinition("x", RuleFormat.DRL), None,
+            new_rule_id(),
+            "a",
+            0,
+            "g",
+            0,
+            t0,
+            None,
+            True,
+            RuleDefinition("x", RuleFormat.DRL),
+            None,
         )
     )
     s.active_set_version(t0)
