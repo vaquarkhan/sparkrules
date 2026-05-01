@@ -1,10 +1,9 @@
 site_name: SparkRules
 site_url: https://sparkrules.readthedocs.io
-site_description: "Drools-style business rule engine for Python — from laptop to lakehouse"
+site_description: "Drools-style business rule engine for Python"
 site_author: Vaquar Khan
 repo_url: https://github.com/vaquarkhan/sparkrules
 repo_name: vaquarkhan/sparkrules
-edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -22,19 +21,13 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.instant
-    - navigation.tracking
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
     - search.suggest
     - search.highlight
     - content.code.copy
-    - content.tabs.link
   icon:
     repo: fontawesome/brands/github
-  logo: images/sparkrules-logo.png
-  favicon: images/sparkrules-logo.png
 
 plugins:
   - search
@@ -46,8 +39,6 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.tabbed:
-      alternate_style: true
   - tables
   - toc:
       permalink: true
@@ -60,7 +51,7 @@ nav:
   - Features:
     - Overview: FEATURES.md
     - Rule Engine: HOW_IT_WORKS.md
-    - Decision Tables: USE_CASES.md
+    - Use Cases: USE_CASES.md
     - Spark Integration: SPARK_INTEGRATION.md
   - API & Workbench:
     - Developer Guide: DEVELOPER_GUIDE.md
@@ -70,10 +61,3 @@ nav:
     - Architecture Scope: KNOWN_LIMITATIONS.md
     - Publishing: PUBLISHING.md
     - Roadmap: ROADMAP.md
-
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/vaquarkhan/sparkrules
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/sparkrules/
