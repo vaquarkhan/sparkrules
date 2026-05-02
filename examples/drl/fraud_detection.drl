@@ -1,0 +1,69 @@
+// Real-time fraud detection rules for payment authorization.
+// Uses salience for priority, stop_on_fire for immediate block,
+// and reason codes for regulatory adverse-action notices.
+
+rule "block-velocity-spike"
+  salience 100
+  stop_on_fire true
+  reason_codes ["FR001", "VELOCITY"]
+  when
+    $txn : Transaction( $txn.txn_count_24h > 20 )
+  then
+    result.action = "BLOCK";
+    result.risk_score = 95;
+    result.reason = "Transaction velocity exceeds 20 in 24h";
+end
+
+rule "block-amount-anomaly"
+  salience 90
+  stop_on_fire true
+  reason_codes ["FR002", "AMOUNT_ANOMALY"]
+  when
+    $txn : Transaction( $txn.amount > 10000 )
+  then
+    result.action = "BLOCK";
+    result.risk_score = 90;
+    result.reason = "Single transaction exceeds $10,000 threshold";
+end
+
+rule "hold-geo-mismatch"
+  salience 70
+  reason_codes ["FR003", "GEO_RISK"]
+  when
+    $txn : Transaction( $txn.geo_risk_score > 0.8 )
+  then
+    result.action = "HOLD";
+    result.risk_score = 75;
+    result.reason = "Geographic risk score exceeds threshold";
+end
+
+rule "review-new-device"
+  salience 60
+  reason_codes ["FR004"]
+  when
+    $txn : Transaction( $txn.device_age_days < 3 )
+  then
+    result.action = "REVIEW";
+    result.risk_score = 60;
+    result.device_flag = "NEW_DEVICE";
+end
+
+rule "review-first-merchant"
+  salience 50
+  reason_codes ["FR005"]
+  when
+    $txn : Transaction( $txn.merchant_first_txn == true )
+  then
+    result.action = "REVIEW";
+    result.risk_score = 50;
+    result.merchant_flag = "FIRST_TXN";
+end
+
+rule "allow-trusted"
+  salience 10
+  when
+    $txn : Transaction( $txn.trusted_device == true )
+  then
+    result.action = "ALLOW";
+    result.risk_score = 5;
+end

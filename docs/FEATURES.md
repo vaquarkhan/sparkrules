@@ -6,7 +6,38 @@
 - Salience-based priority control
 - Agenda group and activation group execution controls
 - Explainable outputs with bound data and reason codes
-- Optional `SQL_JOIN` / multi-pattern path: for **list-valued** fact bindings, **local** execution can form a **Cartesian** product and take the first firing combination (not a distributed join unless wired with Spark)
+- Optional `SQL_JOIN` / multi-pattern path for list-valued fact bindings
+
+## V2 optimized engine (new)
+
+- **AST-to-SQL translator** - DRL predicates translated to Spark SQL for Catalyst pushdown
+- **Closure compiler** - predicates compiled to Python closures at parse time (5-10x faster)
+- **Alpha network** - shared predicate evaluation across rules (Rete-style deduplication)
+- **RulePack** - structured, salience-ordered, classified rule collection
+- **Three execution strategies**: SQL_PUSHDOWN, ALPHA_SHARED, PYTHON_FALLBACK
+- **LocalRuleExecutor** - Python-native scoring with compiled closures + alpha network
+- **SparkRuleExecutor** - three-strategy Spark dispatch with typed output columns
+- **ReteNetwork** - FactView with `__slots__`, range-merged alpha nodes, frozenset membership
+- **Pandas batch evaluation** - `apply_pandas()` for vectorized evaluation without Spark
+- **Cross-path equivalence** - Python and Spark paths produce identical results
+- **DRL parse caching** (LRU 256) for repeated evaluations
+
+## Regulatory compliance (new)
+
+- **Adverse-action notices** - `build_adverse_action_notice()` for ECOA/FCRA/GDPR Art 22
+- Principal reasons capped at 4 per ECOA standard
+- Deduplicated, priority-ordered reason codes with audit metadata
+
+## Data quality and profiling (new)
+
+- **Statistical profiling** - `profile_rows()` for completeness, uniqueness, mean/stddev/percentiles
+- DQ checks: not-null, range, in-set, regex, uniqueness, freshness, column sum, row count, table counts
+- Severity levels: INFO, WARN, ERROR, CRITICAL with tolerance thresholds
+
+## Policy export (new)
+
+- **OPA/Rego export** - `export_to_rego()` converts DRL to Open Policy Agent format
+- **DMN 1.3 import** - parse Camunda-style decision table XML
 
 ## Authoring formats
 
