@@ -36,7 +36,7 @@ def test_apply_drl_with_mock_spark() -> None:
     df.rdd = MagicMock()
     df.rdd.mapPartitions = _map_parts
 
-    res = apply_drl(df, drl)
+    res = apply_drl(df, drl, use_v2=False)
     assert res is out_df
     mspark.createDataFrame.assert_called_once()
 
