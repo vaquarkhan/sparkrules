@@ -175,7 +175,18 @@ docker compose up --build
 
 5 complete end-to-end examples with DRL, sample data, and Spark jobs: [examples/usecases/](examples/usecases/README.md)
 
-3 Jupyter notebooks for interactive learning: [examples/notebooks/](examples/notebooks/README.md)
+### Jupyter notebooks
+
+| # | Notebook | What you'll learn |
+|---|----------|-------------------|
+| 01 | [Getting Started](examples/notebooks/01_getting_started.ipynb) | DRL rules, evaluation, explainable results, rule chains |
+| 02 | [Decision Tables](examples/notebooks/02_decision_tables.ipynb) | Hit policies, XLSX-style tables, JSON export |
+| 03 | [API & Simulation](examples/notebooks/03_api_simulation.ipynb) | REST API, validate, simulate, counterfactual, LSP |
+| 04 | [Credit Underwriting](examples/notebooks/04_credit_underwriting.ipynb) | Lending pipeline, adverse-action notices, data profiling |
+| 05 | [Fraud Detection](examples/notebooks/05_fraud_detection.ipynb) | Real-time auth, risk scoring, OPA Rego export |
+| 06 | [How SparkRules Works](examples/notebooks/06_how_sparkrules_works.ipynb) | Architecture tutorial: parsing, compilation, alpha network, governance |
+
+Start with **notebook 06** for the architecture overview, then **01** for hands-on basics.
 
 ---
 
@@ -220,12 +231,12 @@ docker compose up --build
 | Publishing / CI | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Jupyter notebooks | [examples/notebooks/](examples/notebooks/README.md) |
+| Jupyter notebooks (6) | [examples/notebooks/](examples/notebooks/README.md) |
 | AI agent guide | [AGENTS.md](AGENTS.md) |
 
 ## Quality
 
-- **580+ tests**  -  unit, property-based (Hypothesis), integration, performance
+- **840+ tests**  -  unit, property-based (Hypothesis), integration, cross-path equivalence, performance
 - **100% line coverage** enforced in CI (`fail_under=100`)
 - **Python 3.11 / 3.12 / 3.13** tested in CI matrix
 - **Ruff** lint + format enforced

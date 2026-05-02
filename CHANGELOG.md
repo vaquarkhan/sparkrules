@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional API key authentication for mutating and sensitive endpoints
 - Docker support with Dockerfile and docker-compose
 - CI/CD: GitHub Actions for tests, PyPI release (trusted publishing), Docker image push
-- 560+ tests with 100% line coverage gate, property-based testing with Hypothesis
+- 840+ tests with 100% line coverage gate (6600+ statements), property-based testing with Hypothesis
 - Comprehensive documentation: features, architecture, use cases, benchmarks, governance
 
 ### Changed

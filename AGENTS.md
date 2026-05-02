@@ -19,7 +19,7 @@ python -m pip install -e ".[test]"
 ## Testing
 
 ```bash
-# Full suite (560+ tests, 100% coverage gate)
+# Full suite (840+ tests, 100% coverage gate)
 pytest tests/ -q
 
 # Unit tests only (fast)
