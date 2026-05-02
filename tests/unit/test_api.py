@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from sparkrules.api import AppDeps, create_app
@@ -253,6 +254,175 @@ def test_simulation_counterfactual() -> None:
     j = r.json()
     assert j["drifted"] is True
     assert "decision" in j["drift_fields"]
+
+
+_MINI_DMN_API = """<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn" id="apiDmn">
+  <decision id="d1" name="ApiDecision">
+    <decisionTable id="tbl">
+      <input id="i1">
+        <inputExpression typeRef="string"><text>$.k</text></inputExpression>
+      </input>
+      <output id="o1" name="out" />
+      <rule id="r1">
+        <inputEntry><text>-</text></inputEntry>
+        <outputEntry><text>"ok"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
+"""
+
+
+def test_dmn_evaluate_http_ok() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/evaluate",
+        json={"xml": _MINI_DMN_API, "env": {"k": "x"}},
+    )
+    assert r.status_code == 200
+    assert r.json()["result"] == {"out": "ok"}
+
+
+def test_dmn_evaluate_bad_xml_422() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/dmn/evaluate", json={"xml": "<<<", "env": {}})
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DMN_PARSE_ERROR"
+
+
+def test_dmn_evaluate_collect_aggregate_numeric_error_400() -> None:
+    xml = """<?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable hitPolicy="COLLECT SUM">
+<input><inputExpression><text>$.k</text></inputExpression></input>
+<output name="o"/>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>"x"</text></outputEntry></rule>
+</decisionTable></decision></definitions>"""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/dmn/evaluate", json={"xml": xml, "env": {"k": "1"}})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "DMN_AGGREGATE_ERROR"
+
+
+def test_dmn_evaluate_collect_aggregate_multi_output_ok() -> None:
+    xml = """<?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable hitPolicy="COLLECT SUM">
+<input><inputExpression><text>$.k</text></inputExpression></input>
+<output name="a"/><output name="b"/>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>1</text></outputEntry><outputEntry><text>2</text></outputEntry></rule>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>10</text></outputEntry><outputEntry><text>20</text></outputEntry></rule>
+</decisionTable></decision></definitions>"""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/dmn/evaluate", json={"xml": xml, "env": {"k": "1"}})
+    assert r.status_code == 200
+    assert r.json()["result"] == {"a": 11, "b": 22}
+
+
+def test_dmn_evaluate_unique_overlap_400() -> None:
+    xml = """<?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable hitPolicy="UNIQUE">
+<input><inputExpression><text>$.k</text></inputExpression></input>
+<output name="o"/>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>2</text></outputEntry></rule>
+</decisionTable></decision></definitions>"""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/dmn/evaluate", json={"xml": xml, "env": {"k": "z"}})
+    assert r.status_code == 400
+    body = r.json()["detail"]
+    assert body["code"] == "DMN_UNIQUE_OVERLAP"
+
+
+def test_dmn_counterfactual_http_ok() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/counterfactual",
+        json={"xml": _MINI_DMN_API, "base_env": {"k": "a"}, "env_patch": {"k": "b"}},
+    )
+    assert r.status_code == 200
+    j = r.json()
+    assert j["outputs_differ"] is False and j["base"] == j["counterfactual"]
+
+
+def test_dmn_counterfactual_bad_xml_422() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/counterfactual",
+        json={"xml": "<<<", "base_env": {}, "env_patch": {}},
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"]["code"] == "DMN_PARSE_ERROR"
+
+
+def test_dmn_counterfactual_unique_overlap_400() -> None:
+    xml = """<?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable hitPolicy="UNIQUE">
+<input><inputExpression><text>$.k</text></inputExpression></input>
+<output name="o"/>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>2</text></outputEntry></rule>
+</decisionTable></decision></definitions>"""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/counterfactual",
+        json={"xml": xml, "base_env": {"k": "z"}, "env_patch": {}},
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "DMN_UNIQUE_OVERLAP"
+
+
+def test_dmn_counterfactual_collect_aggregate_numeric_error_400() -> None:
+    xml = """<?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable hitPolicy="COLLECT SUM">
+<input><inputExpression><text>$.k</text></inputExpression></input>
+<output name="o"/>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>1</text></outputEntry></rule>
+<rule><inputEntry><text>-</text></inputEntry><outputEntry><text>"x"</text></outputEntry></rule>
+</decisionTable></decision></definitions>"""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/counterfactual",
+        json={"xml": xml, "base_env": {"k": "1"}, "env_patch": {}},
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "DMN_AGGREGATE_ERROR"
+
+
+def test_dmn_evaluate_unexpected_error_400(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _boom(*_a: object, **_k: object) -> object:
+        raise ValueError("forced")
+
+    monkeypatch.setattr("sparkrules.api.app.evaluate_dmn_decision_table_xml", _boom)
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/dmn/evaluate", json={"xml": _MINI_DMN_API, "env": {}})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "DMN_EVALUATE_FAILED"
+
+
+def test_dmn_counterfactual_unexpected_error_400(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _boom(*_a: object, **_k: object) -> object:
+        raise RuntimeError("forced")
+
+    monkeypatch.setattr("sparkrules.api.app.counterfactual_dmn_decision_table_xml", _boom)
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post(
+        "/dmn/counterfactual",
+        json={"xml": _MINI_DMN_API, "base_env": {}, "env_patch": {}},
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "DMN_COUNTERFACTUAL_FAILED"
 
 
 def test_simulation_counterfactual_bad_drl_422() -> None:

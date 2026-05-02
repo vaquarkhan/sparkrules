@@ -1,8 +1,6 @@
-from sparkrules.store.backends import (
-    PickleFileStore,
-    StoreUnavailableError,
-    create_rule_store,
-)
+from sparkrules.store.backends import PickleFileStore, create_rule_store
+from sparkrules.store.pyiceberg_rule_sink import iceberg_append_sink_from_table
+from sparkrules.store.errors import StoreUnavailableError
 from sparkrules.store.metadata_store import (
     ConflictError,
     InMemoryRuleMetadataStore,
@@ -20,4 +18,5 @@ __all__ = [
     "StoreUnavailableError",
     "UnknownRuleError",
     "create_rule_store",
+    "iceberg_append_sink_from_table",
 ]

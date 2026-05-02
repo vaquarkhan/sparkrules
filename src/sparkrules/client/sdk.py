@@ -54,6 +54,54 @@ class SreClient:
         r.raise_for_status()
         return r.json()  # type: ignore[no-any-return]
 
+    def simulate_chain(
+        self,
+        drl: str,
+        fact: dict[str, object],
+        *,
+        stop_on_decline: bool | None = None,
+        agenda_group_modes: dict[str, str] | None = None,
+    ) -> dict[str, object]:
+        body: dict[str, object] = {
+            "drl": drl,
+            "fact": fact,
+            "agenda_group_modes": dict(agenda_group_modes or {}),
+        }
+        if stop_on_decline is not None:
+            body["stop_on_decline"] = stop_on_decline
+        r = self.post("/simulations/chain", body)
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def simulate_shadow(
+        self,
+        primary_drl: str,
+        shadow_drl: str,
+        fact: dict[str, object],
+        *,
+        run_id: str = "shadow-local",
+    ) -> dict[str, object]:
+        r = self.post(
+            "/simulations/shadow",
+            {
+                "primary_drl": primary_drl,
+                "shadow_drl": shadow_drl,
+                "fact": fact,
+                "run_id": run_id,
+            },
+        )
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def simulate_coverage(
+        self,
+        drl: str,
+        facts: list[dict[str, object]],
+    ) -> dict[str, object]:
+        r = self.post("/simulations/coverage", {"drl": drl, "facts": facts})
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
     def counterfactual(
         self,
         drl: str,
@@ -66,6 +114,28 @@ class SreClient:
                 "drl": drl,
                 "baseline_fact": baseline_fact,
                 "candidate_fact": candidate_fact,
+            },
+        )
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def dmn_evaluate(self, xml: str, env: dict[str, object] | None = None) -> dict[str, object]:
+        r = self.post("/dmn/evaluate", {"xml": xml, "env": dict(env or {})})
+        r.raise_for_status()
+        return r.json()  # type: ignore[no-any-return]
+
+    def dmn_counterfactual(
+        self,
+        xml: str,
+        base_env: dict[str, object] | None = None,
+        env_patch: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        r = self.post(
+            "/dmn/counterfactual",
+            {
+                "xml": xml,
+                "base_env": dict(base_env or {}),
+                "env_patch": dict(env_patch or {}),
             },
         )
         r.raise_for_status()

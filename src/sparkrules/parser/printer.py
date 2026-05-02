@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sparkrules.model.rule import DEFAULT_AGENDA_GROUP
 from sparkrules.parser import ast as A
-from sparkrules.parser.ast import Action, BinaryOperator, FactPattern, RuleAst
+from sparkrules.parser.ast import Action, BinaryOperator, Expr, FactPattern, RuleAst
 
 _BIN_STR = {
     BinaryOperator.EQ: "==",
@@ -66,6 +66,11 @@ def _print_pattern(p: FactPattern) -> str:
 
 def _print_action(a: Action) -> str:
     return f"{a.field_path} = {_print_expr(a.expr)};"
+
+
+def print_ast_expr(expr: Expr) -> str:
+    """Print an expression AST node as a string (for hashing/comparison)."""
+    return _print_expr(expr)
 
 
 def print_ast(rule: RuleAst) -> str:

@@ -95,7 +95,7 @@ def test_executor_join_sql_and_error_and_not_fired() -> None:
         {"id": "1"},
         "rule j when $a : A ( true ) and $b : B ( true ) then end",
     )
-    assert j.error_class == "SqlJoinNotImplemented"
+    assert j.error_class != "SqlJoinNotImplemented"
     err = ex.run(
         {"t": {}},
         "rule e when $t : T ( badf(1) ) then end",
@@ -118,6 +118,15 @@ def test_executor_join_sql_and_error_and_not_fired() -> None:
         allow_sql_join=True,
     )
     assert nj.fired is False
+
+
+def test_executor_multi_pattern_eval_error_surfaces() -> None:
+    ex = RuleExecutor()
+    fr = ex.run(
+        {"a": {"x": 1}, "b": {"y": 1}},
+        "rule mx when $a : A ( badf(1) ) and $b : B ( true ) then result.ok = true; end",
+    )
+    assert fr.error_class is not None and fr.fired is False
 
 
 def test_coerce_string_empty_bool_strings_fallback() -> None:

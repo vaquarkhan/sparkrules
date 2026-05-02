@@ -103,6 +103,20 @@ FastAPI server with OpenAPI docs, health endpoint, rule CRUD, and a browser-base
 ### Simulation modes
 Test rules before deploying: default, shadow (compare two rule sets), coverage (which rules fire?), counterfactual (what-if analysis), and chain (ordered multi-rule evaluation with stop-on-fire).
 
+### DMN (minimal Camunda-style decision tables)
+Evaluate a small DMN 1.3 XML subset (decision tables with hit policies including COLLECT variants) without the JVM.
+
+- **HTTP:** `POST /dmn/evaluate` and `POST /dmn/counterfactual` (XML plus JSON environment; see OpenAPI when the API is running).
+- **CLI:** `sparkrules-cli dmn-evaluate` and `sparkrules-cli dmn-counterfactual` (in-process, no server).
+- **Python:** `sparkrules.dmn.evaluate_dmn_decision_table_xml` / `counterfactual_dmn_decision_table_xml`, or `SreClient.dmn_evaluate` / `dmn_counterfactual` over HTTP.
+
+**In-process simulation CLI (same behavior as HTTP chain/shadow/coverage):** `sparkrules-cli simulate-chain`, `sparkrules-cli simulate-shadow`, and `sparkrules-cli simulate-coverage` (see `sparkrules-cli --help` for flags). Over HTTP, use `SreClient.simulate_chain`, `simulate_shadow`, and `simulate_coverage`.
+
+### AI, Ranger, and compliance notice templates
+- **AI:** By default the API uses offline structural suggestions (no generative model). For OpenAI-compatible Chat Completions, set `SPARKRULES_AI_PROVIDER=openai` and `SPARKRULES_OPENAI_API_KEY` on the server (optional: `SPARKRULES_OPENAI_BASE_URL`, `SPARKRULES_OPENAI_MODEL`, `SPARKRULES_OPENAI_TIMEOUT_SECONDS`).
+- **Ranger-style HTTP policy:** When `SPARKRULES_RANGER_BASE_URL` is set, `ranger_allow_stub()` delegates to `query_ranger_allowed()` (optional `SPARKRULES_RANGER_EVAL_PATH`, `SPARKRULES_RANGER_RESULT_FIELD`). Without it, the function keeps the local dev behavior (deny empty user; otherwise allow).
+- **Adverse-action (compliance):** `build_adverse_action_notice()` emits jurisdiction-framed templates for legal review; use `appendix_lines=...` for institution-specific paragraphs.
+
 ### Time-travel debug
 Capture rule execution snapshots. Replay them later with different facts. Deterministic re-runs for audit and debugging.
 

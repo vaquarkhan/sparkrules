@@ -33,3 +33,13 @@ Ensure `profiles.yml` contains the snippet in [`profiles.yml.example`](profiles.
 
 - **Staging (dbt)**  -  normalization math / typed columns matching the enrichment layer.
 - **Rules (`examples/usecases/clinical_research/clinical_trials_rules.drl`)**  -  QA flags, harmonization picks, duplicate policy using `salience`, **`stop_on_fire`**, **`agenda_group`**, promoted to **`result.*`**.
+
+### Optional: DMN or CLI after dbt
+
+Downstream you can feed harmonized rows into SparkRules as facts (same JSON shape as the simulation APIs) or evaluate a **DMN** decision table on a small env dict (for example eligibility keyed off lab-derived fields). From the repo root, with `sparkrules` installed:
+
+```bash
+sparkrules-cli dmn-evaluate --xml path/to/table.dmn --env-json "{\"glucose_pref_mgdL\": 95}"
+```
+
+Or call `POST /dmn/evaluate` on the API with the same XML plus `env` JSON. The Workbench **Advanced** tab includes a minimal DMN try panel when you use `sparkrules[api]`.

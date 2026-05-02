@@ -71,6 +71,80 @@ def test_sre_client_health() -> None:
     assert j["status"] == "ok"
 
 
+def test_sre_client_dmn_evaluate_and_counterfactual() -> None:
+    c = SreClient("http://example.com")
+    m = MagicMock()
+    inner = MagicMock()
+
+    def ppost(url: str, *, json, timeout: float):  # noqa: ANN001
+        if "/dmn/evaluate" in url:
+            return httpx.Response(
+                200,
+                json={"result": {"out": "ok"}},
+                request=httpx.Request("POST", url),
+            )
+        return httpx.Response(
+            200,
+            json={
+                "base": {"out": "a"},
+                "counterfactual": {"out": "b"},
+                "patch": {"k": "2"},
+                "outputs_differ": True,
+            },
+            request=httpx.Request("POST", url),
+        )
+
+    inner.post = ppost
+    m.__enter__ = MagicMock(return_value=inner)
+    m.__exit__ = MagicMock(return_value=False)
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
+        ev = c.dmn_evaluate("<definitions/>", {"k": "1"})
+        cf = c.dmn_counterfactual("<definitions/>", {"k": "1"}, {"k": "2"})
+    assert ev["result"] == {"out": "ok"}
+    assert cf["outputs_differ"] is True and cf["patch"] == {"k": "2"}
+
+
+def test_sre_client_simulate_chain_shadow_coverage() -> None:
+    c = SreClient("http://example.com")
+    m = MagicMock()
+    inner = MagicMock()
+    seen: list[str] = []
+
+    def ppost(url: str, *, json, timeout: float):  # noqa: ANN001
+        seen.append(url)
+        if "/simulations/chain" in url:
+            return httpx.Response(
+                200,
+                json={"any_fired": True, "steps": []},
+                request=httpx.Request("POST", url),
+            )
+        if "/simulations/shadow" in url:
+            return httpx.Response(
+                200,
+                json={"drifted": False},
+                request=httpx.Request("POST", url),
+            )
+        return httpx.Response(
+            200,
+            json={"total_facts": 1, "items": []},
+            request=httpx.Request("POST", url),
+        )
+
+    inner.post = ppost
+    m.__enter__ = MagicMock(return_value=inner)
+    m.__exit__ = MagicMock(return_value=False)
+    with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
+        ch = c.simulate_chain("rule a when $t : T ( true ) then end", {"t": {}}, stop_on_decline=True)
+        sh = c.simulate_shadow("rule a when $t : T ( true ) then end", "rule b when $t : T ( true ) then end", {"t": {}}, run_id="r1")
+        cov = c.simulate_coverage("rule a when $t : T ( true ) then end", [{"t": {}}])
+    assert ch["any_fired"] is True
+    assert sh["drifted"] is False
+    assert cov["total_facts"] == 1
+    assert any("/simulations/chain" in u for u in seen)
+    assert any("/simulations/shadow" in u for u in seen)
+    assert any("/simulations/coverage" in u for u in seen)
+
+
 def test_sre_client_post_validate_and_simulate() -> None:
     c = SreClient("http://example.com")
     reqs: list[tuple[str, object]] = []

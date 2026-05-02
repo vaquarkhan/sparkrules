@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 
 import pytest
@@ -26,8 +27,8 @@ from sparkrules.runtime import (
     validate_zero_code_change,
 )
 from sparkrules.runtime.fact_source import MissingFieldError
-from sparkrules.store import create_rule_store
-from sparkrules.store.backends import StoreUnavailableError, _PersistentInMemoryStore
+from sparkrules.store import ConflictError, StoreUnavailableError, create_rule_store
+from sparkrules.store.backends import _PersistentInMemoryStore
 
 
 def _rule(handle: str) -> Rule:
@@ -47,20 +48,92 @@ def _rule(handle: str) -> Rule:
 
 
 def test_r35_store_backends_parity(tmp_path) -> None:
-    for b in ("in_memory", "duckdb", "iceberg", "postgres"):
-        kwargs = {}
-        if b == "duckdb":
-            kwargs["db_path"] = str(tmp_path / "d.snapshot")
-        elif b == "iceberg":
-            kwargs["store_path"] = str(tmp_path / "i.snapshot")
-        elif b == "postgres":
-            kwargs["state_path"] = str(tmp_path / "p.snapshot")
+    specs: list[tuple[str, dict]] = [
+        ("in_memory", {}),
+        ("duckdb", {"db_path": str(tmp_path / "d.snapshot")}),
+        ("iceberg", {"store_path": str(tmp_path / "i.snapshot")}),
+    ]
+    pg_url = os.environ.get("SPARKRULES_PG_URL")
+    if pg_url:
+        specs.append(("postgres", {"database_url": pg_url}))
+    for b, kwargs in specs:
         s = create_rule_store(b, **kwargs)
         a = s.insert(_rule("h"))
         assert a.version == 1
         assert s.get("h", 1).rule_handle == "h"
     with pytest.raises(ValueError):
         create_rule_store("bad")
+
+
+def test_postgres_backend_requires_database_url() -> None:
+    with pytest.raises(ValueError, match="database_url"):
+        create_rule_store("postgres")
+
+
+def test_duckdb_rejects_overlapping_active_versions(tmp_path) -> None:
+    s = create_rule_store("duckdb", db_path=str(tmp_path / "ov.duckdb"))
+    s.insert(_rule("x"))
+    with pytest.raises(ConflictError):
+        s.insert(_rule("x"))
+
+
+def test_duckdb_second_active_allowed_after_prior_inactive_version(tmp_path) -> None:
+    s = create_rule_store("duckdb", db_path=str(tmp_path / "ia.duckdb"))
+    s.insert(_rule("y").with_updates(is_active=False))
+    s.insert(_rule("y"))
+    assert len(s.list_versions("y")) == 2
+
+
+def test_duckdb_update_overlap_conflict(tmp_path) -> None:
+    t0 = datetime(2020, 1, 1, tzinfo=UTC)
+    t1 = datetime(2020, 7, 1, tzinfo=UTC)
+    t2 = datetime(2020, 12, 31, tzinfo=UTC)
+    t_bad = datetime(2020, 3, 1, tzinfo=UTC)
+    s = create_rule_store("duckdb", db_path=str(tmp_path / "ou.duckdb"))
+    ra = Rule(
+        new_rule_id(),
+        "u",
+        0,
+        "g",
+        0,
+        t0,
+        t1,
+        True,
+        RuleDefinition("rule r when $t : T ( true ) then end", RuleFormat.DRL),
+        None,
+    )
+    rb = Rule(
+        new_rule_id(),
+        "u",
+        0,
+        "g",
+        0,
+        t1,
+        t2,
+        True,
+        RuleDefinition("rule r when $t : T ( true ) then end", RuleFormat.DRL),
+        None,
+    )
+    s.insert(ra)
+    vb = s.insert(rb)
+    with pytest.raises(ConflictError):
+        s.update("u", vb.with_updates(effective_from=t_bad, effective_to=t2))
+
+
+def test_iceberg_pickles_update_persistence(tmp_path) -> None:
+    p = tmp_path / "rules.pickle"
+    s = create_rule_store("iceberg", store_path=str(p))
+    a = s.insert(_rule("h3"))
+    s.update("h3", a.with_updates(salience=7))
+    s2 = create_rule_store("iceberg", store_path=str(p))
+    assert s2.get("h3", 1).salience == 7
+
+
+def test_pickle_store_rejects_corrupt_snapshot(tmp_path) -> None:
+    p = tmp_path / "broken.pickle"
+    p.write_text("{}", encoding="utf-8")
+    with pytest.raises(StoreUnavailableError):
+        create_rule_store("iceberg", store_path=str(p))
 
 
 def test_r36_result_sink_formats(tmp_path) -> None:
@@ -71,8 +144,8 @@ def test_r36_result_sink_formats(tmp_path) -> None:
         assert len(r.snapshot_id) == 64
     with pytest.raises(ValueError):
         create_result_sink("bad")
-    with pytest.raises(NotImplementedError):
-        ResultSink().write([])
+    with pytest.raises(TypeError, match="abstract"):
+        ResultSink()  # type: ignore[call-arg]
 
 
 def test_r37_r38_fact_source_contracts() -> None:

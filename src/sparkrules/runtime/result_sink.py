@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,9 +14,12 @@ class SinkWriteResult:
     snapshot_id: str
 
 
-class ResultSink:
+class ResultSink(ABC):
+    """Abstract write target for batch rule outputs; use :func:`create_result_sink` for built-ins."""
+
+    @abstractmethod
     def write(self, rows: list[dict[str, Any]]) -> SinkWriteResult:
-        raise NotImplementedError
+        """Persist ``rows`` and return a stable snapshot identifier."""
 
 
 @dataclass

@@ -26,7 +26,7 @@ Focus: **enterprise workbench and packaging**.
 
 - [x] Multi-project **governance**: rule **`namespace`**, in-memory **environment pins** (`dev` / `stage` / `prod`), **sync dev** and **adjacent promote** API + Workbench. See [GOVERNANCE.md](GOVERNANCE.md).
 - [x] **Lakehouse benchmarks**  -  end-to-end checklist and methodology in [BENCHMARKS.md](BENCHMARKS.md#phase-4--lakehouse-benchmarks). Numbers remain cluster-specific; the repo provides harnesses and documentation.
-- [x] **CEP, TMS, DMN** (deeper Drools-style features)  -  **deferred**; not required for the SparkRules product scope today. Revisit if you add CEP or DMN to the road map.
+- [x] **CEP, TMS, full DMN** (Drools-style depth)  -  **deferred**; minimal DMN table XML + KIE-shaped REST exist; CEP/TMS/full FEEL+TCK remain out of scope until requested.
 
 ## References
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
 import hashlib
 import json
+import os
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from typing import Any, Protocol
 
 
@@ -26,33 +27,37 @@ def _stub_explain_from_drl(payload: dict[str, Any]) -> str:
     if not isinstance(payload, dict):
         return (
             'Explain-rule expects a JSON object with a string "drl" field '
-            "(stub provider; no LLM is called)."
+            "(offline structural mode — set SPARKRULES_AI_PROVIDER=openai for generative explanations)."
         )
     raw = payload.get("drl")
     if raw is not None and not isinstance(raw, str):
-        return 'Field "drl" must be a string of DRL source (stub provider; no LLM is called).'
+        return (
+            'Field "drl" must be a string of DRL source '
+            "(offline structural mode — no generative model)."
+        )
     drl = str(raw or "").strip()
     if not drl:
         return (
             'No DRL text was provided: send a non-empty "drl" string '
-            "(stub provider; no LLM is called)."
+            "(offline structural mode — no generative model)."
         )
     try:
         r = parse(drl)
     except ParseError as e:
         return (
-            "DRL failed to parse, so the rule cannot be explained yet "
-            f"(stub provider). ParseError: {e}"
+            "DRL failed to parse, so the rule cannot be summarized yet "
+            f"(offline structural mode). ParseError: {e}"
         )
     except Exception as e:  # noqa: BLE001
         return (
             "DRL triggered an unexpected error during parse/analysis "
-            f"(stub provider): {type(e).__name__}: {e}"
+            f"(offline structural mode): {type(e).__name__}: {e}"
         )
     return (
-        f"Parsed rule `{r.name}` (stub provider — no LLM): salience {r.salience}, "
+        f"Parsed rule `{r.name}` (offline structural summary): salience {r.salience}, "
         f"stop_on_fire={getattr(r, 'stop_on_fire', False)}. "
-        "When-clauses are evaluated against your fact JSON; then-actions populate result.*."
+        "When-clauses are evaluated against your fact JSON; then-actions populate result.*. "
+        "Set SPARKRULES_AI_PROVIDER=openai and SPARKRULES_OPENAI_API_KEY for model-backed text."
     )
 
 
@@ -106,6 +111,22 @@ class AiSuggestionStore:
         return self.items[sid]
 
 
+def create_default_ai_provider() -> AiProvider:
+    """Pick an :class:`AiProvider` from ``SPARKRULES_AI_PROVIDER`` (default: offline stub).
+
+    ``openai`` / ``openai_http`` / ``openai-compatible`` select :class:`sparkrules.ai.openai_provider.OpenAiHttpAiProvider`
+    when ``SPARKRULES_OPENAI_API_KEY`` is set; otherwise falls back to :class:`StubAiProvider`.
+    """
+    mode = (os.environ.get("SPARKRULES_AI_PROVIDER", "") or "stub").strip().lower()
+    if mode in ("openai", "openai_http", "openai-compatible"):
+        from sparkrules.ai.openai_provider import openai_provider_from_env
+
+        p = openai_provider_from_env()
+        if p is not None:
+            return p
+    return StubAiProvider()
+
+
 @dataclass
 class StubAiProvider:
     provider_name: str = "stub"
@@ -130,7 +151,14 @@ class StubAiProvider:
         ]
 
     def analyze_drift(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return {"status": "ok", "drift_score": 0.0, "note": "stub analysis"}
+        return {
+            "status": "ok",
+            "drift_score": 0.0,
+            "note": (
+                "offline placeholder (no model). "
+                "Set SPARKRULES_AI_PROVIDER=openai and SPARKRULES_OPENAI_API_KEY for scored drift."
+            ),
+        }
 
     def explain_rule(self, payload: dict[str, Any]) -> str:
         return _stub_explain_from_drl(payload)

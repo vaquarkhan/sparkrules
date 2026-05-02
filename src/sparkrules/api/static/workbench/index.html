@@ -663,10 +663,12 @@ end</pre>
         <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
           <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use Advanced tools</summary>
           <div style="padding:0.5rem 0 0;line-height:1.6">
-            <p style="margin:0 0 0.4rem"><strong>AI suggestions:</strong> Generate rule candidates from sample facts (stub provider - replace with your own NL model).</p>
+            <p style="margin:0 0 0.4rem"><strong>AI suggestions:</strong> Offline rule templates by default. For OpenAI-backed suggestions set <span class="mono">SPARKRULES_AI_PROVIDER=openai</span> and <span class="mono">SPARKRULES_OPENAI_API_KEY</span> on the server (see deploy docs).</p>
             <p style="margin:0 0 0.4rem"><strong>Chain simulation:</strong> Evaluate multiple rules in sequence with salience ordering and stop-on-fire/decline policies.</p>
             <p style="margin:0 0 0.4rem"><strong>Shadow mode:</strong> Compare two rule sets side-by-side to detect drift before deploying changes.</p>
             <p style="margin:0 0 0.4rem"><strong>Counterfactual:</strong> "What if?" analysis - compare results with different fact values to understand rule sensitivity.</p>
+            <p style="margin:0 0 0.4rem"><strong>Coverage:</strong> Run one DRL against many facts and see per-rule fire counts (<span class="mono">POST /simulations/coverage</span>).</p>
+            <p style="margin:0 0 0.4rem"><strong>DMN:</strong> Evaluate minimal Camunda-style decision-table XML (<span class="mono">/dmn/evaluate</span>, <span class="mono">/dmn/counterfactual</span>).</p>
             <p style="margin:0 0 0.4rem"><strong>Time travel:</strong> Capture a rule execution snapshot, then replay it later with different facts for debugging.</p>
             <p style="margin:0 0 0.4rem"><strong>DQ evaluate:</strong> Run data quality checks (not-null, range, in-set, regex, uniqueness) on a fact. Requires <span class="mono">dq_steward</span> role.</p>
             <p style="margin:0 0 0.4rem"><strong>Graph enrich:</strong> Enrich a fact with graph-based relationships (JSON response, not visual).</p>
@@ -675,9 +677,9 @@ end</pre>
         </details>
         <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled - graph response is JSON only.</p>
         <details class="adv-panel" open>
-          <summary>AI rule suggestions (stub  -  not a full NL pipeline)</summary>
+          <summary>AI rule suggestions (offline or OpenAI)</summary>
           <div class="adv-body">
-            <p class="wb-subtle">This calls <span class="mono">POST /ai/suggest-rules</span> with optional <strong>sample facts</strong> only. The bundled provider is a <strong>stub</strong> (no real NL→DRL model). For your own prompts/audit trail you can add fields inside each fact object, e.g. <span class="mono">[{"intent":"Decline when DPD &gt; 90"}]</span>.</p>
+            <p class="wb-subtle">This calls <span class="mono">POST /ai/suggest-rules</span> with optional <strong>sample facts</strong>. With default settings the server uses <strong>offline</strong> template suggestions. For generative NL→DRL, configure the API process with <span class="mono">SPARKRULES_AI_PROVIDER=openai</span> and <span class="mono">SPARKRULES_OPENAI_API_KEY</span> (see README). Add intent fields on facts for richer prompts, e.g. <span class="mono">[{"intent":"Decline when DPD &gt; 90"}]</span>.</p>
             <div class="row">
               <input id="adv-suggest-ns" value="default" style="max-width:100px" />
               <input id="adv-suggest-handle" placeholder="rule_handle" value="candidate" style="max-width:160px" />
@@ -701,7 +703,7 @@ end</pre>
           </div>
         </details>
         <details class="adv-panel">
-          <summary>Chain / shadow / counterfactual</summary>
+          <summary>Chain / shadow / counterfactual / coverage</summary>
           <div class="adv-body">
             <p class="mono" style="font-size:0.75rem;color:var(--muted)">DRL (multi-rule for chain):</p>
             <textarea id="adv-chain-drl" style="min-height:100px;width:100%">rule a when $t : T ( true ) then result.n = 1; end</textarea>
@@ -726,7 +728,37 @@ end</pre>
             <p class="mono" style="font-size:0.75rem">candidate_fact</p>
             <textarea id="adv-cf-cand" style="min-height:40px;width:100%">{"t":{"x":9}}</textarea>
             <button type="button" class="btn" id="btn-adv-cf">POST /simulations/counterfactual</button>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Coverage — DRL (multi-rule supported):</p>
+            <textarea id="adv-coverage-drl" style="min-height:72px;width:100%">rule r1 when $t : T ( $t.x == 1 ) then result.a = true; end
+rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">facts (JSON array of fact objects):</p>
+            <textarea id="adv-coverage-facts" style="min-height:72px;width:100%">[{"t":{"x":1}},{"t":{"x":0}}]</textarea>
+            <div class="row" style="margin-top:0.35rem">
+              <button type="button" class="btn" id="btn-adv-coverage">POST /simulations/coverage</button>
+            </div>
             <pre id="adv-multi-out" class="mono" style="max-height:240px;overflow:auto;margin-top:0.5rem"></pre>
+          </div>
+        </details>
+        <details class="adv-panel">
+          <summary>DMN (minimal XML)</summary>
+          <div class="adv-body">
+            <p class="wb-subtle">Calls <span class="mono">POST /dmn/evaluate</span> and <span class="mono">POST /dmn/counterfactual</span>. Requires a role in the simulation set (e.g. <span class="mono">rule_reader</span>); default header uses <span class="mono">platform_admin</span>.</p>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">DMN XML:</p>
+            <textarea id="adv-dmn-xml" style="min-height:120px;width:100%"><?xml version="1.0"?>
+<definitions xmlns="https://camunda.org/schema/1.0/dmn"><decision><decisionTable><input><inputExpression><text>$.k</text></inputExpression></input><output name="out"/><rule><inputEntry><text>-</text></inputEntry><outputEntry><text>"ok"</text></outputEntry></rule></decisionTable></decision></definitions></textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">env (JSON object):</p>
+            <textarea id="adv-dmn-env" style="min-height:40px;width:100%">{"k": "z"}</textarea>
+            <div class="row" style="margin-top:0.35rem">
+              <button type="button" class="btn" id="btn-adv-dmn-eval">POST /dmn/evaluate</button>
+            </div>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem">Counterfactual — base_env:</p>
+            <textarea id="adv-dmn-cf-base" style="min-height:40px;width:100%">{"k": "a"}</textarea>
+            <p class="mono" style="font-size:0.75rem;color:var(--muted)">env_patch:</p>
+            <textarea id="adv-dmn-cf-patch" style="min-height:40px;width:100%">{"k": "b"}</textarea>
+            <div class="row" style="margin-top:0.35rem">
+              <button type="button" class="btn" id="btn-adv-dmn-cf">POST /dmn/counterfactual</button>
+            </div>
+            <pre id="adv-dmn-out" class="mono" style="max-height:220px;overflow:auto;margin-top:0.5rem"></pre>
           </div>
         </details>
         <details class="adv-panel">
@@ -797,7 +829,7 @@ end</pre>
               <p style="margin:0 0 0.4rem">- <strong>Platform:</strong> local, glue, databricks, gcp-dataproc, or azure-synapse</p>
               <p style="margin:0 0 0.4rem">- <strong>Spark version:</strong> target Spark 3.x version</p>
               <p style="margin:0 0 0.4rem">- <strong>Executor resources:</strong> cores, workers, memory</p>
-              <p style="margin:0 0 0.4rem">- <strong>Store backend:</strong> in_memory, pickle_file, etc.</p>
+              <p style="margin:0 0 0.4rem">- <strong>Store backend:</strong> in_memory, duckdb, postgres, iceberg (sink or pickle fallback), etc.</p>
               <p style="margin:0">To change configuration, set environment variables on the server (e.g. <span class="mono">SPARKRULES_PLATFORM=databricks</span>).</p>
             </div>
           </details>
@@ -1873,6 +1905,36 @@ end</pre>
       postJson("/simulations/counterfactual", { drl: drl, baseline_fact: baseline_fact, candidate_fact: candidate_fact }).then(function (j) {
         document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
         setMessage("Counterfactual done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-coverage").addEventListener("click", function () {
+      var drl = document.getElementById("adv-coverage-drl").value || "";
+      var facts;
+      try { facts = JSON.parse(document.getElementById("adv-coverage-facts").value || "[]"); } catch (e) { setMessage("Invalid facts JSON: " + e, "err"); return; }
+      if (!Array.isArray(facts)) { setMessage("facts must be a JSON array.", "err"); return; }
+      postJson("/simulations/coverage", { drl: drl, facts: facts }).then(function (j) {
+        document.getElementById("adv-multi-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Coverage simulation done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-dmn-eval").addEventListener("click", function () {
+      var xml = document.getElementById("adv-dmn-xml").value || "";
+      var env;
+      try { env = JSON.parse(document.getElementById("adv-dmn-env").value || "{}"); } catch (e) { setMessage("Invalid env JSON: " + e, "err"); return; }
+      postJson("/dmn/evaluate", { xml: xml, env: env }).then(function (j) {
+        document.getElementById("adv-dmn-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("DMN evaluate done.", "ok");
+      }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("btn-adv-dmn-cf").addEventListener("click", function () {
+      var xml = document.getElementById("adv-dmn-xml").value || "";
+      var base_env;
+      var env_patch;
+      try { base_env = JSON.parse(document.getElementById("adv-dmn-cf-base").value || "{}"); } catch (e) { setMessage("Invalid base_env JSON: " + e, "err"); return; }
+      try { env_patch = JSON.parse(document.getElementById("adv-dmn-cf-patch").value || "{}"); } catch (e) { setMessage("Invalid env_patch JSON: " + e, "err"); return; }
+      postJson("/dmn/counterfactual", { xml: xml, base_env: base_env, env_patch: env_patch }).then(function (j) {
+        document.getElementById("adv-dmn-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("DMN counterfactual done.", "ok");
       }).catch(function (e) { setMessage(e.message, "err"); });
     });
     document.getElementById("btn-adv-tt-cap").addEventListener("click", function () {
