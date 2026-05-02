@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -e ".[test]"
-          python -m pytest --cov=sparkrules --cov-report=term
+          python -m pytest tests/unit/ tests/property/ tests/integration/ --cov=sparkrules --cov-report=term
 
   build:
     needs: [test]
