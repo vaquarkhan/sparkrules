@@ -517,7 +517,7 @@ def test_batcher_simple_no_strategy() -> None:
 
 
 def test_rulepack_from_drl_no_constraint() -> None:
-    """Cover line 73: rule with no constraint -> SQL_PUSHDOWN via RulePack.from_drl."""
+    """Cover: rule with 'true' constraint -> SQL_PUSHDOWN via RulePack.from_drl."""
     pack = RulePack.from_drl('rule "wild" when $t : T ( true ) then result.ok = true; end')
     assert pack.rules[0].strategy == Strategy.SQL_PUSHDOWN
-    assert pack.rules[0].predicate_sql is None  # no constraint to translate
+    assert pack.rules[0].predicate_sql == "true"  # Literal(True) translates to 'true'
