@@ -35,7 +35,7 @@ def test_apply_drl_fires_on_rows(spark: SparkSession) -> None:
         {"id": "2", "z": {"n": 0}},
     ]
     df0 = rows_from_session(spark, base)
-    out = apply_drl(df0, _DRL, fact_id_field="id")
+    out = apply_drl(df0, _DRL, fact_id_field="id", use_v2=False)
     rows = {r.fact_id: (r.fired, r.out_json) for r in out.collect()}
     assert rows["1"][0] is True
     assert '"1"' in rows["1"][1] or "1" in rows["1"][1]
