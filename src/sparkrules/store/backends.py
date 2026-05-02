@@ -5,11 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sparkrules.model.rule import Rule
+from sparkrules.store.errors import StoreUnavailableError
 from sparkrules.store.metadata_store import InMemoryRuleMetadataStore
-
-
-class StoreUnavailableError(RuntimeError):
-    pass
+from sparkrules.store.iceberg_hydrating import IcebergHydratingRuleStore
+from sparkrules.store.pyiceberg_rule_sink import iceberg_append_sink_from_table
+from sparkrules.store.sql_metadata import DuckDbRuleMetadataStore, PostgresRuleMetadataStore
 
 
 @dataclass
@@ -56,14 +56,33 @@ class PickleFileStore(_PersistentInMemoryStore):
 
 
 def create_rule_store(backend: str, **kwargs: object) -> InMemoryRuleMetadataStore:
-    # TODO: implement real DuckDB/Iceberg/Postgres backends
     b = backend.lower()
     if b == "in_memory":
         return InMemoryRuleMetadataStore()
     if b == "duckdb":
-        return PickleFileStore(db_path=str(kwargs.get("db_path", "duckdb_rules.pickle")))
+        return DuckDbRuleMetadataStore(db_path=str(kwargs.get("db_path", "rules.duckdb")))
     if b == "iceberg":
+        sink = kwargs.get("iceberg_version_sink")
+        if callable(sink):
+            return IcebergHydratingRuleStore(version_sink=sink)
+        pie_tbl = kwargs.get("pyiceberg_table")
+        if pie_tbl is not None:
+            blob_f = str(kwargs.get("iceberg_blob_field", "rule_blob"))
+            handle_f = str(kwargs.get("iceberg_handle_field", "rule_handle"))
+            ver_f = str(kwargs.get("iceberg_version_field", "version"))
+            typed_sink = iceberg_append_sink_from_table(
+                pie_tbl,
+                blob_field=blob_f,
+                handle_field=handle_f,
+                version_field=ver_f,
+            )
+            return IcebergHydratingRuleStore(version_sink=typed_sink)
         return PickleFileStore(db_path=str(kwargs.get("store_path", "iceberg_rules.pickle")))
     if b == "postgres":
-        return PickleFileStore(db_path=str(kwargs.get("state_path", "postgres_rules.pickle")))
+        url = kwargs.get("database_url") or kwargs.get("dsn")
+        if not url:
+            raise ValueError(
+                "postgres backend requires database_url or dsn (e.g. postgresql://user:pass@localhost/db)"
+            )
+        return PostgresRuleMetadataStore(database_url=str(url))
     raise ValueError(f"unknown backend: {backend!r}")

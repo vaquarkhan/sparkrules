@@ -74,13 +74,14 @@ class DecisionTableImporter:
         if ws is None:
             return ImportResult(None, [CellTypeError("no active sheet", row=0, col=0)])
         name = str(ws["C1"].value or "table")
-        b2 = str(ws["B2"].value or "UNIQUE").strip().upper()
+        b2_raw = str(ws["B2"].value or "UNIQUE").strip().upper()
+        hp_key = b2_raw.replace(" ", "_")
         try:
-            hp = HitPolicy[b2]
+            hp = HitPolicy[hp_key]
         except KeyError:
             return ImportResult(
                 None,
-                [CellTypeError(f"invalid HIT_POLICY {b2!r}", row=2, col=2)],
+                [CellTypeError(f"invalid HIT_POLICY {b2_raw!r}", row=2, col=2)],
             )
         c = 1
         in_cols: list[InputColumn] = []

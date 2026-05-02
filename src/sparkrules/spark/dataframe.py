@@ -26,6 +26,7 @@ def iter_rule_rows(
 ) -> Iterator[tuple[str, bool, str]]:
     """Map each Spark-like row to ``(fact_id, fired, out_json)`` (unit-testable, no Spark)."""
     from sparkrules.compiler import RuleMatch, evaluate_rule
+    from sparkrules.compiler.discrimination import DiscriminationNetwork
     from sparkrules.parser import parse_rules
     from sparkrules.runtime.rule_chain import ChainExecutionPolicy, run_rule_chain
 
@@ -37,10 +38,12 @@ def iter_rule_rows(
     else:
 
         def _eval_with_chain(facts: dict[str, Any]) -> RuleMatch:
+            dn = DiscriminationNetwork.from_asts(rules)
             cr = run_rule_chain(
                 rules,
                 facts,
                 ChainExecutionPolicy(stop_on_decline=False),
+                discrimination=dn,
             )
             fired = any(step.fired for step in cr.steps)
             return RuleMatch(

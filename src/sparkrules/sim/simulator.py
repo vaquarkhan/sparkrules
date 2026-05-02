@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, MutableMapping
 
 from sparkrules.compiler import evaluate_rule
+from sparkrules.compiler.discrimination import DiscriminationNetwork
 from sparkrules.parser import parse, parse_rules
+from sparkrules.parser.ast import RuleAst
 from sparkrules.runtime.rule_chain import ChainExecutionPolicy, RuleChainResult, run_rule_chain
 
 
@@ -46,6 +48,11 @@ class CoverageSimulationResult:
     items: list[RuleCoverageItem]
 
 
+def _coverage_respects_dn_first_pattern(rule: RuleAst) -> bool:
+    """True when the discrimination network's first-pattern alpha can exclude this rule."""
+    return len(rule.when) == 1 and rule.when[0].constraint is not None
+
+
 @dataclass
 class RuleSimulator:
     _persist: list[Any] = field(default_factory=list, repr=False, init=False)
@@ -64,6 +71,7 @@ class RuleSimulator:
         agenda_group_modes: dict[str, str] | None = None,
     ) -> ChainSimulationResult:
         rules = parse_rules(drl)
+        dn = DiscriminationNetwork.from_asts(rules) if len(rules) > 1 else None
         cr = run_rule_chain(
             rules,
             dict(fact),
@@ -71,6 +79,7 @@ class RuleSimulator:
                 stop_on_decline=stop_on_decline,
                 agenda_group_modes=dict(agenda_group_modes or {}),
             ),
+            discrimination=dn,
         )
         return ChainSimulationResult(
             cr,
@@ -100,11 +109,18 @@ class RuleSimulator:
         facts: list[Mapping[str, Any]],
     ) -> CoverageSimulationResult:
         rules = parse_rules(drl)
+        dn = DiscriminationNetwork.from_asts(rules) if len(rules) > 1 else None
+        elig_per_fact: list[frozenset[str]] | None = (
+            [dn.eligible_rule_names(f) for f in facts] if dn is not None else None
+        )
         totals = len(facts)
         items: list[RuleCoverageItem] = []
         for r in rules:
             fired = 0
-            for f in facts:
+            use_skip = dn is not None and _coverage_respects_dn_first_pattern(r)
+            for i, f in enumerate(facts):
+                if use_skip and elig_per_fact is not None and r.name not in elig_per_fact[i]:
+                    continue
                 m = evaluate_rule(r, dict(f))
                 if m.fired:
                     fired += 1

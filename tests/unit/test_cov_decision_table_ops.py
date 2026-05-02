@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from sparkrules.model import (
+    CollectAggregateError,
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -203,3 +204,104 @@ def test_custom_operator_acts_like_eq() -> None:
     )
     assert evaluate_decision_table(t, {"f": "k"})["o"] == "v"
     assert evaluate_decision_table(t, {"f": "nope"}) is None
+
+
+def _dt_agg(hp: HitPolicy, rows: tuple[Row, ...]) -> DecisionTable:
+    return DecisionTable(
+        "agg",
+        hp,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (OutputColumn("o", "o", ColumnType.INT),),
+        rows,
+    )
+
+
+def test_collect_sum_min_max_count_single_output() -> None:
+    rows = (Row((1, 10), 0), Row((1, 30), 0), Row((1, 20), 0))
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, rows), {"f": 1}) == {"o": 60}
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_MIN, rows), {"f": 1}) == {"o": 10}
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_MAX, rows), {"f": 1}) == {"o": 30}
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_COUNT, rows), {"f": 1}) == {"o": 3}
+
+
+def test_collect_sum_single_match_no_rows_and_zero() -> None:
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 7), 0),)), {"f": 1}) == {"o": 7}
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 0), 0),)), {"f": 1}) == {"o": 0}
+    t0 = DecisionTable(
+        "z",
+        HitPolicy.COLLECT_SUM,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (OutputColumn("o", "o", ColumnType.INT),),
+        (),
+    )
+    assert evaluate_decision_table(t0, {"f": 1}) is None
+
+
+def test_collect_sum_non_numeric_raises() -> None:
+    t = _dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 1), 0), Row((1, "x"), 0)))
+    with pytest.raises(CollectAggregateError, match="aggregate"):
+        evaluate_decision_table(t, {"f": 1})
+
+
+def test_collect_sum_rejects_bool_even_if_int_subclass() -> None:
+    t = _dt_agg(HitPolicy.COLLECT_SUM, (Row((1, True), 0), Row((1, 2), 0)))
+    with pytest.raises(CollectAggregateError, match="aggregate"):
+        evaluate_decision_table(t, {"f": 1})
+
+
+def test_collect_aggregate_multi_output_sum_per_column() -> None:
+    rows = (
+        Row((1, 10, 100), 0),
+        Row((1, 20, 200), 0),
+        Row((1, 30, 300), 0),
+    )
+    t = DecisionTable(
+        "m",
+        HitPolicy.COLLECT_SUM,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (OutputColumn("a", "a", ColumnType.INT), OutputColumn("b", "b", ColumnType.INT)),
+        rows,
+    )
+    assert evaluate_decision_table(t, {"f": 1}) == {"a": 60, "b": 600}
+
+
+def test_collect_aggregate_multi_output_count() -> None:
+    t = DecisionTable(
+        "mc",
+        HitPolicy.COLLECT_COUNT,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (OutputColumn("x", "x", ColumnType.INT), OutputColumn("y", "y", ColumnType.INT)),
+        (Row((1, 1, 2), 0), Row((1, 3, 4), 0)),
+    )
+    assert evaluate_decision_table(t, {"f": 1}) == {"x": 2, "y": 2}
+
+
+def test_collect_aggregate_requires_at_least_one_output_column() -> None:
+    t = DecisionTable(
+        "empty_out",
+        HitPolicy.COLLECT_SUM,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (),
+        (Row((1,), 0),),
+    )
+    with pytest.raises(CollectAggregateError, match="at least one output"):
+        evaluate_decision_table(t, {"f": 1})
+
+
+def test_collect_aggregate_missing_output_cell_raises() -> None:
+    t = DecisionTable(
+        "x",
+        HitPolicy.COLLECT_SUM,
+        (InputColumn("i", "f", ColumnType.INT, "=="),),
+        (OutputColumn("o", "o", ColumnType.INT),),
+        (Row((1,), 0),),
+    )
+    with pytest.raises(CollectAggregateError, match="missing output"):
+        evaluate_decision_table(t, {"f": 1})
+
+
+def test_json_roundtrip_collect_aggregate_policies() -> None:
+    t = _dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 2), 0), Row((1, 3), 0)))
+    t2 = dt_from_json(dt_to_json(t))
+    assert t2.hit_policy == HitPolicy.COLLECT_SUM
+    assert evaluate_decision_table(t2, {"f": 1}) == {"o": 5}

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, MutableMapping, Sequence
+from typing import TYPE_CHECKING, Any, MutableMapping, Sequence
 
 from sparkrules.compiler import evaluate_rule
+from sparkrules.compiler.beta_join import refine_eligibility_with_beta_join
 from sparkrules.parser.ast import RuleAst
+
+if TYPE_CHECKING:
+    from sparkrules.compiler.discrimination import DiscriminationNetwork
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,6 +17,7 @@ class ChainExecutionPolicy:
 
     stop_on_decline: bool = False
     agenda_group_modes: dict[str, str] = field(default_factory=dict)
+    max_fires: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +55,7 @@ def run_rule_chain(
     rules: Sequence[RuleAst],
     fact: MutableMapping[str, Any],
     policy: ChainExecutionPolicy | None = None,
+    discrimination: DiscriminationNetwork | None = None,
 ) -> RuleChainResult:
     """Run rules in salience order; enforce activation groups, stop_on_fire, stop_on_decline."""
     pol = policy or ChainExecutionPolicy()
@@ -59,6 +65,11 @@ def run_rule_chain(
 
     ordered = sorted(rules, key=lambda r: (-r.salience, r.name))
     work: dict[str, Any] = {k: v for k, v in fact.items()}
+    if discrimination is None:
+        eligible = None
+    else:
+        base = discrimination.eligible_rule_names(work)
+        eligible = refine_eligibility_with_beta_join(base, ordered, work)
     consumed_activations: set[str] = set()
     halted_agenda_groups: set[str] = set()
     evaluated = 0
@@ -84,6 +95,17 @@ def run_rule_chain(
                     False,
                     True,
                     "activation_group",
+                    dict(work.get("result") or {}) if isinstance(work.get("result"), dict) else {},
+                )
+            )
+            continue
+        if eligible is not None and r.name not in eligible:
+            out.steps.append(
+                ChainStep(
+                    r.name,
+                    False,
+                    True,
+                    "discrimination_alpha",
                     dict(work.get("result") or {}) if isinstance(work.get("result"), dict) else {},
                 )
             )
@@ -123,5 +145,11 @@ def run_rule_chain(
             out.stop_reason = "stop_on_decline"
             out.final_bound = {k: v for k, v in work.items() if k != "result"}
             return out
+        if pol.max_fires is not None and pol.max_fires > 0:
+            n_fired = sum(1 for s in out.steps if s.fired)
+            if n_fired >= pol.max_fires:
+                out.stop_reason = "fire_max"
+                out.final_bound = {k: v for k, v in work.items() if k != "result"}
+                return out
     out.final_bound = {k: v for k, v in work.items() if k != "result"}
     return out

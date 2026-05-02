@@ -58,23 +58,16 @@ class RuleExecutor:
         pass_: str = "SINGLE",
         allow_sql_join: bool = False,
     ) -> FactResult:
+        """Run ``drl`` against ``fact``.
+
+        Multi-pattern ``when`` clauses are evaluated in-process: list-valued bindings are
+        expanded with a Cartesian product (same behavior as the former ``allow_sql_join=True`` path).
+        The ``allow_sql_join`` flag is **deprecated** and ignored (kept for call-site compatibility).
+        """
+        _ = allow_sql_join
         r = parse(drl)
-        if len(r.when) > 1 and not allow_sql_join:
-            return FactResult(
-                fact_id,
-                rule_id,
-                handle,
-                version,
-                pass_,
-                False,
-                (),
-                {k: v for k, v in fact.items() if k != "result"},
-                {},
-                "SqlJoinNotImplemented",
-                "join rules require Spark",
-            )
         try:
-            if len(r.when) > 1 and allow_sql_join:
+            if len(r.when) > 1:
                 bind_names = tuple(p.bind_name for p in r.when)
                 m = None
                 for cand in self._candidate_facts(fact, bind_names):

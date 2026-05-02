@@ -417,3 +417,31 @@ class LspDiagnosticResponse(BaseModel):
 class LspAnalyzeResponse(BaseModel):
     diagnostics: list[LspDiagnosticResponse] = []
     completions: list[str] = []
+
+
+class DmnEvaluateRequest(BaseModel):
+    """Minimal Camunda-style DMN 1.3 decision table XML + fact environment."""
+
+    xml: str = Field(..., min_length=1)
+    env: dict[str, Any] = Field(default_factory=dict)
+
+
+class DmnEvaluateResponse(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    result: Any = None
+
+
+class DmnCounterfactualRequest(BaseModel):
+    xml: str = Field(..., min_length=1)
+    base_env: dict[str, Any] = Field(default_factory=dict)
+    env_patch: dict[str, Any] = Field(default_factory=dict)
+
+
+class DmnCounterfactualResponse(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    base: Any = None
+    counterfactual: Any = None
+    patch: dict[str, Any] = Field(default_factory=dict)
+    outputs_differ: bool = False

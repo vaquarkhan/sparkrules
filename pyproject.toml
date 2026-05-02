@@ -43,6 +43,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+lakehouse = [
+  "pyiceberg>=0.8",
+  "pyarrow>=14",
+]
+store = [
+  "duckdb>=1.1.0",
+  "psycopg[binary]>=3.2",
+]
 api = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -53,15 +61,20 @@ api = [
 spark = [
   "pyspark>=3.5.0",
 ]
+tecton = [
+  "tecton-client>=0.4",
+]
 all = [
-  "sparkrules[api,spark]",
+  "sparkrules[api,spark,store]",
 ]
 test = [
   "sparkrules[api]",
+  "sparkrules[store]",
   "pytest>=8.0",
   "hypothesis>=6.100",
   "httpx>=0.27,<0.28",
   "pytest-cov>=4.0",
+  "pyarrow>=14",
   "pyspark>=3.5.0",
 ]
 

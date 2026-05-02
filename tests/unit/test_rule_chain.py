@@ -50,6 +50,23 @@ end
     assert "extra" not in out.final_action
 
 
+def test_fire_max_stops_after_n_firings() -> None:
+    drl = """
+rule a salience 10
+when $t : T ( true ) then
+    result.tag = "a";
+end
+rule b salience 0
+when $t : T ( true ) then
+    result.tag = "b";
+end
+"""
+    rs = parse_rules(drl)
+    cr = run_rule_chain(rs, {"t": {}}, ChainExecutionPolicy(stop_on_decline=False, max_fires=1))
+    assert cr.stop_reason == "fire_max"
+    assert sum(1 for s in cr.steps if s.fired) == 1
+
+
 def test_stop_on_decline() -> None:
     drl = """
 rule a salience 10

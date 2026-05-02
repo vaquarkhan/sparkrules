@@ -53,8 +53,7 @@ end
 DRL_ERR_WHEN = """
 rule a
 when
-$t : T ( 1==1 ) and
-$u : U ( 1==1 )
+$t : T ( badf(1) )
 then
 result.r = 0;
 end
@@ -77,8 +76,8 @@ def test_p20_shared_predicate_eval_count() -> None:
     """
     dn = DiscriminationNetwork.build(
         {
-            "r1": "rule t when $x : T (1==1) then end",
-            "r2": "rule t when $x : T (1==1) then end",
+            "r1": "rule u1 when $x : T (1==1) then end",
+            "r2": "rule u2 when $x : T (1==1) then end",
         }
     )
     c0 = dn.eval_counter

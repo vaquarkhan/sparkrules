@@ -65,12 +65,11 @@ SparkRules ships with pluggable metadata backends:
 | Backend | Status | Use case |
 |---------|--------|----------|
 | `in_memory` | Production-ready | Development, testing, single-process deployments |
-| `pickle_file` | Production-ready | Persistent local storage, single-replica deployments |
-| `duckdb` | Planned | Embedded SQL storage with query support |
-| `iceberg` | Planned | Lakehouse-native snapshot semantics |
-| `postgres` | Planned | Multi-instance deployments with shared state |
+| `duckdb` | Production-ready (optional `duckdb` extra) | Embedded SQL file via `db_path`; versioned metadata |
+| `postgres` | Production-ready (optional driver extra) | Shared metadata; pass `database_url` / `dsn` |
+| `iceberg` | Partial | `IcebergHydratingRuleStore` with callable `iceberg_version_sink` or `pyiceberg_table` append sink; **without** a sink, falls back to `PickleFileStore` on disk (`store_path`) for dev/tests |
 
-> **Note:** The `create_rule_store("duckdb")` / `"iceberg"` / `"postgres"` factory currently returns a `PickleFileStore` (pickle-to-disk). Real database backends are on the roadmap. The API is stable  -  switching to a real backend will be a drop-in replacement.
+> **Note:** `create_rule_store` accepts `in_memory`, `duckdb`, `postgres`, and `iceberg` (see `sparkrules.store.backends`). For ad-hoc file persistence without SQL, use the `iceberg` backend without a sink (pickle fallback) or construct `PickleFileStore` directly from `sparkrules.store`.
 
 **Extension point:** Implement the store interface for your preferred backend (Redis, DynamoDB, etc.).
 
@@ -132,7 +131,7 @@ Platform switching is configuration-only  -  no code changes between environment
 See [ROADMAP.md](ROADMAP.md) for planned work. Community contributions welcome for:
 
 - CEP (Complex Event Processing) patterns
-- DMN (Decision Model and Notation) support
+- Full DMN (FEEL, DRD, DMN-TCK conformance) beyond the minimal Camunda-style table subset
 - Visual rule graph designer (React Flow)
 - Bulk simulation upload (CSV/JSONL)
 - Full run history browser

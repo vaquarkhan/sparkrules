@@ -1,4 +1,5 @@
 from sparkrules.model.decision_table import (
+    CollectAggregateError,
     ColumnType,
     DecisionTable,
     HitPolicy,
@@ -28,6 +29,7 @@ from sparkrules.model.rule_template import (
 )
 
 __all__ = [
+    "CollectAggregateError",
     "ColumnType",
     "DEFAULT_AGENDA_GROUP",
     "DecisionTable",

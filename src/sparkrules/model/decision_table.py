@@ -13,6 +13,10 @@ class HitPolicy(Enum):
     FIRST = auto()
     PRIORITY = auto()
     COLLECT = auto()
+    COLLECT_SUM = auto()
+    COLLECT_MIN = auto()
+    COLLECT_MAX = auto()
+    COLLECT_COUNT = auto()
 
 
 class ColumnType(Enum):
@@ -60,6 +64,10 @@ class OverlappingRowsError(ValueError):
     pass
 
 
+class CollectAggregateError(ValueError):
+    """Invalid inputs for COLLECT_* aggregate evaluation (per-output column)."""
+
+
 def _row_matches(row: Row, input_cols: Sequence[InputColumn], env: Mapping[str, Any]) -> bool:
     for i, col in enumerate(input_cols):
         if i >= len(row.cells):
@@ -104,6 +112,63 @@ def _merge_outputs(table: DecisionTable, row: Row, n_in: int) -> dict[str, Any]:
     return out
 
 
+def _is_real_number(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _coerce_aggregate_numbers(vals: list[Any], col_name: str) -> list[float]:
+    """Coerce DMN literal outputs (often strings) to floats for SUM/MIN/MAX."""
+    out: list[float] = []
+    for v in vals:
+        if _is_real_number(v):
+            out.append(float(v))
+            continue
+        if isinstance(v, str):
+            s = v.strip()
+            try:
+                out.append(float(s))
+            except ValueError as e:
+                raise CollectAggregateError(
+                    f"COLLECT aggregate requires numeric values for {col_name!r}",
+                ) from e
+            continue
+        raise CollectAggregateError(
+            f"COLLECT aggregate requires numeric values for {col_name!r}",
+        )
+    return out
+
+
+def _evaluate_collect_aggregate(
+    table: DecisionTable, matches: list[Row], n_in: int, hp: HitPolicy
+) -> dict[str, Any]:
+    """DMN-style collect aggregators; each output column is aggregated independently."""
+    if not table.output_columns:
+        raise CollectAggregateError(
+            "COLLECT_SUM, COLLECT_MIN, COLLECT_MAX, and COLLECT_COUNT require at least one output column",
+        )
+    merged = [_merge_outputs(table, r, n_in) for r in matches]
+    result: dict[str, Any] = {}
+    for ocol in table.output_columns:
+        oname = ocol.name
+        vals: list[Any] = []
+        for d in merged:
+            if oname not in d:
+                raise CollectAggregateError(f"missing output {oname!r} on a matching row")
+            vals.append(d[oname])
+        if hp == HitPolicy.COLLECT_COUNT:
+            result[oname] = len(matches)
+        elif hp == HitPolicy.COLLECT_SUM:
+            nums = _coerce_aggregate_numbers(vals, oname)
+            result[oname] = sum(nums)
+        elif hp == HitPolicy.COLLECT_MIN:
+            nums = _coerce_aggregate_numbers(vals, oname)
+            result[oname] = min(nums)
+        else:
+            nums = _coerce_aggregate_numbers(vals, oname)
+            result[oname] = max(nums)
+    return result
+
+
 def evaluate_decision_table(
     table: DecisionTable, env: Mapping[str, Any]
 ) -> list[dict[str, Any]] | dict[str, Any] | None:
@@ -111,6 +176,13 @@ def evaluate_decision_table(
     n_in = len(table.input_columns)
     if not matches:
         return None
+    if table.hit_policy in (
+        HitPolicy.COLLECT_SUM,
+        HitPolicy.COLLECT_MIN,
+        HitPolicy.COLLECT_MAX,
+        HitPolicy.COLLECT_COUNT,
+    ):
+        return _evaluate_collect_aggregate(table, matches, n_in, table.hit_policy)
     if table.hit_policy == HitPolicy.COLLECT:
         return [_merge_outputs(table, r, n_in) for r in matches]
     if table.hit_policy == HitPolicy.FIRST:

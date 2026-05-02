@@ -49,7 +49,7 @@
 
 - Versioned rule metadata lifecycle operations
 - Active window overlap detection and conflict protection
-- Pluggable store backends (`in_memory` production-ready; `pickle_file` for persistent local storage; DuckDB, Iceberg, and Postgres backends planned)
+- Pluggable store backends: `in_memory`; **DuckDB** and **Postgres** SQL metadata stores; **Iceberg**-hydrating store with optional **pyiceberg** append sink or pickle-on-disk fallback when no sink is configured (`create_rule_store` in `sparkrules.store.backends`)
 
 ## Observability
 
@@ -67,7 +67,7 @@
 
 ## Regulatory compliance
 
-- **Adverse-action reason aggregation**  -  `build_adverse_action_notice()` collects reason codes from rule chain evaluations into structured notices for ECOA/FCRA (US) and GDPR Art 22 (EU)
+- **Adverse-action reason aggregation**  -  `build_adverse_action_notice()`, `adverse_action_record()`, and `adverse_action_counterfactual_summary()` (base vs hypothetical context) for ECOA/FCRA (US) and GDPR Art 22 (EU) counsel-reviewable templates
 - Principal reasons capped at 4 per ECOA standard
 - Deduplicated, priority-ordered reason codes with audit metadata
 

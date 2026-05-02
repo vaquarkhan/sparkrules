@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
+from sparkrules.api.kie import router as kie_router
 from sparkrules.api.rulepack import build_export_payload, unified_diff_drl
 from sparkrules.api.schemas import (
     DeploymentStatusResponse,
@@ -67,8 +68,12 @@ from sparkrules.api.schemas import (
     LspDiagnosticResponse,
     ModelScoreRequest,
     ModelScoreResponse,
+    DmnCounterfactualRequest,
+    DmnCounterfactualResponse,
+    DmnEvaluateRequest,
+    DmnEvaluateResponse,
 )
-from sparkrules.ai import AiService, StubAiProvider
+from sparkrules.ai import AiService, create_default_ai_provider
 from sparkrules.api.security import (
     install_optional_api_key_middleware,
     principal_from_request,
@@ -86,6 +91,12 @@ from sparkrules.model.rule import new_rule_id, Rule, RuleDefinition, RuleFormat
 from sparkrules.model.rule_template import RuleTemplate
 from sparkrules.ide import analyze_drl_for_lsp
 from sparkrules.compiler import RuleEvaluationError
+from sparkrules.dmn import (
+    DmnParseError,
+    counterfactual_dmn_decision_table_xml,
+    evaluate_dmn_decision_table_xml,
+)
+from sparkrules.model.decision_table import CollectAggregateError, OverlappingRowsError
 from sparkrules.parser import parse
 from sparkrules.parser.ast import ParseError
 from sparkrules.runtime import EngineConfig, guided_fields_from_template, runtime_conf
@@ -157,7 +168,7 @@ class AppDeps:
             append_only=True,
         )
     )
-    ai: AiService = field(default_factory=lambda: AiService(StubAiProvider()))
+    ai: AiService = field(default_factory=lambda: AiService(create_default_ai_provider()))
     graph_source: InMemoryGraphSource = field(default_factory=InMemoryGraphSource)
     model_provider: StubModelProvider = field(default_factory=StubModelProvider)
     run_history: IcebergLikeTable = field(
@@ -632,6 +643,102 @@ def create_app(deps: AppDeps | None = None) -> Any:
             candidate_action=c.action,
             drifted=bool(drift_fields),
             drift_fields=drift_fields,
+        )
+
+    _SIM_ROLES: set[str] = {
+        "rule_reader",
+        "rule_author",
+        "rule_admin",
+        "run_operator",
+        "dq_steward",
+        "ai_reviewer",
+    }
+
+    @app.post(
+        "/dmn/evaluate",
+        response_model=DmnEvaluateResponse,
+        tags=["dmn"],
+    )
+    def dmn_evaluate(req: Request, body: DmnEvaluateRequest) -> DmnEvaluateResponse:
+        p = principal_from_request(req)
+        require_any_role(p, _SIM_ROLES)
+        run_id = f"dmn-eval-{uuid.uuid4()}"
+        ctx: dict[str, object] = {"mode": "DMN_EVALUATE", "endpoint": "/dmn/evaluate"}
+        _lineage_start(
+            run_id,
+            inputs={"xml_len": len(body.xml), "env_keys": sorted(body.env.keys())},
+            context=ctx,
+        )
+        try:
+            out = evaluate_dmn_decision_table_xml(body.xml, body.env)
+        except DmnParseError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "DMN_PARSE_ERROR", "message": str(e)},
+            ) from e
+        except CollectAggregateError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_AGGREGATE_ERROR") from e
+        except OverlappingRowsError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_UNIQUE_OVERLAP") from e
+        except Exception as e:  # noqa: BLE001
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_EVALUATE_FAILED") from e
+        _lineage_complete(
+            run_id,
+            outputs={"result_type": type(out).__name__},
+            metrics={"facts_processed": 1},
+        )
+        return DmnEvaluateResponse(result=out)
+
+    @app.post(
+        "/dmn/counterfactual",
+        response_model=DmnCounterfactualResponse,
+        tags=["dmn"],
+    )
+    def dmn_counterfactual(req: Request, body: DmnCounterfactualRequest) -> DmnCounterfactualResponse:
+        p = principal_from_request(req)
+        require_any_role(p, _SIM_ROLES)
+        run_id = f"dmn-cf-{uuid.uuid4()}"
+        ctx = {"mode": "DMN_COUNTERFACTUAL", "endpoint": "/dmn/counterfactual"}
+        _lineage_start(
+            run_id,
+            inputs={
+                "xml_len": len(body.xml),
+                "base_keys": sorted(body.base_env.keys()),
+                "patch_keys": sorted(body.env_patch.keys()),
+            },
+            context=ctx,
+        )
+        try:
+            out = counterfactual_dmn_decision_table_xml(body.xml, body.base_env, body.env_patch)
+        except DmnParseError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "DMN_PARSE_ERROR", "message": str(e)},
+            ) from e
+        except CollectAggregateError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_AGGREGATE_ERROR") from e
+        except OverlappingRowsError as e:
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_UNIQUE_OVERLAP") from e
+        except Exception as e:  # noqa: BLE001
+            _lineage_fail(run_id, exc=e, context=ctx, principal=p.principal)
+            raise _http_bad_request(str(e), code="DMN_COUNTERFACTUAL_FAILED") from e
+        _lineage_complete(
+            run_id,
+            outputs={"outputs_differ": bool(out.get("outputs_differ"))},
+            metrics={"facts_processed": 2},
+        )
+        return DmnCounterfactualResponse(
+            base=out["base"],
+            counterfactual=out["counterfactual"],
+            patch=dict(out["patch"]),
+            outputs_differ=bool(out["outputs_differ"]),
         )
 
     @app.post(
@@ -1791,6 +1898,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
         )
 
     install_optional_api_key_middleware(app)
+
+    app.include_router(kie_router)
 
     static_dir = Path(__file__).resolve().parent / "static" / "workbench"
     app.mount(
