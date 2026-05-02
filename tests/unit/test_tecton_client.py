@@ -10,9 +10,9 @@ import pytest
 import sparkrules.integrations as integrations_pkg
 from sparkrules.integrations.tecton_client import (
     TectonFeatureClient,
-    merge_features_into_fact,
     tecton_fetch_row,
 )
+from sparkrules.integrations.feast_client import merge_features_into_fact
 
 
 def test_integration_package_exports_tecton() -> None:
