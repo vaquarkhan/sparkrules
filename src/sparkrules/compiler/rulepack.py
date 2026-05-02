@@ -15,7 +15,7 @@ from typing import Any
 from sparkrules.compiler.closure import PredicateFn, compile_action, compile_predicate
 from sparkrules.compiler.translator import TranslationError, can_translate, translate_action, translate_predicate
 from sparkrules.parser import parse_rules
-from sparkrules.parser.ast import BinaryOp, BinaryOperator, Expr, FactPattern, RuleAst
+from sparkrules.parser.ast import BinaryOp, BinaryOperator, Expr, FactPattern, InExpr, Literal, Not, RuleAst
 
 
 class Strategy(Enum):
@@ -56,6 +56,33 @@ def _flatten_and_chain(expr: Expr) -> list[Expr]:
     return [expr]
 
 
+def _has_python_only_regex(expr: Expr) -> bool:
+    """Check if expression contains regex patterns with Python-only features (Req 21).
+
+    Python regex features NOT supported by Spark RLIKE:
+    - Lookahead: (?=...), (?!...)
+    - Lookbehind: (?<=...), (?<!...)
+    - Atomic groups: (?>...)
+    - Possessive quantifiers: *+, ++, ?+
+    - Named groups: (?P<name>...)
+    """
+    import re as _re
+
+    PYTHON_ONLY = _re.compile(r"\(\?[=!<P>]|\*\+|\+\+|\?\+")
+
+    if isinstance(expr, BinaryOp):
+        if expr.op == BinaryOperator.MATCHES and isinstance(expr.right, Literal):
+            pattern = str(expr.right.value)
+            if PYTHON_ONLY.search(pattern):
+                return True
+        return _has_python_only_regex(expr.left) or _has_python_only_regex(expr.right)
+    if isinstance(expr, Not):
+        return _has_python_only_regex(expr.expr)
+    if isinstance(expr, InExpr):
+        return _has_python_only_regex(expr.left) or _has_python_only_regex(expr.right)
+    return False
+
+
 def classify_rule(rule: RuleAst) -> Strategy:
     """Classify a rule into an execution strategy (Req 4).
 
@@ -73,6 +100,9 @@ def classify_rule(rule: RuleAst) -> Strategy:
         return Strategy.SQL_PUSHDOWN  # pragma: no cover
 
     if can_translate(pattern.constraint):
+        # Req 21: Python-only regex -> PYTHON_FALLBACK
+        if _has_python_only_regex(pattern.constraint):
+            return Strategy.PYTHON_FALLBACK
         # Check if actions are also translatable
         all_actions_simple = True
         for action in rule.then:
