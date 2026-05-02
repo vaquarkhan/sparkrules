@@ -11,9 +11,11 @@ class ChainingLimitExceededError(ValueError):
 def order_activations(
     activations: Sequence[tuple[int, str, str | None, str]],
 ) -> list[str]:
-    items = [(-a[0], a[1], a[2] or "", a[3], i) for i, a in enumerate(activations)]
-    items.sort()
-    return [x[3] for x in items]
+    """Order activations per Req 24 / Req 17: (-salience, rule handle ascending, declaration order ascending)."""
+
+    indexed = list(enumerate(activations))
+    indexed.sort(key=lambda ix: (-ix[1][0], ix[1][3], ix[0]))
+    return [ix[1][3] for ix in indexed]
 
 
 def resolve_activation_groups(fired: Sequence[tuple[str, str | None]]) -> list[str]:

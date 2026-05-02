@@ -7,7 +7,7 @@ GDPR Article 22 (EU) compliance.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Sequence
 
 from sparkrules.executor.rule_executor import FactResult

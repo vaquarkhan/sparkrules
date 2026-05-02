@@ -10,13 +10,12 @@ Cross-path equivalence with LocalRuleExecutor is a hard requirement.
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass
 from typing import Any
 
 from sparkrules.compiler.alpha_network import AlphaNetwork
-from sparkrules.compiler.closure import compile_action, compile_predicate
-from sparkrules.compiler.rulepack import ClassifiedRule, RulePack, Strategy
+from sparkrules.compiler.rulepack import ClassifiedRule, RulePack
 from sparkrules.compiler.translator import translate_predicate
 
 
@@ -26,6 +25,9 @@ class SchemaValidationError(TypeError):
     pass
 
 
+_SAFE_SPARK_IDENTIFIER = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+
+
 def _safe_rule_col(name: str) -> str:
     """Sanitize rule name for use as a Spark column name."""
     return "r_" + name.replace("-", "_").replace(" ", "_").replace('"', "")
@@ -33,6 +35,23 @@ def _safe_rule_col(name: str) -> str:
 
 def _safe_action_col(field_name: str) -> str:
     return "action_" + field_name.replace("-", "_").replace(" ", "_")
+
+
+def _staging_action_flat(salience: int, source_order: int, action_field: str) -> str:
+    """Intermediate action column unique per rule (Req 17: salience + parse-order ties)."""
+
+    return _safe_action_col(action_field) + "__s" + str(salience) + "_o" + str(source_order)
+
+
+def _staging_action_column(rule: ClassifiedRule, action_field: str) -> str:
+    return _staging_action_flat(rule.salience, rule.source_order, action_field)
+
+
+def _assert_machine_generated_alias(alias: str) -> None:
+    if not _SAFE_SPARK_IDENTIFIER.fullmatch(alias):
+        raise SchemaValidationError(
+            f"Rule-derived Spark identifier '{alias}' is unsafe after sanitization (Req 33)."
+        )
 
 
 @dataclass
@@ -63,6 +82,9 @@ class SparkRuleExecutor:
                     f"Column '{col_field.name}' has MapType but rules expect StructType. "
                     f"Use explicit schema: spark.createDataFrame(data, schema=StructType([...]))"
                 )
+
+        for rule in self.rulepack.rules:
+            _assert_machine_generated_alias(_safe_rule_col(rule.name))
 
         result = df
 
@@ -111,7 +133,7 @@ class SparkRuleExecutor:
 
             # Typed action columns (Req 10)
             for action_field, action_sql in rule.action_sql.items():
-                action_col = _safe_action_col(action_field) + "__s" + str(rule.salience)
+                action_col = _staging_action_column(rule, action_field)
                 result = result.withColumn(
                     action_col,
                     F.when(F.col(col_name), F.expr(action_sql)),
@@ -167,7 +189,7 @@ class SparkRuleExecutor:
 
             # Action columns
             for action_field, action_sql in rule.action_sql.items():
-                action_col = _safe_action_col(action_field) + "__s" + str(rule.salience)
+                action_col = _staging_action_column(rule, action_field)
                 result = result.withColumn(
                     action_col,
                     F.when(F.col(col_name), F.expr(action_sql)),
@@ -181,7 +203,7 @@ class SparkRuleExecutor:
 
     def _apply_strategy_c(self, df: Any) -> Any:  # pragma: no cover
         """Strategy C: PYTHON_FALLBACK - mapPartitions with broadcast (Req 8, 20)."""
-        from pyspark.sql import Row, functions as F
+        from pyspark.sql import Row
         from pyspark.sql.types import (
             BooleanType,
             StringType,
@@ -199,9 +221,7 @@ class SparkRuleExecutor:
         drl_broadcast = sc.broadcast(self._drl)
         rule_names = [r.name for r in rules]
         rule_names_broadcast = sc.broadcast(rule_names)
-
-        # Collect existing columns
-        existing_cols = df.columns
+        source_order_broadcast = sc.broadcast({r.name: r.source_order for r in rules})
 
         def _eval_partition(partition: Any) -> Any:
             """Evaluate fallback rules per partition (Req 8, AC 2-3)."""
@@ -212,6 +232,7 @@ class SparkRuleExecutor:
 
             drl_val = drl_broadcast.value
             target_names = set(rule_names_broadcast.value)
+            source_orders = source_order_broadcast.value
             all_rules = pr(drl_val)
             target_rules = [r for r in all_rules if r.name in target_names]
             net = AN.from_rules(target_rules)
@@ -243,7 +264,8 @@ class SparkRuleExecutor:
                     result_row[col] = fired
                     if fired:
                         for fname, fn in action_fns.get(rule.name, []):
-                            acol = _safe_action_col(fname) + "__s" + str(rule.salience)
+                            so = source_orders.get(rule.name, 0)
+                            acol = _staging_action_flat(rule.salience, so, fname)
                             try:
                                 result_row[acol] = fn(fact)
                             except Exception:  # noqa: BLE001
@@ -254,15 +276,13 @@ class SparkRuleExecutor:
         result_rdd = df.rdd.mapPartitions(_eval_partition)
 
         # Build schema: original + rule columns + action columns
-        from pyspark.sql.types import StructType
-
         new_fields = list(df.schema.fields)
         for rule in rules:
             new_fields.append(StructField(_safe_rule_col(rule.name), BooleanType(), True))
             for action_field in rule.action_sql:
                 new_fields.append(
                     StructField(
-                        _safe_action_col(action_field) + "__s" + str(rule.salience),
+                        _staging_action_column(rule, action_field),
                         StringType(),
                         True,
                     )
@@ -275,29 +295,30 @@ class SparkRuleExecutor:
         """Req 17: Cross-strategy salience resolution."""
         from pyspark.sql import functions as F
 
-        # Collect all action columns grouped by field name
-        action_fields: dict[str, list[tuple[int, str]]] = {}
+        # Collect all action columns grouped by field name (Req 17 tie-breakers)
+        action_fields: dict[str, list[tuple[int, str, int, str]]] = {}
         for rule in self.rulepack.rules:
             for action_field in rule.action_sql:
-                col_name = _safe_action_col(action_field) + "__s" + str(rule.salience)
+                col_name = _staging_action_column(rule, action_field)
                 if col_name in df.columns:
                     if action_field not in action_fields:
                         action_fields[action_field] = []
-                    action_fields[action_field].append((rule.salience, col_name))
+                    action_fields[action_field].append(
+                        (rule.salience, rule.name, rule.source_order, col_name),
+                    )
 
         result = df
         for field_name, salience_cols in action_fields.items():
-            # Sort by salience descending - highest wins
-            salience_cols.sort(key=lambda x: -x[0])
+            salience_cols.sort(key=lambda x: (-x[0], x[1], x[2]))
             merged_col = _safe_action_col(field_name)
 
-            # Build COALESCE chain (first non-null wins, ordered by salience)
-            col_refs = [F.col(c) for _, c in salience_cols]
+            # Build COALESCE chain (first non-null wins)
+            col_refs = [F.col(t[-1]) for t in salience_cols]
             result = result.withColumn(merged_col, F.coalesce(*col_refs))
 
             # Drop intermediate salience-tagged columns
-            for _, c in salience_cols:
-                result = result.drop(c)
+            for t in salience_cols:
+                result = result.drop(t[-1])
 
         return result
 

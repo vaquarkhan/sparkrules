@@ -19,5 +19,5 @@
 | `pytest tests/perf -m perf -q` → `1 passed` | **Met** |
 | `BUILD_STATUS.md` counts | **Updated** (this file) |
 | `README.md` points newcomers to docs by role | **Met**  -  see root `README.md` and **Documentation hub** [`docs/README.md`](docs/README.md) |
-| Every documented requirement has a test | **Met** for the in-repo requirements set in `docs/REQUIREMENTS.md`, cross-covered by `tests/property/`, `tests/integration/`, and `tests/unit/test_requirement_ladder.py` |
+| Every documented requirement has a test | **Met** for the in-repo ladder in `idea-brainstrom.md` lineage + `tests/property/`, `tests/integration/`, and `tests/unit/test_requirement_ladder.py`; V2 Req **30–34** exercised via **`tests/unit/test_engine_metrics_and_rollout.py`** + **`test_v2_engine.py`** (**Req 35–37** retain external / policy facets) |
 | P1–P38 Hypothesis **≥ 100** examples (where `@given` is used) | **Met**  -  `tests/property/hypo_settings.py` `PROFILE.max_examples=100` |

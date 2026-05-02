@@ -249,7 +249,7 @@ def _g8_misc(r: int) -> None:
     if r == 2:
         import sparkrules
 
-        assert sparkrules.__version__ == "1.0.1"
+        assert sparkrules.__version__ == "1.1.0"
         return
     if r in range(3, 18):
         assert uuid.uuid4()

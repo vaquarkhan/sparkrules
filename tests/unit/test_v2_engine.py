@@ -7,6 +7,7 @@ import pickle
 from sparkrules.compiler.closure import (
     compile_action,
     compile_predicate,
+    _compile_value,
     _compare,
     _as_collection,
     _call_builtin,
@@ -280,6 +281,31 @@ rule "mid" salience 50 when $t : T ( true ) then end
     assert names == ["high", "mid", "low"]
 
 
+def test_rulepack_salience_tiebreaker_name_lexicographic() -> None:
+    """Req 17: equal salience — ascending rule name (code-point order), then declaration order."""
+    drl = """
+rule "zeta" salience 5 when $t : T ( true ) then end
+rule "alpha" salience 5 when $t : T ( true ) then end
+rule "beta" salience 5 when $t : T ( true ) then end
+"""
+    pack = RulePack.from_drl(drl)
+    names = [r.name for r in pack.rules]
+    assert names == ["alpha", "beta", "zeta"]
+
+
+def test_rulepack_debug_classification() -> None:
+    drl = 'rule r when $t : T ( $t.x > 5 ) then result.ok = true; end'
+    pack = RulePack.from_drl(drl)
+    rows = pack.debug_classification()
+    assert (
+        len(rows) == 1
+        and rows[0]["rule"] == "r"
+        and rows[0]["strategy"] == Strategy.SQL_PUSHDOWN.name
+        and rows[0]["source_order"] == 0
+        and rows[0]["classification_rationale"] == "SQL_PUSH_TRANSLATABLE"
+    )
+
+
 def test_rulepack_serialize_roundtrip() -> None:
     drl = 'rule r when $t : T ( $t.x > 5 ) then result.ok = true; end'
     pack = RulePack.from_drl(drl)
@@ -291,6 +317,51 @@ def test_rulepack_serialize_roundtrip() -> None:
 def test_rulepack_deserialize_invalid() -> None:
     with pytest.raises(TypeError):
         RulePack.deserialize(pickle.dumps("not a rulepack"))
+
+
+def test_rulepack_deserialize_legacy_raw_pickle_without_envelope() -> None:
+    drl = 'rule legacy when $t : T ( true ) then end'
+    pack = RulePack.from_drl(drl)
+    raw_only = pickle.dumps(pack, protocol=4)
+    assert not raw_only.startswith(b"SRRP")
+    again = RulePack.deserialize(raw_only)
+    assert again.drl_hash == pack.drl_hash and len(again.rules) == len(pack.rules)
+
+
+def test_rulepack_deserialize_unknown_envelope_raises() -> None:
+    from sparkrules.compiler.exceptions import RulePackVersionError
+
+    bogus = b"SRRP" + bytes([255, 0]) + pickle.dumps(None)
+    with pytest.raises(RulePackVersionError):
+        RulePack.deserialize(bogus)
+
+
+def test_rulepack_serialize_raises_when_over_hard_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_MAX_RULEPACK_BYTES", "90")
+    drl = "\n".join(
+        [
+            'rule "b{i}" salience 0 when $t : T ( true ) then result.x = true; end'.format(i=i)
+            for i in range(15)
+        ]
+    )
+    pack = RulePack.from_drl(drl)
+    with pytest.raises(ValueError, match="SPARKRULES_MAX_RULEPACK_BYTES"):
+        pack.serialize()
+
+
+def test_rulepack_serialize_warns_when_large(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    import logging
+
+    from sparkrules.compiler import rulepack as rp
+
+    monkeypatch.setattr(rp, "RULEPACK_LARGE_SERIALIZE_WARN_BYTES", 900)
+    lines = [
+        f'rule "bulk{i}" salience 0 when $t : T ( true ) then result.flag = true; end' for i in range(60)
+    ]
+    drl = "\n".join(lines)
+    with caplog.at_level(logging.WARNING):
+        blob = RulePack.from_drl(drl).serialize()
+    assert len(blob) > 900 and "RulePack.serialize produced" in caplog.text
 
 
 def test_classify_simple_rule() -> None:
@@ -325,8 +396,6 @@ def test_print_ast_expr() -> None:
 
 
 # --- Coverage gaps ---
-
-from sparkrules.compiler.closure import _compile_value
 
 
 def test_closure_compile_value_call_expr() -> None:

@@ -24,6 +24,16 @@
 - Agenda groups: scope which rules run in a stage.
 - Activation groups: XOR behavior for competing rules.
 
+## Observability, rollout, and limits (V2)
+
+- **Classification transparency:** `RulePack.debug_classification()` returns each rule’s strategy plus a stable **`classification_rationale`** code (e.g. `SQL_PUSH_TRANSLATABLE`, `PYTHON_ONLY_REGEX`).
+- **Counters (opt-in):** set **`SPARKRULES_ENGINE_METRICS=1`** then poll **`snapshot_engine_metrics()`** from `sparkrules.runtime.engine_metrics` (evaluations, row counts, firings-by-strategy, translation-failure tally, coarse latency buckets). **`LocalRuleExecutor`** and **`apply_pandas`** record automatically when metrics are enabled.
+- **Structured logs:** at **INFO**, `LocalRuleExecutor` emits one line per firing with rule name, strategy, salience, and reason codes.
+- **Rollout knobs:** **`rollout_config_from_environ()`** reads **`SPARKRULES_SHADOW_DUAL_EVAL`**, **`SPARKRULES_ENGINE_METRICS`**, **`SPARKRULES_MAX_RULEPACK_BYTES`**. For single-rule parity smoke tests use **`compare_v1_v2_single_rule_fired(fact, drl)`**.
+- **Serialized RulePack caps:** optional hard limit via **`SPARKRULES_MAX_RULEPACK_BYTES`**; soft warning still applies when blobs exceed **`RULEPACK_LARGE_SERIALIZE_WARN_BYTES`**.
+
+See **docs/REQUIREMENTS_V2_ENGINE.md** (Req **30–34**) for normative wording.
+
 ## Data and output model
 
 - Rule evaluation returns fired state, bound field values, and action outputs.

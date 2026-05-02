@@ -31,7 +31,7 @@ Run the full test suite and coverage gate:
 
 ```bash
 python -m pip install -e ".[test]"
-python -m pytest tests/unit/ --cov=src/sre
+python -m pytest tests/unit/ --cov=src/sparkrules
 ```
 
 Opt-in performance tests (if present) use `pytest -m perf`.
@@ -47,3 +47,7 @@ For **governance and promotion** (see [GOVERNANCE.md](GOVERNANCE.md)), the repos
 5. **Record**: job duration, shuffle GB, executor CPU, and cost estimate; file under your org’s performance evidence process.
 
 Re-use the in-repo [perf harness](#in-repo-tools) for micro-benchmarks; lakehouse **billions-of-rows** evidence stays outside the repo, as in [What “production evidence” means](#what-production-evidence-means).
+
+## Appendix: Req 37 / native wheel CI order-of-magnitude
+
+Optional **Rust + cibuildwheel** jobs are **budgeted separately** from the default Python CI matrix (\~``3 ×`` Python minors × lint + tests). Expect **additional** runner minutes proportional to **`(Python minors) × (OS targets: manylinux, macOS arm64, Windows)`** × cold-cache builds (**tens** to **low hundreds** of minutes per release wave until incremental caches warm). Track wall time alongside **pure-Python fallback** correctness (same test gate).

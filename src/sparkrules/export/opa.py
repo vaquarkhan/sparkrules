@@ -6,16 +6,13 @@ existing OPA toolchain. Supports basic comparison operators and boolean logic.
 
 from __future__ import annotations
 
-from typing import Any
 
 from sparkrules.parser import parse_rules
 from sparkrules.parser.ast import (
-    Action,
     BinaryOp,
     BinaryOperator,
     CallExpr,
     Expr,
-    FactPattern,
     Identifier,
     InExpr,
     ListExpr,

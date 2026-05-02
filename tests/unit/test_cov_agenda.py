@@ -30,6 +30,11 @@ def test_order_activations_and_controller() -> None:
         ]
     )
     assert a[0] == "id2"
+
+
+def test_order_activations_same_salience_lexicographic_handle() -> None:
+    o = order_activations([(5, "t", None, "rule_b"), (5, "t", None, "rule_a")])
+    assert o == ["rule_a", "rule_b"]
     c = AgendaController()
     a2 = c.order_activations(
         [

@@ -1,6 +1,10 @@
 """Exceptions raised by rule expression evaluation (distinct from DRL parse errors)."""
 
 
+class RulePackVersionError(ValueError):
+    """``RulePack.deserialize`` rejects bytes produced by unsupported formats (Req 34)."""
+
+
 class RuleEvaluationError(Exception):
     """Evaluating a DRL `when` expression failed in a way users should not see as a raw TypeError.
 

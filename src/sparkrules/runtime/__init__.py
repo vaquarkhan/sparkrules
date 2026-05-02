@@ -8,6 +8,17 @@ from sparkrules.runtime.config_contract import (
     runtime_conf,
     validate_zero_code_change,
 )
+from sparkrules.runtime.engine_metrics import (
+    engine_metrics_enabled,
+    reset_engine_metrics,
+    set_engine_metrics_enabled,
+    snapshot_engine_metrics,
+)
+from sparkrules.runtime.rollout import (
+    RolloutConfig,
+    compare_v1_v2_single_rule_fired,
+    rollout_config_from_environ,
+)
 from sparkrules.runtime.export_service import ExportResult, ExportService
 from sparkrules.runtime.fact_source import (
     FactSourceSpec,
@@ -53,6 +64,7 @@ from sparkrules.runtime.graph import (
 )
 
 __all__ = [
+    "RolloutConfig",
     "CatalystConfigurer",
     "ChaosPolicy",
     "ChaosResult",
@@ -106,7 +118,13 @@ __all__ = [
     "shared_attribute_velocity_over",
     "community_membership_flagged",
     "centrality_anomaly",
+    "compare_v1_v2_single_rule_fired",
+    "engine_metrics_enabled",
+    "rollout_config_from_environ",
+    "reset_engine_metrics",
     "scale_evidence",
+    "set_engine_metrics_enabled",
+    "snapshot_engine_metrics",
     "validate_fact_source",
     "validate_zero_code_change",
 ]

@@ -28,7 +28,7 @@
 | [BENCHMARKS.md](BENCHMARKS.md) | Performance methodology and measured throughput |
 | [PUBLISHING.md](PUBLISHING.md) | PyPI, GitHub Container Registry, CI release process |
 | [ROADMAP.md](ROADMAP.md) | Phases and future scope |
-| [REQUIREMENTS_V2_ENGINE.md](REQUIREMENTS_V2_ENGINE.md) | V2 engine requirements (26 of 29 implemented) |
+| [REQUIREMENTS_V2_ENGINE.md](REQUIREMENTS_V2_ENGINE.md) | **Normative V2 requirements** Req 1–37 (core + phased Spec A/B/C, non-goals, rollout, observability, security); implementation status summarized in-document |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment: Glue, Databricks, Dataproc, Synapse, K8s |
 
 ## Quick links
