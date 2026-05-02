@@ -26,6 +26,10 @@ You should receive an acknowledgment within 48 hours. We will work with you to u
 
 This policy covers the SparkRules Python package (`sparkrules`) and its API surface. It does not cover third-party dependencies, though we monitor them via automated security scanning (pip-audit) in CI.
 
+## Evaluation surface (trust boundaries)
+
+SparkRules parses and executes authored DRL. Treat authored rules **and** authored actions as trusted code governed by your rule-promotion workflow. For the normative engineering requirements on identifier validation, pickled `RulePack` compatibility, rollout, and disclosures, see [docs/REQUIREMENTS_V2_ENGINE.md](docs/REQUIREMENTS_V2_ENGINE.md) (**Req 33** and adjacent cross-cutting reqs). Runtime knobs include **`SPARKRULES_MAX_RULEPACK_BYTES`** (reject oversize serializations), **`SPARKRULES_ENGINE_METRICS`**, **`SPARKRULES_SHADOW_DUAL_EVAL`**, and **`USE_V2`-style** behavior via application code (see **HOW_IT_WORKS.md**).
+
 ## Security Practices
 
 - Dependencies are monitored via Dependabot and pip-audit

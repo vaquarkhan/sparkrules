@@ -1,4 +1,4 @@
-﻿# sparkrules 1.0.1
+﻿# sparkrules
 
 **The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails  -  from laptop to lakehouse, no JVM required.
 

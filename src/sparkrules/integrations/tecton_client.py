@@ -12,7 +12,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
-from sparkrules.integrations.feast_client import merge_features_into_fact
 
 
 @dataclass

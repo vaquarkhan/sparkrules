@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sparkrules"
-version = "1.0.1"
+version = "1.1.0"
 description = "Drools-equivalent business rule engine reference implementation"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -122,7 +122,8 @@ ignore = ["E741"]  # allow 'l' as variable name in parser code
 
 [tool.ruff.lint.per-file-ignores]
 "src/sparkrules/**/__init__.py" = ["F401"]  # re-exports
-"tests/**/*.py" = ["F401", "F841"]  # test imports and unused vars
+"src/sparkrules/policy/ranger_compat.py" = ["E402"]  # imports after docstring
+"tests/**/*.py" = ["F401", "F841", "E402"]  # test imports and unused vars
 
 [tool.coverage.run]
 source = ["src/sparkrules"]

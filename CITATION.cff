@@ -10,7 +10,7 @@ authors:
 repository-code: "https://github.com/vaquarkhan/sparkrules"
 url: "https://github.com/vaquarkhan/sparkrules"
 license: "Apache-2.0"
-version: "1.0.1"
+version: "1.1.0"
 date-released: "2026-05-01"
 keywords:
   - "business-rules"

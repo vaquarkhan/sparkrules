@@ -6,12 +6,12 @@ for simple rules and row-wise closure application for complex rules.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
-from sparkrules.compiler.alpha_network import AlphaNetwork
 from sparkrules.compiler.closure import compile_action, compile_predicate
 from sparkrules.compiler.rulepack import RulePack, Strategy
-from sparkrules.compiler.translator import translate_predicate
+from sparkrules.runtime.engine_metrics import record_score_completed
 
 
 def _safe_col(name: str) -> str:
@@ -35,13 +35,8 @@ def apply_pandas(
         pandas DataFrame with r_<rule> boolean columns, action_<field>
         typed columns, and fired_any boolean column.
     """
-    import pandas as pd
-
+    t0 = time.perf_counter()
     result = df.copy()
-
-    # Build alpha network for closure-based rules
-    asts = [r.ast for r in pack.rules]
-    net = AlphaNetwork.from_rules(asts)
 
     # Pre-compile action closures
     action_closures: dict[str, list[tuple[str, Any]]] = {}
@@ -91,6 +86,23 @@ def apply_pandas(
         result["fired_any"] = result[rule_cols].any(axis=1)
     else:
         result["fired_any"] = False
+
+    elapsed = time.perf_counter() - t0
+    fires_by_strategy: dict[str, int] = {}
+    for rule in pack.rules:
+        col_name = f"r_{_safe_col(rule.name)}"
+        n = int(result[col_name].fillna(False).astype(bool).sum())
+        if n:
+            strat = rule.strategy.name
+            fires_by_strategy[strat] = fires_by_strategy.get(strat, 0) + n
+
+    record_score_completed(
+        latency_seconds=elapsed,
+        rows=len(result),
+        pack=pack,
+        executor_tag="v2_pandas",
+        fires_by_strategy=fires_by_strategy,
+    )
 
     return result
 

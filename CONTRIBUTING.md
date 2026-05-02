@@ -36,6 +36,6 @@ Line coverage for `sparkrules` is enforced at 100% in `pyproject.toml` when you 
 
 ## Documentation
 
-- Large requirements and glossary live in [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).
+- V2 execution requirements (normative) live in [`docs/REQUIREMENTS_V2_ENGINE.md`](docs/REQUIREMENTS_V2_ENGINE.md). Internal drafts may remain local and gitignored.
 - The root [`README.md`](README.md) should stay a short **overview**; expand detail in `docs/`.
 

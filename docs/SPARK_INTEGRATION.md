@@ -43,7 +43,8 @@ Use Spark when you need **distributed** execution over **large** row sets alread
 3. **Apply** DRL to that DataFrame using the helpers in `src/sparkrules/spark/dataframe.py`:
    - **`apply_drl(df, drl, ...)`**  -  `broadcast`’s the DRL string, uses **`mapPartitions`** over the DataFrame’s RDD, returns a new `DataFrame` of `fact_id`, `fired`, `out_json`.
    - Lower-level: **`iter_rule_rows`**, **`mpartition_rows`** for custom pipelines.
-4. **Optionally** combine with a **`CompiledRulePackage`** and **`sparkrules/transport/broadcaster.py`** for **broadcasting** larger artifacts in advanced setups (see that module’s docstring and tests).
+4. **`use_v2=True` (recommended):** the Spark executor merges action fields across strategies with deterministic ordering (salience, then rule-name code points, then DRL declaration order). You may briefly see **`action_<field>__s<salience>_o<order>`** staging columns internally; outputs surface as **`action_<field>`** after merge. **`RulePack.serialize()`** embeds a **`SRRP`** version header before the pickle (see **`docs/REQUIREMENTS_V2_ENGINE.md`** Req 34).
+5. **Optionally** combine with a **`CompiledRulePackage`** and **`sparkrules/transport/broadcaster.py`** for **broadcasting** larger artifacts in advanced setups (see that module’s docstring and tests).
 
 **Requirements on the workers:** JARs / Python environment must include this package, PySpark, and compatible Spark version  -  same as any other PySpark app.
 

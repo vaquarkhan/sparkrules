@@ -7,12 +7,18 @@ output for action computation. Achieves sub-millisecond p99 latency for
 
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
 from sparkrules.compiler.alpha_network import AlphaNetwork
 from sparkrules.compiler.closure import compile_action
 from sparkrules.compiler.rulepack import RulePack
+from sparkrules.runtime.engine_metrics import record_score_completed
+
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +87,7 @@ class LocalRuleExecutor:
 
         Returns fired rules ordered by salience with action outputs.
         """
+        t0 = time.perf_counter()
         # Shared alpha evaluation
         alpha_fired = self.alpha_net.evaluate(fact)
 
@@ -116,6 +123,28 @@ class LocalRuleExecutor:
                     reason_codes=rule.reason_codes,
                 )
             )
+
+        elapsed = time.perf_counter() - t0
+        fired_rule_names_one_row = [f.rule_name for f in fires if f.fired]
+        record_score_completed(
+            latency_seconds=elapsed,
+            rows=1,
+            pack=self.rulepack,
+            executor_tag="v2_local",
+            fired_rule_names_one_row=fired_rule_names_one_row,
+        )
+        if _LOG.isEnabledFor(logging.INFO):
+            name_to_rule = {r.name: r for r in self.rulepack.rules}
+            for fr in fires:
+                if fr.fired:
+                    cr = name_to_rule[fr.rule_name]
+                    _LOG.info(
+                        "rule_fired rule=%s strategy=%s salience=%s reason_codes=%s",
+                        fr.rule_name,
+                        cr.strategy.name,
+                        fr.salience,
+                        ",".join(fr.reason_codes),
+                    )
 
         return ScoreResult(fires=fires, fired_any=any_fired, merged_actions=merged)
 

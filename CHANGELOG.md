@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `docs/REQUIREMENTS_V2_ENGINE.md`: full normative Req 1–37 set with phased Spec A/B/C delivery model, explicit **non-goals**, rollout/migration (**Req 30**), observability (**Req 31**), resource bounds (**Req 32**), security (**Req 33**), **`RulePack` serialization policy** (**Req 34**), cluster performance evidence (**Req 35**), `use_v2` deprecation (**Req 36**), native program (**Req 37**), deterministic salience/agenda tie-breakers (**Req 17**, **Req 24**), and risk register.
+- **`RulePack.debug_classification()`** + per-rule **`classification_rationale`** stable codes (**Req 31**).
+- **`sparkrules.runtime.engine_metrics`** — opt-in counters / latency buckets (**`SPARKRULES_ENGINE_METRICS=1`**, **`snapshot_engine_metrics()`**); wired **`LocalRuleExecutor`** + **`apply_pandas`**.
+- **`sparkrules.runtime.rollout`** — **`RolloutConfig`** from env, **`compare_v1_v2_single_rule_fired`** parity helper (**Req 30** shadow smoke).
+- **`RulePackVersionError`** when rejecting unsupported serialized **`RulePack`** formats.
+
+### Changed
+
+- **`RulePack.serialize`** prefixes an explicit **`SRRP`** + major/minor version envelope before the pickle payload; **`deserialize`** accepts legacy raw pickles and current **1.0** payloads; optional **`SPARKRULES_MAX_RULEPACK_BYTES`** raises **`ValueError`**; emits **`logging`** warning when serialized size exceeds a soft guideline (Req **32**).
+- **`classify_rule_with_rationale()`** complements **`classify_rule()`** for diagnostics.
+- **Deterministic ordering:** rules sort by **`(-salience, name, source_order)`**; each **`ClassifiedRule`** carries **`source_order`** from DRL declaration order for stable merges.
+- **Spark staging columns** for RHS merge: **`action_<field>__s<salience>_o<source_order>`** (avoids collisions when salience ties).
+
+### Security
+
+- **`SparkRuleExecutor.apply`** rejects rule-derived Spark column names that remain invalid identifiers after sanitization (**`SchemaValidationError`**, Req 33).
+
+## [1.1.0] - 2026-05-02
+
+### Added
+- **V2 Optimized Engine** - complete rewrite of the evaluation pipeline:
+  - AST-to-SQL translator for Spark Catalyst pushdown (Req 1)
+  - Closure compiler - DRL predicates compiled to Python closures (Req 2)
+  - Alpha network with AND-chain flattening and shared predicate evaluation (Req 3)
+  - RulePack with 3-strategy classification: SQL_PUSHDOWN, ALPHA_SHARED, PYTHON_FALLBACK (Req 4-5)
+  - LocalRuleExecutor with score(), apply(), refresh_rules() (Req 9)
+  - SparkRuleExecutor with Strategy A/B/C dispatch (Req 6-8)
+  - ReteNetwork with FactView __slots__ and range-merged alpha nodes (Req 25-26)
+  - Pandas batch evaluation via apply_pandas() (Req 22)
+  - Cross-path equivalence tests (Req 12)
+  - Regex compatibility detection for Python vs Spark (Req 21)
+- **Typed output schema** - r_<rule> booleans + action_<field> typed columns + fired_any (Req 10)
+- **apply_drl(use_v2=True)** - backward-compatible wrapper with V2 default (Req 11)
+- **iter_rule_rows v2** - compiled closures + alpha network for pure-Python path (Req 19)
+- **Schema validation** - MapType vs StructType check for Spark DataFrames (Req 15)
+- **Pickle-safe broadcast** - DRL string broadcast, per-partition rebuild (Req 20)
+- **KIE Server API** - Drools-compatible REST endpoints for zero-code migration
+- **DMN 1.3 import** - parse Camunda-style decision table XML
+- **Real DuckDB backend** - SQL-based metadata store with actual duckdb
+- **Real Postgres backend** - SQL-based metadata store with psycopg
+- **OpenAI provider** - real LLM provider for AI rule suggestions
+- **Feast/Tecton adapters** - feature store integration clients
+- **Ranger/OPA policy clients** - pluggable access control adapters
+- 6 Jupyter notebooks: getting started, decision tables, API simulation, credit underwriting, fraud detection, architecture tutorial
+- 7 production-quality DRL examples: credit underwriting, fraud detection, insurance claims
+- 4 Python demo scripts: V2 executor, adverse-action, data profiling, OPA export
+- 840+ tests with 100% line coverage (6600+ statements)
+
+### Fixed
+- Schema validation for Spark DataFrames (MapType vs StructType)
+- Alpha column cleanup after Strategy B evaluation
+- Cross-strategy salience resolution with COALESCE merge
+
 ## [1.0.1] - 2026-05-01
 
 ### Added
@@ -67,5 +124,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `py.typed` marker for PEP 561 type checking support
 - Added PyPI metadata: keywords, classifiers, project URLs
 
+[1.1.0]: https://github.com/vaquarkhan/sparkrules/releases/tag/v1.1.0
 [1.0.1]: https://github.com/vaquarkhan/sparkrules/releases/tag/v1.0.1
 [1.0.0]: https://github.com/vaquarkhan/sparkrules/releases/tag/v1.0.0
