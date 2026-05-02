@@ -1,48 +1,67 @@
 ﻿# Examples
 
-**Author:** Vaquar Khan  
-
-Full requirements and glossary: [**docs/REQUIREMENTS.md**](../docs/REQUIREMENTS.md) · Docs index: [**docs/README.md**](../docs/README.md).
-
-All examples assume a working install of the package from the repo root:
+## Quick start
 
 ```bash
-python -m pip install -e ".[test]"
+pip install sparkrules[api]
 ```
 
-On Windows, if `import sre` fails, use the **same** interpreter for `pip` and `python`.
+## DRL rule files
 
-| Path | What it shows |
-|------|----------------|
-| [drl/minimal.drl](drl/minimal.drl) | Smallest valid rule (one pattern, one action). |
-| [drl/discount_tier.drl](drl/discount_tier.drl) | Slightly richer conditions (`and`, comparisons). |
-| [decision_table/first_match.json](decision_table/first_match.json) | `DecisionTable` as JSON (load with `sre.model.decision_table.dt_from_json`). |
-| [python/evaluate_drl_file.py](python/evaluate_drl_file.py) | Parse a `.drl` file and run `evaluate_rule` on sample facts. |
-| [python/api_inprocess.py](python/api_inprocess.py) | Build the FastAPI app and print OpenAPI path keys (in-process, no `uvicorn`). |
-| [usecases/README.md](usecases/README.md) | **SparkRules domain packs**  -  lending, clinical research, POS, credit card, loyalty: each has **DRL**, **CSV**, **`validate_csv.py`**, **`spark_e2e.py`**, **`EXAMPLE.md`**. |
-| [spark/README.md](spark/README.md) | **Thin PySpark harness**  -  `apply_drl_local`, `iter_rule_rows_no_jvm`, `DROOLS_FEATURES.md`. |
-| [dbt_clinical/README.md](dbt_clinical/README.md) | **dbt + DuckDB** staging mirror of `examples/usecases/clinical_research/staging.py` (same seed CSV; optional SQL-side QA). |
+| File | Domain | Features demonstrated |
+|------|--------|---------------------|
+| [drl/minimal.drl](drl/minimal.drl) | Basic | Simplest possible rule |
+| [drl/discount_tier.drl](drl/discount_tier.drl) | Retail | Salience, AND conditions |
+| [drl/credit_underwriting.drl](drl/credit_underwriting.drl) | Lending | Activation groups, reason codes, multi-rule pack |
+| [drl/fraud_detection.drl](drl/fraud_detection.drl) | Payments | stop_on_fire, risk scoring, velocity checks |
+| [drl/insurance_claims.drl](drl/insurance_claims.drl) | Insurance | Agenda groups, staged evaluation, claim routing |
 
-### PySpark (cluster-style rule runs)
+## Python scripts
 
-Open **[usecases/README.md](usecases/README.md)**, pick a domain, then **`python examples/usecases/<name>/validate_csv.py`** (no Java). For executors: **`python examples/usecases/<name>/spark_e2e.py`**. Generic smoke tests stay in **[spark/README.md](spark/README.md)**. Drools-style authoring notes: **[spark/DROOLS_FEATURES.md](spark/DROOLS_FEATURES.md)**.
+| Script | What it demonstrates |
+|--------|---------------------|
+| [python/evaluate_drl_file.py](python/evaluate_drl_file.py) | Load and evaluate a DRL file |
+| [python/api_inprocess.py](python/api_inprocess.py) | In-process FastAPI app inspection |
+| [python/v2_local_executor.py](python/v2_local_executor.py) | **V2 engine**: RulePack classification, alpha network, performance benchmarks |
+| [python/adverse_action_demo.py](python/adverse_action_demo.py) | **Regulatory**: ECOA/FCRA adverse-action notice generation |
+| [python/data_profiling_demo.py](python/data_profiling_demo.py) | **DQ**: Statistical profiling + quality checks before rule evaluation |
+| [python/opa_export_demo.py](python/opa_export_demo.py) | **Policy**: Export DRL rules to OPA Rego format |
 
-### DRL: built-in tool
+## Decision tables
 
-```bash
-python -m sre.tools.smoke_drl examples/drl/minimal.drl
-```
+| File | Format |
+|------|--------|
+| [decision_table/first_match.json](decision_table/first_match.json) | JSON decision table with FIRST hit policy |
 
-Pretty-prints the parsed rule to stdout (same as without arguments, but reads the file you pass in).
+## Jupyter notebooks
 
-### Optional: run the HTTP API
+| Notebook | Topic |
+|----------|-------|
+| [notebooks/01_getting_started.ipynb](notebooks/01_getting_started.ipynb) | DRL rules, evaluation, explainable results |
+| [notebooks/02_decision_tables.ipynb](notebooks/02_decision_tables.ipynb) | Decision tables, hit policies, JSON export |
+| [notebooks/03_api_simulation.ipynb](notebooks/03_api_simulation.ipynb) | REST API: validate, simulate, counterfactual |
 
-```bash
-uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8000
-```
+## Spark examples
 
-Then open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). Use `api_inprocess.py` to confirm the app loads; use a browser or `curl` against the server for real HTTP.
+| Script | What it demonstrates |
+|--------|---------------------|
+| [spark/apply_drl_local.py](spark/apply_drl_local.py) | PySpark `apply_drl()` on a local cluster |
+| [spark/iter_rule_rows_no_jvm.py](spark/iter_rule_rows_no_jvm.py) | Pure-Python row iterator (no JVM needed) |
 
-### XLSX decision tables
+## End-to-end use cases
 
-The spreadsheet layout for [DecisionTableImporter](../../src/sre/ioxls/importer.py) is exercised in tests (see `tests/unit/test_cov_xlsx_subprocess_iceberg.py`). This folder does not ship a binary `.xlsx`; you can copy that test helper pattern or export from a rule tool once the sheet is set up (see importer docstrings in code).
+Complete domain examples with DRL rules, sample CSV data, validation scripts, and Spark E2E jobs:
+
+| Use case | Domain | Files |
+|----------|--------|-------|
+| [usecases/lending_portfolio/](usecases/lending_portfolio/) | Lending | 50-rule underwriting pack, 90-row sample |
+| [usecases/clinical_research/](usecases/clinical_research/) | Healthcare | Trial eligibility screening |
+| [usecases/credit_card/](usecases/credit_card/) | Payments | Card authorization rules |
+| [usecases/point_of_sale/](usecases/point_of_sale/) | Retail | POS checkout rules |
+| [usecases/reward_loyalty/](usecases/reward_loyalty/) | Loyalty | Reward tier assignment |
+
+## dbt integration
+
+| Example | What it demonstrates |
+|---------|---------------------|
+| [dbt_clinical/](dbt_clinical/) | dbt + DuckDB staging for clinical lab data |

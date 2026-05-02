@@ -1,0 +1,76 @@
+// Credit underwriting rules - multi-rule pack with salience ordering,
+// reason codes, and activation groups for mutual exclusion.
+
+rule "auto-decline-fico-below-580"
+  salience 100
+  activation-group "credit-decision"
+  reason_codes ["CR001", "FICO_VERY_LOW"]
+  when
+    $app : Application( $app.fico_score < 580 )
+  then
+    result.decision = "DECLINE";
+    result.reason = "FICO score below minimum threshold";
+end
+
+rule "auto-decline-bankruptcy"
+  salience 95
+  activation-group "credit-decision"
+  reason_codes ["CR002", "BANKRUPTCY"]
+  when
+    $app : Application( $app.bankruptcy_flag == true )
+  then
+    result.decision = "DECLINE";
+    result.reason = "Active bankruptcy on file";
+end
+
+rule "refer-marginal-fico"
+  salience 50
+  activation-group "credit-decision"
+  reason_codes ["CR003"]
+  when
+    $app : Application( $app.fico_score < 660 )
+  then
+    result.decision = "REFER";
+    result.reason = "Marginal FICO - manual review required";
+end
+
+rule "refer-high-dti"
+  salience 45
+  reason_codes ["DTI001"]
+  when
+    $app : Application( $app.dti_ratio > 0.43 )
+  then
+    result.dti_flag = "HIGH";
+    result.dti_reason = "DTI exceeds 43% threshold";
+end
+
+rule "refer-short-employment"
+  salience 40
+  reason_codes ["EM001"]
+  when
+    $app : Application( $app.employment_years < 2 )
+  then
+    result.employment_flag = "SHORT";
+end
+
+rule "approve-prime"
+  salience 10
+  activation-group "credit-decision"
+  when
+    $app : Application( $app.fico_score >= 740 )
+  then
+    result.decision = "APPROVE";
+    result.tier = "PRIME";
+    result.rate_adjustment = 0;
+end
+
+rule "approve-standard"
+  salience 5
+  activation-group "credit-decision"
+  when
+    $app : Application( $app.fico_score >= 660 )
+  then
+    result.decision = "APPROVE";
+    result.tier = "STANDARD";
+    result.rate_adjustment = 50;
+end

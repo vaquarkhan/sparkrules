@@ -1,0 +1,58 @@
+// Insurance claims adjudication rules.
+// Demonstrates agenda groups for staged evaluation and
+// reason codes for claim denial explanations.
+
+rule "reject-expired-policy"
+  salience 100
+  agenda-group "eligibility"
+  reason_codes ["CL001", "POLICY_EXPIRED"]
+  when
+    $claim : Claim( $claim.policy_active == false )
+  then
+    result.status = "DENIED";
+    result.reason = "Policy is not active at time of claim";
+end
+
+rule "reject-over-limit"
+  salience 90
+  agenda-group "eligibility"
+  reason_codes ["CL002", "OVER_LIMIT"]
+  when
+    $claim : Claim( $claim.amount > 500000 )
+  then
+    result.status = "DENIED";
+    result.reason = "Claim amount exceeds policy maximum";
+end
+
+rule "escalate-high-value"
+  salience 50
+  agenda-group "routing"
+  when
+    $claim : Claim( $claim.amount > 100000 )
+  then
+    result.status = "ESCALATE";
+    result.assigned_to = "senior_adjuster";
+    result.priority = "HIGH";
+end
+
+rule "escalate-prior-claims"
+  salience 45
+  agenda-group "routing"
+  reason_codes ["CL003"]
+  when
+    $claim : Claim( $claim.prior_claims_count > 3 )
+  then
+    result.fraud_review = true;
+    result.priority = "HIGH";
+end
+
+rule "auto-approve-small"
+  salience 10
+  agenda-group "routing"
+  when
+    $claim : Claim( $claim.amount <= 5000 )
+  then
+    result.status = "AUTO_APPROVED";
+    result.assigned_to = "auto_processor";
+    result.priority = "LOW";
+end
