@@ -7,7 +7,7 @@ for simple rules and row-wise closure application for complex rules.
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, Callable
 
 from sparkrules.compiler.closure import compile_action, compile_predicate
 from sparkrules.compiler.rulepack import RulePack, Strategy
@@ -59,15 +59,11 @@ def apply_pandas(
             except Exception:  # noqa: BLE001
                 # Fall back to row-wise
                 pred_fn = compile_predicate(rule.ast.when[0].constraint)
-                result[col_name] = result.apply(
-                    lambda row, _fn=pred_fn: _fn(row.to_dict()), axis=1
-                )
+                result[col_name] = result.apply(lambda row, _fn=pred_fn: _fn(row.to_dict()), axis=1)
         else:
             # Row-wise closure application (Req 22, AC 2)
             pred_fn = compile_predicate(rule.ast.when[0].constraint)
-            result[col_name] = result.apply(
-                lambda row, _fn=pred_fn: _fn(row.to_dict()), axis=1
-            )
+            result[col_name] = result.apply(lambda row, _fn=pred_fn: _fn(row.to_dict()), axis=1)
 
         # Action columns
         for fname, fn in action_closures.get(rule.name, []):
@@ -81,7 +77,9 @@ def apply_pandas(
                 )
 
     # fired_any column (Req 22, AC 3)
-    rule_cols = [f"r_{_safe_col(r.name)}" for r in pack.rules if f"r_{_safe_col(r.name)}" in result.columns]
+    rule_cols = [
+        f"r_{_safe_col(r.name)}" for r in pack.rules if f"r_{_safe_col(r.name)}" in result.columns
+    ]
     if rule_cols:
         result["fired_any"] = result[rule_cols].any(axis=1)
     else:
@@ -107,6 +105,38 @@ def apply_pandas(
     return result
 
 
+def _transform_spark_sql_outside_string_literals(
+    sql: str, transform_chunk: Callable[[str], str]
+) -> str:
+    """Apply *transform_chunk* only outside single-quoted literals (``''`` escaped)."""
+
+    out: list[str] = []
+    i = 0
+    n = len(sql)
+    while i < n:
+        c = sql[i]
+        if c == "'":
+            out.append("'")
+            i += 1
+            while i < n:
+                if sql[i] == "'":
+                    out.append("'")
+                    i += 1
+                    if i < n and sql[i] == "'":
+                        out.append("'")
+                        i += 1
+                        continue
+                    break
+                out.append(sql[i])
+                i += 1
+            continue
+        start = i
+        while i < n and sql[i] != "'":
+            i += 1
+        out.append(transform_chunk(sql[start:i]))
+    return "".join(out)
+
+
 def _spark_sql_to_pandas(sql: str) -> str:
     """Adapt Spark SQL expression to pandas.eval() syntax.
 
@@ -114,16 +144,16 @@ def _spark_sql_to_pandas(sql: str) -> str:
     - Spark = to pandas ==
     - Spark AND/OR to pandas &/|
     - Spark NOT to pandas ~
-    - Strip outer parens for simple expressions
+    - Operators are rewritten only outside string literals (avoids mangling ``'a AND b'``).
     """
-    expr = sql.strip()
-    # Spark uses = for equality, pandas uses ==
-    # But our translator already uses = not ==, so convert
-    expr = expr.replace(" = ", " == ").replace("(= ", "(== ")
-    # AND/OR/NOT
-    expr = expr.replace(" AND ", " & ").replace(" OR ", " | ")
-    expr = expr.replace("(NOT ", "(~")
-    expr = expr.replace("NOT ", "~")
+
+    def _chunk(expr: str) -> str:
+        e = expr.replace(" = ", " == ").replace("(= ", "(== ")
+        e = e.replace(" AND ", " & ").replace(" OR ", " | ")
+        e = e.replace("(NOT ", "(~").replace("NOT ", "~")
+        return e
+
+    expr = _transform_spark_sql_outside_string_literals(sql.strip(), _chunk)
     # RLIKE not supported in pandas.eval - will fall back to closure
     if "RLIKE" in expr or "array_contains" in expr or "CONTAINS" in expr:
         raise ValueError("pandas.eval does not support RLIKE/array_contains")

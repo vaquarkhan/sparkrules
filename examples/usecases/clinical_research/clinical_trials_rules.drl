@@ -73,14 +73,14 @@ rule harmonize_glucose_mmol_to_mgdL
   when $f : T (
     ($f.measure_code == "GLUCOSE")
     and ($f.raw_unit matches "(?i)^mmol/L$")
-    and ($f.glucose_pref_mgdl != null)
+    and ($f.glucose_pref_mgdL != null)
   )
   then
-    result.normalized_value = $f.glucose_pref_mgdl;
+    result.normalized_value = $f.glucose_pref_mgdL;
     result.normalized_unit = "mg/dL";
     result.ucum_unit = "mg/dL";
     result.conversion_applied = "mmolL_to_mgdL";
-    result.conversion_factor = $f.conv_factor_mmol_to_mgdl;
+    result.conversion_factor = $f.conv_factor_mmol_to_mgdL;
 end
 
 rule harmonize_hgb_gL_to_gdL

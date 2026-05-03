@@ -16,6 +16,8 @@ pip install sparkrules[api]
 | [drl/fraud_detection.drl](drl/fraud_detection.drl) | Payments | stop_on_fire, risk scoring, velocity checks |
 | [drl/insurance_claims.drl](drl/insurance_claims.drl) | Insurance | Agenda groups, staged evaluation, claim routing |
 
+Sample rows for the smallest DRLs live next to them — see **[drl/README.md](drl/README.md)** (`minimal_facts.json`, `discount_tier_facts.json`).
+
 ## Python scripts
 
 | Script | What it demonstrates |
@@ -23,6 +25,9 @@ pip install sparkrules[api]
 | [python/evaluate_drl_file.py](python/evaluate_drl_file.py) | Load and evaluate a DRL file |
 | [python/api_inprocess.py](python/api_inprocess.py) | In-process FastAPI app inspection |
 | [python/v2_local_executor.py](python/v2_local_executor.py) | **V2 engine**: RulePack classification, alpha network, performance benchmarks |
+| [python/apply_pandas_demo.py](python/apply_pandas_demo.py) | **V2 pandas**: `apply_pandas()` vectorized / closure batch path |
+| [python/refresh_rules_hot_swap.py](python/refresh_rules_hot_swap.py) | **Hot-swap**: `LocalRuleExecutor.refresh_rules()` without restart |
+| [python/benchmark_v2_local_throughput.py](python/benchmark_v2_local_throughput.py) | Quick local throughput sanity check (see `docs/BENCHMARKS.md` for methodology) |
 | [python/adverse_action_demo.py](python/adverse_action_demo.py) | **Regulatory**: ECOA/FCRA adverse-action notice generation |
 | [python/data_profiling_demo.py](python/data_profiling_demo.py) | **DQ**: Statistical profiling + quality checks before rule evaluation |
 | [python/opa_export_demo.py](python/opa_export_demo.py) | **Policy**: Export DRL rules to OPA Rego format |
@@ -32,6 +37,7 @@ pip install sparkrules[api]
 | File | Format |
 |------|--------|
 | [decision_table/first_match.json](decision_table/first_match.json) | JSON decision table with FIRST hit policy |
+| [decision_table/xlsx_roundtrip_demo.py](decision_table/xlsx_roundtrip_demo.py) | XLSX export + import round-trip (`ioxls`) |
 
 ## Jupyter notebooks
 
@@ -45,8 +51,15 @@ pip install sparkrules[api]
 
 | Script | What it demonstrates |
 |--------|---------------------|
-| [spark/apply_drl_local.py](spark/apply_drl_local.py) | PySpark `apply_drl()` on a local cluster |
+| [spark/apply_drl_local.py](spark/apply_drl_local.py) | **V2** `SparkRuleExecutor.apply(df)` — typed columns, classifier printout, optional `--explain` (Catalyst) |
 | [spark/iter_rule_rows_no_jvm.py](spark/iter_rule_rows_no_jvm.py) | Pure-Python row iterator (no JVM needed) |
+
+## Rule store (DuckDB / Postgres)
+
+| Script | What it demonstrates |
+|--------|---------------------|
+| [store/duckdb_quickstart.py](store/duckdb_quickstart.py) | File-backed metadata with `create_rule_store("duckdb", ...)` |
+| [store/postgres_quickstart.py](store/postgres_quickstart.py) | Postgres URL via `DATABASE_URL` / `--dsn` |
 
 ## End-to-end use cases
 

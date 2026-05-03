@@ -14,6 +14,20 @@ This document is the **normative** requirements set for the V2 execution archite
 
 Requirements are numbered **Req 1–29** (original engine scope), plus **Req 30–37** (cross-cutting: rollout, observability, resources, security, versioning, deprecation, native program).
 
+### Quick reference — stakeholder themes
+
+Stakeholders auditing this spec should use this index; normative detail remains in **§2** and **§4**.
+
+| Theme | Normative anchor | Summary |
+|--------|-------------------|---------|
+| **Non-goals** | **§2** | Explicit exclusions (CEP, TMS, multitenant kernel, SaaS rollout, bitwise pickle guarantees across Python minors, …). |
+| **Rollout / migration** | **Req 30** | Staged feature-flag promotion (`dev` → `stage` → `prod`); pickled pack migration rejects unknown versions (**Req 34**); telemetry tags for executor version, strategy mix, parity deltas. |
+| **Observability** | **Req 31** | Required metric wire points (`rows_evaluated`, `rules_fired`, latency histograms, translation/fallback rates); structured logs with `rule_id`, `strategy`, `salience`, `reason_codes` on fire; classification debug breakdown. |
+| **Resource bounds** | **Req 32** | Working-set guidance; **`max_broadcast_bytes`** hard cap (operator override); linear closure scaling; aligns with broadcast sizing notes **Req 20.4**. |
+| **Security** | **Req 33** | DRL treated as **trusted code** (RHS = Python execution); **kernel sandboxing** (RestrictedPython/WASM/full DSL cage) **not an OSS requirement** — disclosure + governance; **injection**: validated identifiers / translator-only `F.expr` assembly (**Req 33.2**); native FFI bounds **Req 37**. |
+| **Deterministic salience ties** | **Req 17**, **Req 24** | Tie-break tuple: **`(-salience, rule_name Unicode order, compilation index)`** everywhere merged outcomes or activation XOR must pick one winner (**COALESCE**, pandas, local RHS, Spark ordering). |
+| **RulePack serialization versioning** | **Req 34** | Versioned envelope (`magic` + semver majors/minors); minor additive policy; **`N−1` minor deserialize** deprecation window; reject stale pickles with actionable rebuild (**Req 30.1**). |
+
 ---
 
 ## 1. Phased specification (delivery model)

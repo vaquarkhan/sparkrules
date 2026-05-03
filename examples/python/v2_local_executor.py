@@ -68,8 +68,10 @@ def main() -> None:
 
     # 2. Build LocalRuleExecutor
     executor = LocalRuleExecutor.from_rulepack(pack)
-    print(f"\nAlpha network: {executor.alpha_net.unique_alphas} unique nodes, "
-          f"sharing ratio: {executor.alpha_net.sharing_ratio:.1f}")
+    print(
+        f"\nAlpha network: {executor.alpha_net.unique_alphas} unique nodes, "
+        f"sharing ratio: {executor.alpha_net.sharing_ratio:.1f}"
+    )
 
     # 3. Sample applicants
     applicants = [
@@ -88,7 +90,9 @@ def main() -> None:
         stats = f""
         if f.numeric_stats:
             stats = f" mean={f.numeric_stats.mean:.0f} min={f.numeric_stats.min_val} max={f.numeric_stats.max_val}"
-        print(f"  {f.field_name}: completeness={f.completeness:.0%} unique={f.uniqueness:.0%}{stats}")
+        print(
+            f"  {f.field_name}: completeness={f.completeness:.0%} unique={f.uniqueness:.0%}{stats}"
+        )
 
     # 5. Evaluate each applicant
     print("\n=== Rule Evaluation ===")
@@ -97,7 +101,9 @@ def main() -> None:
         result = executor.score(applicant)
         all_results.append(result)
         fired_rules = [f for f in result.fires if f.fired]
-        print(f"\n{applicant['id']} (FICO={applicant['app']['fico']}, DTI={applicant['app']['dti']:.0%}):")
+        print(
+            f"\n{applicant['id']} (FICO={applicant['app']['fico']}, DTI={applicant['app']['dti']:.0%}):"
+        )
         print(f"  Decision: {result.merged_actions.get('decision', 'N/A')}")
         if fired_rules:
             for fr in fired_rules:

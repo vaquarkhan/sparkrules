@@ -54,8 +54,26 @@ def main() -> int:
             n = args.synthetic
             sid = F.col("id")
             us = [
-                "CA", "TX", "FL", "NY", "IL", "PA", "WA", "CO", "MA", "OR",
-                "UT", "CT", "NJ", "MS", "NV", "OH", "GA", "AZ", "TN", "SC",
+                "CA",
+                "TX",
+                "FL",
+                "NY",
+                "IL",
+                "PA",
+                "WA",
+                "CO",
+                "MA",
+                "OR",
+                "UT",
+                "CT",
+                "NJ",
+                "MS",
+                "NV",
+                "OH",
+                "GA",
+                "AZ",
+                "TN",
+                "SC",
             ]
             st = F.element_at(
                 F.array(*[F.lit(s) for s in us]),
@@ -72,9 +90,7 @@ def main() -> int:
                     "annual_income"
                 ),
                 (F.lit(600) + (F.col("id") % F.lit(200)).cast("int")).alias("fico_score"),
-                (F.lit(0.22) + (F.col("id") % F.lit(30)).cast("double") * F.lit(0.01)).alias(
-                    "dti"
-                ),
+                (F.lit(0.22) + (F.col("id") % F.lit(30)).cast("double") * F.lit(0.01)).alias("dti"),
                 st.alias("state"),
                 pr.alias("product"),
                 (F.col("id") % F.lit(3)).cast("int").alias("delinq_90d_12m"),
@@ -83,8 +99,8 @@ def main() -> int:
             if not args.csv.is_file():
                 print(f"CSV not found: {args.csv}", file=sys.stderr)
                 return 1
-            base = spark.read.option("header", "true").option("inferSchema", "true").csv(
-                str(args.csv)
+            base = (
+                spark.read.option("header", "true").option("inferSchema", "true").csv(str(args.csv))
             )
             base = base.select(
                 F.col("id").cast("string"),
@@ -114,9 +130,7 @@ def main() -> int:
         fired = out.filter(F.col("fired") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
 
-        print(
-            f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt/elapsed:.0f}"
-        )
+        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
         out.show(5, truncate=False)
     finally:
         spark.stop()

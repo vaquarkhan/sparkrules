@@ -66,9 +66,7 @@ def main() -> int:
         out = apply_drl(df_in, drl, fact_id_field="auth_id")
         cnt = out.count()
         fired = out.filter(F.col("fired") == True).count()  # noqa: E712
-        print(
-            f"rows={cnt}  fired={fired}  elapsed_s={time.perf_counter() - t0:.3f}"
-        )
+        print(f"rows={cnt}  fired={fired}  elapsed_s={time.perf_counter() - t0:.3f}")
         out.show(10, truncate=False)
     finally:
         spark.stop()

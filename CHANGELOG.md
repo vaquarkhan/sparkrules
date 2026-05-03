@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SparkRuleExecutor with Strategy A/B/C dispatch (Req 6-8)
   - ReteNetwork with FactView __slots__ and range-merged alpha nodes (Req 25-26)
   - Pandas batch evaluation via apply_pandas() (Req 22)
-  - Cross-path equivalence tests (Req 12)
+  - Cross-path equivalence tests (`tests/unit/test_cross_path_equivalence.py`, plus related property tests) (Req 12)
   - Regex compatibility detection for Python vs Spark (Req 21)
 - **Typed output schema** - r_<rule> booleans + action_<field> typed columns + fired_any (Req 10)
 - **apply_drl(use_v2=True)** - backward-compatible wrapper with V2 default (Req 11)

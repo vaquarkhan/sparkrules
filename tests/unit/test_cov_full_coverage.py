@@ -223,6 +223,13 @@ def test_lexer_multiline_double_quoted_string() -> None:
     tokenize('"a\nsecond"')
 
 
+def test_lexer_hyphen_kw_prefix_with_bad_suffix_retries_ident() -> None:
+    """Invalid Drools hyphen keyword tails stay one lexeme (line 227 ``continue`` still runs)."""
+    ts = tokenize("activation-groupX")
+    idents = [x for x in ts if x.kind == TokenKind.IDENT]
+    assert idents and idents[0].text == "activation-groupX"
+
+
 def test_print_ast_empty_constraint_pattern() -> None:
     r = RuleAst(
         "p",

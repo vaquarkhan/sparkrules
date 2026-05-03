@@ -82,6 +82,16 @@ class LocalRuleExecutor:
         pack = RulePack.from_drl(drl)
         return LocalRuleExecutor.from_rulepack(pack)
 
+    @staticmethod
+    def _deserialize_pickled_pack(blob: bytes) -> LocalRuleExecutor:
+        """Rebuild executor for ``pickle`` / joblib (closures are not serialized)."""
+
+        pack = RulePack.deserialize(blob)
+        return LocalRuleExecutor.from_rulepack(pack)
+
+    def __reduce__(self) -> tuple[Any, tuple[bytes]]:
+        return (self._deserialize_pickled_pack, (self.rulepack.serialize(),))
+
     def score(self, fact: Mapping[str, Any]) -> ScoreResult:
         """Evaluate all rules against a single fact (Req 9, AC 1).
 

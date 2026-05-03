@@ -18,11 +18,13 @@ rule "low" salience 5 when $t : T ( $t.amount <= 500 ) then result.risk = "low";
 
 def test_apply_pandas_basic() -> None:
     pack = RulePack.from_drl(DRL)
-    df = pd.DataFrame([
-        {"t": {"amount": 1500}},
-        {"t": {"amount": 300}},
-        {"t": {"amount": 800}},
-    ])
+    df = pd.DataFrame(
+        [
+            {"t": {"amount": 1500}},
+            {"t": {"amount": 300}},
+            {"t": {"amount": 800}},
+        ]
+    )
     result = apply_pandas(pack, df)
     assert "r_high" in result.columns
     assert "r_low" in result.columns
@@ -60,6 +62,18 @@ def test_spark_sql_to_pandas_conversion() -> None:
     assert "~" in _spark_sql_to_pandas("NOT a")
 
 
+def test_spark_sql_to_pandas_preserves_and_inside_literals() -> None:
+    out = _spark_sql_to_pandas("(t.ok = true AND t.msg = 'paid AND settled')")
+    assert "'paid AND settled'" in out
+    assert "&" in out.replace("'paid AND settled'", "")
+
+
+def test_transform_spark_sql_handles_doubled_quotes_inside_literal() -> None:
+    """Inside ``''`` SQL escapes must not treat `` AND `` as pandas ``&``."""
+    out = _spark_sql_to_pandas("(flag = true AND txt = 'it''s high AND urgent')")
+    assert "high AND urgent" in out
+
+
 def test_spark_sql_to_pandas_rlike_raises() -> None:
     with pytest.raises(ValueError, match="RLIKE"):
         _spark_sql_to_pandas("(name RLIKE '^A.*')")
@@ -88,6 +102,7 @@ def test_apply_pandas_no_rules() -> None:
     """Cover fired_any=False when no rules exist."""
     # Create a pack with no rules by using empty DRL trick
     from sparkrules.compiler.rulepack import RulePack as RP
+
     pack = RP(rules=[], sql_pushdown=[], alpha_shared=[], python_fallback=[], drl_hash="x")
     df = pd.DataFrame([{"x": 1}])
     result = apply_pandas(pack, df)

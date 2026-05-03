@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_clinical_labs
+    description: Normalized staging layer for labs (join-safe column names mirror SparkRules/clinical trials DRL bindings).
+    columns:
+      - name: glucose_pref_mgdL
+        description: Canonical mg/dL hint for glucose (case-sensitive binding for `staging.enrich_clinical_flat` / DRL).
+      - name: conv_factor_mmol_to_mgdL
+        description: mmol/L to mg/dL conversion factor emitted with `glucose_pref_mgdL`.

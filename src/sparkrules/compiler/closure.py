@@ -74,16 +74,16 @@ def compile_predicate(expr: Expr) -> PredicateFn:
             return lambda f, _l=lp, _r=rp: _safe(lambda: _l(f)) or _safe(lambda: _r(f))
 
         op = expr.op
-        return lambda f, _l=left_fn, _r=right_fn, _op=op: _safe(
-            lambda: _compare(_l(f), _r(f), _op)
-        )
+        return lambda f, _l=left_fn, _r=right_fn, _op=op: _safe(lambda: _compare(_l(f), _r(f), _op))
 
     if isinstance(expr, InExpr):
         left_fn = _compile_value(expr.left)
         right_fn = _compile_value(expr.right)
         negated = expr.negated
         return lambda f, _l=left_fn, _r=right_fn, _neg=negated: _safe(
-            lambda: (_l(f) not in _as_collection(_r(f))) if _neg else (_l(f) in _as_collection(_r(f)))
+            lambda: (
+                (_l(f) not in _as_collection(_r(f))) if _neg else (_l(f) in _as_collection(_r(f)))
+            )
         )
 
     # Fallback: try to evaluate as a truthy value
@@ -163,7 +163,11 @@ def _compare(left: Any, right: Any, op: BinaryOperator) -> bool:
     if op == BinaryOperator.GE:
         return left >= right
     if op == BinaryOperator.CONTAINS:
-        return right in left if hasattr(left, "__contains__") else False
+        if isinstance(left, (list, tuple, set, frozenset)):
+            return right in left
+        left_s = str(left) if left is not None else ""
+        right_s = str(right) if right is not None else ""
+        return right_s in left_s if left_s or right_s else False
     if op == BinaryOperator.MATCHES:
         return bool(re.search(str(right), str(left)))
     return False

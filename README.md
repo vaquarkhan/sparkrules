@@ -126,6 +126,8 @@ Version every rule. Scope by namespace. Promote through dev → stage → prod. 
 ### Spark integration (optional)
 Pure Python by default. When you need cluster scale, wire `apply_drl(df, drl)` into your PySpark job  -  same rules, distributed via `mapPartitions`. Compatible with Spark 3.x+. Deploy on AWS Glue, Databricks, GCP Dataproc, Azure Synapse, or Kubernetes  -  config-driven, no code changes.
 
+Scope and trade-offs are documented in **[`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md)**.
+
 ### Performance (new in 1.0.1)
 DRL parse caching (LRU 256) gives 5-10x throughput boost on repeated evaluations.
 
@@ -227,6 +229,7 @@ Start with **notebook 06** for the architecture overview, then **01** for hands-
 | Governance | [docs/GOVERNANCE.md](docs/GOVERNANCE.md) |
 | Benchmarks | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) |
 | Architecture scope | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
+| **Comparison vs Drools/GoRules/Flink/ODM** | [docs/SPARKRULES_VS_THE_WORLD.md](docs/SPARKRULES_VS_THE_WORLD.md) |
 | Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Publishing / CI | [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |

@@ -33,7 +33,7 @@ pytest tests/unit/ -q --cov=src/sre
 
 ```bash
 python -m pip install -e "."
-python -m uvicorn sre.api.app:create_app --factory --host 127.0.0.1 --port 8042
+python -m uvicorn sparkrules.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
 If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm the terminal is still running, the URL uses the **same port** as the command (8042 unless you changed it), and you are using `http://` not `https://`. On Windows, **`scripts\check_env.cmd`** runs `import sparkrules` and prints `sys.executable` so you can align the same `python` as `pip install -e .` and Uvicorn (mismatched interpreters are a common cause of "it works in the shell but not in the browser"). See [README.md](../README.md#api-run) for a longer checklist.

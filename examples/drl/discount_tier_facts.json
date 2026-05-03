@@ -1,0 +1,5 @@
+[
+  {"id": "us-high", "txn": {"amount": 150, "region": "US"}},
+  {"id": "us-low", "txn": {"amount": 50, "region": "US"}},
+  {"id": "eu-high", "txn": {"amount": 200, "region": "EU"}}
+]
