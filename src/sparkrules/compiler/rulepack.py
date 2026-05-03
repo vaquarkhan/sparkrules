@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import pickle
+from pickle import UnpicklingError
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
@@ -20,6 +21,7 @@ from sparkrules.compiler.translator import (
     translate_predicate,
 )
 from sparkrules.compiler.exceptions import RulePackVersionError
+from sparkrules.compiler.safe_pickle import loads_rulepack_payload
 from sparkrules.parser import parse_rules
 from sparkrules.parser.ast import BinaryOp, BinaryOperator, Expr, InExpr, Literal, Not, RuleAst
 
@@ -300,7 +302,12 @@ class RulePack:
             if maj != RULEPACK_SER_MAJOR_VERSION or minor != RULEPACK_SER_MINOR_VERSION:
                 raise RulePackVersionError(f"unsupported RulePack format {maj}.{minor}")
             payload = data[offset:]
-        obj = pickle.loads(payload)  # noqa: S301
+        try:
+            obj = loads_rulepack_payload(payload)
+        except UnpicklingError as exc:
+            raise RulePackVersionError(
+                "RulePack deserialization rejected malformed or unsafe pickle bytes",
+            ) from exc
         if not isinstance(obj, RulePack):
             raise TypeError("invalid RulePack")
         return obj

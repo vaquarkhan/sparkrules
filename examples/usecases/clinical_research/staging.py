@@ -36,8 +36,7 @@ def enrich_clinical_flat(rec: dict[str, Any]) -> dict[str, Any]:
     row["dup_note"] = row.get("dup_note") or ""
     row["is_repeat_of_record"] = row.get("is_repeat_of_record") or ""
     row["repeat_note"] = (
-        row.get("repeat_note")
-        or "Repeat draw linked to primary record (retest / protocol)."
+        row.get("repeat_note") or "Repeat draw linked to primary record (retest / protocol)."
     )
 
     # Deterministic normalization hints (canonical numerics consumed by rules).
@@ -48,12 +47,12 @@ def enrich_clinical_flat(rec: dict[str, Any]) -> dict[str, Any]:
         row["wt_pref_kg"] = round(kg + 1e-12, 3)
         row["conv_factor_lb_to_kg"] = nv / kg if kg else None
 
-    row["glucose_pref_mgdl"] = None
-    row["conv_factor_mmol_to_mgdl"] = None
+    row["glucose_pref_mgdL"] = None
+    row["conv_factor_mmol_to_mgdL"] = None
     if nv is not None and mc == "GLUCOSE" and unit.lower() == "mmol/l":
         mg = nv * 18.0182
-        row["glucose_pref_mgdl"] = round(mg + 1e-12, 1)
-        row["conv_factor_mmol_to_mgdl"] = mg / nv if nv else None
+        row["glucose_pref_mgdL"] = round(mg + 1e-12, 1)
+        row["conv_factor_mmol_to_mgdL"] = mg / nv if nv else None
 
     row["hgb_pref_gdl"] = None
     row["conv_factor_gl_per_gdl"] = None

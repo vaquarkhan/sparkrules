@@ -68,7 +68,7 @@ def main() -> int:
         cnt = out.count()
         fired = out.filter(F.col("fired") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
-        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt/elapsed:.0f}")
+        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
         out.show(12, truncate=False)
     finally:
         spark.stop()

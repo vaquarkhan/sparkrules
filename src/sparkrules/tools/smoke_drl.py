@@ -3,7 +3,7 @@
 Use this instead of one-line ``python -c`` on Windows PowerShell, which often
 mangles ``$`` in quoted strings. Run after ``pip install -e ".[test]"``::
 
-  python -m sre.tools.smoke_drl
+  python -m sparkrules.tools.smoke_drl
 """
 
 from __future__ import annotations

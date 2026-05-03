@@ -29,6 +29,22 @@ class TranslationError(Exception):
         super().__init__(message)
 
 
+def _sql_string_literal(value: str) -> str:
+    """SQL string literal escape (ANSI doubling of single-quote)."""
+
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _spark_rlike_pattern_literal(pattern: str) -> str:
+    """Embed a regex pattern into a Spark SQL literal (Java regex consumes ``\\`` as ``\\\\``).
+
+    Drools/Python ``matches`` semantics are anchored to Spark ``RLIKE``; backslashes must
+    survive SQL parsing before the regex engine interprets escapes like ``\\d``.
+    """
+
+    return "'" + pattern.replace("\\", "\\\\").replace("'", "''") + "'"
+
+
 def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
     """Translate a predicate AST to a Spark SQL expression string.
 
@@ -45,8 +61,7 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
     """
     if isinstance(expr, Literal):
         if isinstance(expr.value, str):
-            escaped = expr.value.replace("'", "\\'")
-            return f"'{escaped}'"
+            return _sql_string_literal(expr.value)
         if isinstance(expr.value, bool):
             return "true" if expr.value else "false"
         if expr.value is None:
@@ -60,6 +75,14 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
         return name
 
     if isinstance(expr, BinaryOp):
+        if expr.op == BinaryOperator.MATCHES:
+            left = translate_predicate(expr.left, strip_binding=strip_binding)
+            if isinstance(expr.right, Literal) and isinstance(expr.right.value, str):
+                rp = _spark_rlike_pattern_literal(str(expr.right.value))
+            else:
+                rp = translate_predicate(expr.right, strip_binding=strip_binding)
+            return f"({left} RLIKE {rp})"
+
         left = translate_predicate(expr.left, strip_binding=strip_binding)
         right = translate_predicate(expr.right, strip_binding=strip_binding)
 
@@ -79,9 +102,12 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
         if expr.op == BinaryOperator.OR:
             return f"({left} OR {right})"
         if expr.op == BinaryOperator.CONTAINS:
-            return f"array_contains({left}, {right})"
-        if expr.op == BinaryOperator.MATCHES:
-            return f"({left} RLIKE {right})"
+            # Python ``right in left``: arrays -> ``array_contains``; strings/other scalars ->
+            # substring containment via ``instr`` (parity with Drools-ish ``contains`` on text).
+            return (
+                f"(CASE WHEN typeof({left}) LIKE 'array%' THEN array_contains({left}, {right}) "
+                f"ELSE (instr(cast({left} AS STRING), cast({right} AS STRING)) > 0) END)"
+            )
 
         raise TranslationError(  # pragma: no cover
             f"Unsupported binary operator: {expr.op}", node_type="BinaryOp"
@@ -95,27 +121,29 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
         left = translate_predicate(expr.left, strip_binding=strip_binding)
         if isinstance(expr.right, ListExpr):
             items = ", ".join(
-                translate_predicate(it, strip_binding=strip_binding)
-                for it in expr.right.items
+                translate_predicate(it, strip_binding=strip_binding) for it in expr.right.items
             )
             if expr.negated:
                 return f"({left} NOT IN ({items}))"
             return f"({left} IN ({items}))"
+        if isinstance(expr.right, Identifier):
+            raise TranslationError(
+                "``IN`` with a non-literal list cannot be reliably translated without "
+                "ARRAY-typed Spark columns — use ALPHA_SHARED / PYTHON_FALLBACK or expose "
+                "``array_contains`` explicitly",
+                node_type="InExpr",
+            )
         right = translate_predicate(expr.right, strip_binding=strip_binding)
         if expr.negated:
             return f"(NOT array_contains({right}, {left}))"
         return f"array_contains({right}, {left})"
 
     if isinstance(expr, ListExpr):
-        items = ", ".join(
-            translate_predicate(it, strip_binding=strip_binding) for it in expr.items
-        )
+        items = ", ".join(translate_predicate(it, strip_binding=strip_binding) for it in expr.items)
         return f"array({items})"
 
     if isinstance(expr, CallExpr):
-        args = ", ".join(
-            translate_predicate(a, strip_binding=strip_binding) for a in expr.args
-        )
+        args = ", ".join(translate_predicate(a, strip_binding=strip_binding) for a in expr.args)
         return f"{expr.name}({args})"
 
     raise TranslationError(

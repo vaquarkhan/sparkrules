@@ -45,9 +45,7 @@ def main() -> int:
         d = json.loads(out_json)
         if fired_n <= 5:
             act = d.get("action") or {}
-            print(
-                f"  id={fact_id} tier={act.get('tier')} program_id={act.get('program_id')}"
-            )
+            print(f"  id={fact_id} tier={act.get('tier')} program_id={act.get('program_id')}")
 
     print(f"CSV rows={len(rows)}  rules_fired={fired_n}")
     return 0

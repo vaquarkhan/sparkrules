@@ -57,10 +57,14 @@ def main() -> int:
             for rec in csv.DictReader(fh):
                 rows.append(flatten_for_iter("record_id", dict(rec)))
 
-        df_in = spark.createDataFrame(rows).select(
-            "record_id",
-            F.col("f").alias("f"),
-        ).repartition(max(2, args.partitions))
+        df_in = (
+            spark.createDataFrame(rows)
+            .select(
+                "record_id",
+                F.col("f").alias("f"),
+            )
+            .repartition(max(2, args.partitions))
+        )
 
         t0 = time.perf_counter()
         out = apply_drl(df_in, drl, fact_id_field="record_id")
@@ -68,9 +72,7 @@ def main() -> int:
         fired = out.filter(F.col("fired") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
 
-        print(
-            f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt/elapsed:.0f}"
-        )
+        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
         out.show(12, truncate=False)
     finally:
         spark.stop()

@@ -8,10 +8,14 @@ from typing import Any
 import hashlib
 import uuid
 
-from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
-from starlette.staticfiles import StaticFiles
-
+from sparkrules.api._http_deps import (
+    FastAPI,
+    HTTPException,
+    JSONResponse,
+    Query,
+    Request,
+    StaticFiles,
+)
 from sparkrules.api.kie import router as kie_router
 from sparkrules.api.rulepack import build_export_payload, unified_diff_drl
 from sparkrules.api.schemas import (
@@ -447,14 +451,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
                     )
                 )
             except Exception as e:  # noqa: BLE001
-                results.append(
-                    BatchSimulationResultItem(
-                        index=i, fired=False, error=str(e)
-                    )
-                )
-        return BatchSimulationResponse(
-            total=len(s.facts), fired_count=fired_count, results=results
-        )
+                results.append(BatchSimulationResultItem(index=i, fired=False, error=str(e)))
+        return BatchSimulationResponse(total=len(s.facts), fired_count=fired_count, results=results)
 
     @app.post(
         "/simulations/shadow",
@@ -698,7 +696,9 @@ def create_app(deps: AppDeps | None = None) -> Any:
         response_model=DmnCounterfactualResponse,
         tags=["dmn"],
     )
-    def dmn_counterfactual(req: Request, body: DmnCounterfactualRequest) -> DmnCounterfactualResponse:
+    def dmn_counterfactual(
+        req: Request, body: DmnCounterfactualRequest
+    ) -> DmnCounterfactualResponse:
         p = principal_from_request(req)
         require_any_role(p, _SIM_ROLES)
         run_id = f"dmn-cf-{uuid.uuid4()}"

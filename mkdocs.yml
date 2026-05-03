@@ -59,5 +59,6 @@ nav:
     - Benchmarks: BENCHMARKS.md
   - Operations:
     - Architecture Scope: KNOWN_LIMITATIONS.md
+    - Comparison vs Alternatives: SPARKRULES_VS_THE_WORLD.md
     - Publishing: PUBLISHING.md
     - Roadmap: ROADMAP.md

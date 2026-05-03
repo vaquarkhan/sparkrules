@@ -13,16 +13,26 @@ import json
 from sparkrules.executor import RuleExecutor, build_adverse_action_notice
 
 RULES = [
-    ('rule "fico-low" reason_codes ["CR001"] when $a : App( $a.fico < 620 ) '
-     'then result.d = "decline"; result.r = "Low FICO score"; end'),
-    ('rule "dti-high" reason_codes ["DTI001"] when $a : App( $a.dti > 0.43 ) '
-     'then result.d = "decline"; result.r = "High debt-to-income ratio"; end'),
-    ('rule "income-low" reason_codes ["IN001"] when $a : App( $a.income < 30000 ) '
-     'then result.d = "decline"; result.r = "Insufficient income"; end'),
-    ('rule "ltv-high" reason_codes ["LTV001"] when $a : App( $a.ltv > 0.95 ) '
-     'then result.d = "decline"; result.r = "Loan-to-value ratio too high"; end'),
-    ('rule "employment-short" reason_codes ["EM001"] when $a : App( $a.emp_years < 1 ) '
-     'then result.d = "refer"; result.r = "Short employment history"; end'),
+    (
+        'rule "fico-low" reason_codes ["CR001"] when $a : App( $a.fico < 620 ) '
+        'then result.d = "decline"; result.r = "Low FICO score"; end'
+    ),
+    (
+        'rule "dti-high" reason_codes ["DTI001"] when $a : App( $a.dti > 0.43 ) '
+        'then result.d = "decline"; result.r = "High debt-to-income ratio"; end'
+    ),
+    (
+        'rule "income-low" reason_codes ["IN001"] when $a : App( $a.income < 30000 ) '
+        'then result.d = "decline"; result.r = "Insufficient income"; end'
+    ),
+    (
+        'rule "ltv-high" reason_codes ["LTV001"] when $a : App( $a.ltv > 0.95 ) '
+        'then result.d = "decline"; result.r = "Loan-to-value ratio too high"; end'
+    ),
+    (
+        'rule "employment-short" reason_codes ["EM001"] when $a : App( $a.emp_years < 1 ) '
+        'then result.d = "refer"; result.r = "Short employment history"; end'
+    ),
 ]
 
 
@@ -50,7 +60,9 @@ def main() -> None:
     )
     print(json.dumps(notice.to_dict(), indent=2))
 
-    print(f"\nPrincipal reasons ({len(notice.principal_reasons)} of {len(notice.all_reason_codes)} total):")
+    print(
+        f"\nPrincipal reasons ({len(notice.principal_reasons)} of {len(notice.all_reason_codes)} total):"
+    )
     for code in notice.principal_reasons:
         print(f"  - {code}")
 

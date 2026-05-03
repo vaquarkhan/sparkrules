@@ -191,3 +191,12 @@ def test_parse_rules_not_rule() -> None:
 def test_stop_on_fire_parse_error() -> None:
     with pytest.raises(ParseError, match="expected true or false"):
         parse("rule a stop_on_fire when $t : T ( true ) then end")
+
+
+def test_parse_activation_and_agenda_group_hyphen_keywords() -> None:
+    drools_style = """
+rule hyphen_act activation-group "g1" agenda-group "lab" when $t : T ( true ) then end
+"""
+    r = parse_rules(drools_style)[0]
+    assert r.activation_group == "g1"
+    assert r.agenda_group == "lab"

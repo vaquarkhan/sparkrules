@@ -47,6 +47,12 @@ def _staging_action_column(rule: ClassifiedRule, action_field: str) -> str:
     return _staging_action_flat(rule.salience, rule.source_order, action_field)
 
 
+def _action_fields_from_ast(rule: ClassifiedRule) -> list[str]:
+    """Staging column names derive from RHS actions (Strategy C lacks ``action_sql``)."""
+
+    return [action.field_path.replace("result.", "") for action in rule.ast.then]
+
+
 def _assert_machine_generated_alias(alias: str) -> None:
     if not _SAFE_SPARK_IDENTIFIER.fullmatch(alias):
         raise SchemaValidationError(
@@ -149,7 +155,9 @@ class SparkRuleExecutor:
         if not rules:
             return df
 
-        # Build alpha nodes with SQL translations
+        # Build alpha nodes with SQL translations (single AlphaNetwork planning pass).
+        asts = [r.ast for r in self.rulepack.rules]
+        net_plan = AlphaNetwork.from_rules(asts)
         alpha_sql: dict[str, str] = {}
         rule_alpha_map: dict[str, list[str]] = {}
 
@@ -158,14 +166,16 @@ class SparkRuleExecutor:
             rule_alpha_map[rule.name] = hashes
             for h in hashes:
                 if h not in alpha_sql:
-                    # Find the alpha node and translate its expression
-                    asts = [r.ast for r in self.rulepack.rules]
-                    net = AlphaNetwork.from_rules(asts)
-                    node = net.nodes.get(h)
+                    node = net_plan.nodes.get(h)
                     if node:
                         try:
                             alpha_sql[h] = translate_predicate(node.expr)
                         except Exception:  # noqa: BLE001
+                            from sparkrules.runtime.engine_metrics import (
+                                record_translation_failure,
+                            )
+
+                            record_translation_failure()
                             alpha_sql[h] = "true"
 
         result = df
@@ -279,7 +289,7 @@ class SparkRuleExecutor:
         new_fields = list(df.schema.fields)
         for rule in rules:
             new_fields.append(StructField(_safe_rule_col(rule.name), BooleanType(), True))
-            for action_field in rule.action_sql:
+            for action_field in _action_fields_from_ast(rule):
                 new_fields.append(
                     StructField(
                         _staging_action_column(rule, action_field),
@@ -298,7 +308,7 @@ class SparkRuleExecutor:
         # Collect all action columns grouped by field name (Req 17 tie-breakers)
         action_fields: dict[str, list[tuple[int, str, int, str]]] = {}
         for rule in self.rulepack.rules:
-            for action_field in rule.action_sql:
+            for action_field in _action_fields_from_ast(rule):
                 col_name = _staging_action_column(rule, action_field)
                 if col_name in df.columns:
                     if action_field not in action_fields:
@@ -313,7 +323,7 @@ class SparkRuleExecutor:
             merged_col = _safe_action_col(field_name)
 
             # Build COALESCE chain (first non-null wins)
-            col_refs = [F.col(t[-1]) for t in salience_cols]
+            col_refs = [F.col(t[-1]).cast("string") for t in salience_cols]
             result = result.withColumn(merged_col, F.coalesce(*col_refs))
 
             # Drop intermediate salience-tagged columns

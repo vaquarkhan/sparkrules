@@ -26,6 +26,13 @@ def test_staging_action_helpers() -> None:
     ) == sex._staging_action_column(rule, "flag")
 
 
+def test_action_fields_from_ast_multiple_outputs() -> None:
+    drl = "rule mr when $t : T ( true ) then result.u = 1; result.v = 2; end"
+    pack = RulePack.from_drl(drl)
+    rule = pack.rules[0]
+    assert sex._action_fields_from_ast(rule) == ["u", "v"]
+
+
 def test_safe_rule_col_sanitizes() -> None:
     assert sex._safe_rule_col('My "Quoted" Rule') == "r_My_Quoted_Rule"
 

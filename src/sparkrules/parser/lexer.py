@@ -64,6 +64,8 @@ _KEYWORDS: dict[str, TokenKind] = {
     "salience": TokenKind.SALIENCE,
     "agenda_group": TokenKind.AGENDA_GROUP,
     "activation_group": TokenKind.ACTIVATION_GROUP,
+    "agenda-group": TokenKind.AGENDA_GROUP,
+    "activation-group": TokenKind.ACTIVATION_GROUP,
     "pass": TokenKind.PASS,
     "group_by": TokenKind.GROUP_BY,
     "reason_codes": TokenKind.REASON_CODES,
@@ -79,6 +81,15 @@ _KEYWORDS: dict[str, TokenKind] = {
     "matches": TokenKind.MATCHES,
 }
 
+# Must be matched before splitting ``activation`` + ``-`` as two tokens (Drools hyphen keywords).
+_HYPHEN_KEYWORDS_SORTED_BY_LEN_DESC: tuple[tuple[str, TokenKind], ...] = tuple(
+    sorted(
+        ((k, v) for k, v in _KEYWORDS.items() if "-" in k),
+        key=lambda kv: len(kv[0]),
+        reverse=True,
+    ),
+)
+
 
 def tokenize(text: str) -> list[Token]:
     toks: list[Token] = []
@@ -86,7 +97,9 @@ def tokenize(text: str) -> list[Token]:
     i = 0
     line, col = 1, 1
     r_number = re.compile(r"-?\d+(\.\d+)?")
-    r_ident = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+    # Hyphenated atoms (e.g. ``activation-groupX``) are a single IDENT; ``x-1`` stops at ``x``
+    # because the segment after ``-`` must start with a letter.
+    r_ident = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:-[A-Za-z][A-Za-z0-9_]*)*")
     r_string_dq = re.compile(r'"(\\.|[^"\\])*"')
     r_string_sq = re.compile(r"'(\\.|[^'\\])*'")
 
@@ -205,6 +218,22 @@ def tokenize(text: str) -> list[Token]:
             nchars = len(t)
             i = m.end()
             col = col + nchars
+            continue
+        hyphen_kw_matched = False
+        for hk, hk_kind in _HYPHEN_KEYWORDS_SORTED_BY_LEN_DESC:
+            if text.startswith(hk, i):
+                nx = i + len(hk)
+                if nx < n:
+                    nx_c = text[nx]
+                    if nx_c.isalnum() or nx_c == "_":
+                        continue
+                toks.append(Token(hk_kind, hk, line, col))
+                nchars = len(hk)
+                i = nx
+                col = col + nchars
+                hyphen_kw_matched = True
+                break
+        if hyphen_kw_matched:
             continue
         m = r_ident.match(text, i)
         if m:

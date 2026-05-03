@@ -1,6 +1,6 @@
 # Deployment overview
 
-SparkRules ships as a Python package and HTTP API. Runtime target (Glue, Databricks, Dataproc, Synapse) is selected via configuration; see `sre.runtime.EngineConfig` and `runtime_conf()`.
+SparkRules ships as a Python package and HTTP API. Runtime target (Glue, Databricks, Dataproc, Synapse) is selected via configuration; see `sparkrules.runtime.EngineConfig` and `runtime_conf()`.
 
 This directory contains **reference** scripts and notes. You must supply cloud credentials, IAM roles, and network settings in your own account.
 

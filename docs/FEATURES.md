@@ -19,7 +19,7 @@
 - **SparkRuleExecutor** - three-strategy Spark dispatch with typed output columns
 - **ReteNetwork** - FactView with `__slots__`, range-merged alpha nodes, frozenset membership
 - **Pandas batch evaluation** - `apply_pandas()` for vectorized evaluation without Spark
-- **Cross-path equivalence** - Python and Spark paths produce identical results
+- **Cross-path equivalence** - unit + property coverage in `tests/unit/test_cross_path_equivalence.py` and selected `tests/property/` cases
 - **DRL parse caching** (LRU 256) for repeated evaluations
 
 ## Regulatory compliance (new)
