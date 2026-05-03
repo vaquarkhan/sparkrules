@@ -1,0 +1,35 @@
+version: 2
+
+seeds:
+  - name: clinical_labs_sample
+    description: >
+      Synthetic lab rows for the SparkRules clinical demo (ingested as text; typed in dbt_project.yml).
+    columns:
+      - name: record_id
+        description: Stable row identifier within the seed file.
+      - name: subject_id
+        description: Subject key (joins to downstream models if extended).
+      - name: visit_id
+        description: Visit / encounter identifier.
+      - name: study_arm
+        description: Randomized arm label (e.g. PLACEBO, TREAT-A).
+      - name: measure_code
+        description: Canonical measure code (e.g. WT, HGB).
+      - name: lab_name_raw
+        description: Vendor or site-specific lab name text.
+      - name: raw_value
+        description: Numeric or textual result as captured at source.
+      - name: raw_unit
+        description: Unit string as captured (normalization happens in staging SQL).
+      - name: ingest_batch
+        description: Ingestion batch id for lineage / replay demos.
+      - name: site_code
+        description: Site identifier.
+      - name: is_repeat_of_record
+        description: When set, points to a prior record_id this row repeats or corrects.
+      - name: dup_key
+        description: Optional deduplication key from upstream systems.
+      - name: dup_note
+        description: Free-text dedup explanation.
+      - name: repeat_note
+        description: Notes when this row is a repeat / retest of another record.

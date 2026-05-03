@@ -77,7 +77,7 @@ If you are unsure, start with **pure Python** simulations; add **Spark** when yo
 The **`sparkrules.spark`** package is covered to **100% line** coverage in CI style when you run:
 
 ```bash
-python -m pytest tests/unit/ -q --cov=src/sre
+python -m pytest tests/unit/ -q --cov=sparkrules
 ```
 
 How that is achieved:
@@ -89,4 +89,4 @@ How that is achieved:
 | `tests/unit/test_cov_spark_mpartition.py` | `mpartition_rows` with real **PySpark** `Row` (imports `pyspark`; skipped if import fails). |
 | `tests/spark/test_pyspark_dataframe.py` | Optional **end-to-end** with `SparkSession` (`local[1]`)  -  **requires JVM**; marked `spark`, not in default `pytest` selection if you exclude the directory. |
 
-You get **full** `sre/spark` coverage from **unit** tests alone (mocks + `importorskip` PySpark for `mpartition_rows`); the `tests/spark/` file is for **real** Spark smoke runs in environments with Java.
+You get **full** `sparkrules.spark` coverage from **unit** tests alone (mocks + `importorskip` PySpark for `mpartition_rows`); the `tests/spark/` file is for **real** Spark smoke runs in environments with Java.

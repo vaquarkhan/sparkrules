@@ -52,13 +52,23 @@ def spark() -> SparkSession:
     s.stop()
 
 
-def test_apply_drl_v2_typed_columns(spark: SparkSession) -> None:
+def _assert_apply_drl_v2_nested_struct_fires(spark: SparkSession) -> None:
     df0 = _facts_struct_df(spark)
     out = apply_drl(df0, _DRL, fact_id_field="id", use_v2=True)
     by_id = {r["id"]: r.asDict(recursive=True) for r in out.collect()}
     assert by_id["1"]["r_r1"] is True
     assert by_id["1"]["action_x"] == 1
     assert by_id["2"]["r_r1"] is False
+
+
+def test_apply_drl_v2_typed_columns(spark: SparkSession) -> None:
+    _assert_apply_drl_v2_nested_struct_fires(spark)
+
+
+def test_apply_drl_fires_on_rows(spark: SparkSession) -> None:
+    """Stable name for CI / smoke docs: nested ``z`` must be StructType, not ``rows_from_session`` MapType."""
+
+    _assert_apply_drl_v2_nested_struct_fires(spark)
 
 
 def test_apply_drl_v1_json_path(spark: SparkSession) -> None:

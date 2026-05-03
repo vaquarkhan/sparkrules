@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Author: Vaquar Khan
-"""Card authorization rules + Spark."""
+"""Card authorization rules + Spark (**V2** typed columns: ``r_*``, ``action_*``, ``fired_any``).
+
+Nested card fact ``c`` is a Spark ``StructType`` via ``Row``, not ``MapType`` from plain dicts.
+"""
 
 from __future__ import annotations
 
@@ -38,7 +41,7 @@ def _rows(csv_path: Path) -> list[dict[str, object]]:
 
 def main() -> int:
     try:
-        from pyspark.sql import SparkSession
+        from pyspark.sql import Row, SparkSession
         from pyspark.sql import functions as F
     except ImportError:
         print('Install: pip install -e ".[test]"', file=sys.stderr)
@@ -57,16 +60,23 @@ def main() -> int:
         return 1
 
     try:
+        from sparkrules.compiler.rulepack import RulePack
         from sparkrules.spark import apply_drl
 
         drl = (sd / "card_auth_rules.drl").read_text(encoding="utf-8")
-        base = spark.createDataFrame(_rows(args.csv))
-        df_in = base.select("auth_id", F.col("c")).repartition(max(2, args.partitions))
+        print("RulePack:", RulePack.from_drl(drl).summary())
+
+        spark_rows = [Row(auth_id=r["auth_id"], c=Row(**r["c"])) for r in _rows(args.csv)]
+        df_in = spark.createDataFrame(spark_rows).repartition(max(2, args.partitions))
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="auth_id")
+        out = apply_drl(df_in, drl, fact_id_field="auth_id", use_v2=True)
         cnt = out.count()
-        fired = out.filter(F.col("fired") == True).count()  # noqa: E712
-        print(f"rows={cnt}  fired={fired}  elapsed_s={time.perf_counter() - t0:.3f}")
+        fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
+        r_cols = [c for c in out.columns if c.startswith("r_")]
+        print(
+            f"rows={cnt}  fired_any={fired}  rule_cols={r_cols}  elapsed_s={time.perf_counter() - t0:.3f}"
+        )
+        out.printSchema()
         out.show(10, truncate=False)
     finally:
         spark.stop()

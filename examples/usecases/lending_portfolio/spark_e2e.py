@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # Author: Vaquar Khan
-"""Lending prime tier DRL + Spark (same behavior as legacy ``lending_e2e``)."""
+"""Lending prime tier DRL + Spark (**V2** typed columns: ``r_*``, ``action_*``, ``fired_any``).
+
+Same rule outcomes as the local ``lending_e2e`` demo; this script showcases Catalyst-friendly
+facts (``LoanApp`` as a Spark ``StructType``) and the default ``apply_drl(..., use_v2=True)`` path.
+"""
 
 from __future__ import annotations
 
@@ -45,10 +49,12 @@ def main() -> int:
         return 1
 
     try:
+        from sparkrules.compiler.rulepack import RulePack
         from sparkrules.spark import apply_drl
 
         sd = _here()
         drl = (sd / "drools_lending_premium.drl").read_text(encoding="utf-8")
+        print("RulePack:", RulePack.from_drl(drl).summary())
 
         if args.synthetic > 0:
             n = args.synthetic
@@ -125,12 +131,18 @@ def main() -> int:
         ).repartition(max(2, args.partitions))
 
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="id")
+        out = apply_drl(df_in, drl, fact_id_field="id", use_v2=True)
         cnt = out.count()
-        fired = out.filter(F.col("fired") == True).count()  # noqa: E712
+        fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
 
-        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
+        r_cols = [c for c in out.columns if c.startswith("r_")]
+        act_cols = [c for c in out.columns if c.startswith("action_") and "__s" not in c]
+        print(
+            f"rows={cnt}  fired_any={fired}  rule_cols={r_cols}  action_cols={act_cols}  "
+            f"elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}"
+        )
+        out.printSchema()
         out.show(5, truncate=False)
     finally:
         spark.stop()

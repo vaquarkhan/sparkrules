@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Author: Vaquar Khan
-"""Clinical trial DRL + PySpark (see EXAMPLE.md)."""
+"""Clinical trial DRL + PySpark (**V2** typed columns; see EXAMPLE.md).
+
+Facts use a nested ``StructType`` for ``f`` (not inferred ``MapType`` from Python dicts).
+"""
 
 from __future__ import annotations
 
@@ -23,7 +26,7 @@ def main() -> int:
     from staging import flatten_for_iter  # noqa: E402
 
     try:
-        from pyspark.sql import SparkSession
+        from pyspark.sql import Row, SparkSession
         from pyspark.sql import functions as F
     except ImportError:
         print('Install: pip install -e ".[test]"', file=sys.stderr)
@@ -49,30 +52,32 @@ def main() -> int:
         return 1
 
     try:
+        from sparkrules.compiler.rulepack import RulePack
         from sparkrules.spark import apply_drl
 
         drl = (sd / "clinical_trials_rules.drl").read_text(encoding="utf-8")
+        print("RulePack:", RulePack.from_drl(drl).summary())
+
         rows: list[dict[str, object]] = []
         with args.csv.open(encoding="utf-8", newline="") as fh:
             for rec in csv.DictReader(fh):
                 rows.append(flatten_for_iter("record_id", dict(rec)))
 
-        df_in = (
-            spark.createDataFrame(rows)
-            .select(
-                "record_id",
-                F.col("f").alias("f"),
-            )
-            .repartition(max(2, args.partitions))
-        )
+        spark_rows = [Row(record_id=r["record_id"], f=Row(**r["f"])) for r in rows]
+        df_in = spark.createDataFrame(spark_rows).repartition(max(2, args.partitions))
 
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="record_id")
+        out = apply_drl(df_in, drl, fact_id_field="record_id", use_v2=True)
         cnt = out.count()
-        fired = out.filter(F.col("fired") == True).count()  # noqa: E712
+        fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
 
-        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
+        r_cols = [c for c in out.columns if c.startswith("r_")]
+        print(
+            f"rows={cnt}  fired_any={fired}  rule_cols={r_cols}  "
+            f"elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}"
+        )
+        out.printSchema()
         out.show(12, truncate=False)
     finally:
         spark.stop()

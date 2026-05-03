@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-_MSG = "Install HTTP API dependencies with: pip install sparkrules[api]"
+_MSG = (
+    "FastAPI/Starlette (and `uvicorn sparkrules.api.app:create_app`) require the optional "
+    "HTTP stack. Install with: pip install 'sparkrules[api]' "
+    "(or `pip install -e '.[api]'` from a source checkout)."
+)
 
 try:
     from fastapi import FastAPI, HTTPException, Query, Request

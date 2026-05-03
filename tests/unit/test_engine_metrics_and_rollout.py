@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import logging
+from unittest.mock import patch
 
 import pytest
 
 from sparkrules.compiler.rulepack import RulePack, Strategy, classify_rule_with_rationale
+from sparkrules.compiler.translator import TranslationError
+from sparkrules.parser import parse
 from sparkrules.executor.local_executor import LocalRuleExecutor
 from sparkrules.runtime.engine_metrics import (
     engine_metrics_enabled,
@@ -60,7 +63,7 @@ def test_rulepack_classified_and_local_score_snapshot() -> None:
 def test_record_score_completed_with_fires_by_strategy() -> None:
     set_engine_metrics_enabled(True)
     reset_engine_metrics()
-    pack = RulePack.from_drl('rule r when $t : T ( true ) then end')
+    pack = RulePack.from_drl("rule r when $t : T ( true ) then end")
     reset_engine_metrics()
     record_score_completed(
         latency_seconds=0.002,
@@ -93,9 +96,27 @@ def test_engine_metrics_enabled_via_environment(monkeypatch: pytest.MonkeyPatch)
 def test_record_score_completed_skips_when_metrics_disabled() -> None:
     set_engine_metrics_enabled(False)
     reset_engine_metrics()
-    pack = RulePack.from_drl('rule r when $t : T ( true ) then end')
+    pack = RulePack.from_drl("rule r when $t : T ( true ) then end")
     record_score_completed(latency_seconds=0.01, rows=1, pack=pack, executor_tag="noop")
     assert snapshot_engine_metrics()["evaluations_total"] == 0
+
+
+def test_classify_records_translation_failure_when_action_does_not_translate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``ACTION_NOT_SQL_TRANSLATABLE`` should bump ``translation_failures_total`` when metrics on."""
+
+    monkeypatch.setenv("SPARKRULES_ENGINE_METRICS", "1")
+    set_engine_metrics_enabled(None)
+    reset_engine_metrics()
+    with patch(
+        "sparkrules.compiler.rulepack.translate_action",
+        side_effect=TranslationError("simulated", node_type="Action"),
+    ):
+        r = parse("rule r when $t : T ( $t.x > 1 ) then result.flag = true; end")
+        strat, _ = classify_rule_with_rationale(r)
+    assert strat == Strategy.ALPHA_SHARED
+    assert snapshot_engine_metrics()["translation_failures_total"] == 1
 
 
 def test_translation_failure_records_when_enabled_and_noop_when_disabled() -> None:
@@ -115,7 +136,7 @@ def test_latency_histogram_all_buckets() -> None:
     """Exercise every ms bucket in `_bucket_latency_ms`."""
 
     set_engine_metrics_enabled(True)
-    pack = RulePack.from_drl('rule r when $t : T ( true ) then end')
+    pack = RulePack.from_drl("rule r when $t : T ( true ) then end")
     for lat_s, expect_idx in [
         (5e-5, 0),
         (0.0005, 1),
@@ -137,10 +158,12 @@ def test_latency_histogram_all_buckets() -> None:
 def test_latency_histogram_buckets_populated() -> None:
     set_engine_metrics_enabled(True)
     reset_engine_metrics()
-    pack = RulePack.from_drl('rule r when $t : T ( true ) then end')
+    pack = RulePack.from_drl("rule r when $t : T ( true ) then end")
     reset_engine_metrics()
     record_score_completed(latency_seconds=0.0001, rows=1, pack=pack, executor_tag="a")
-    record_score_completed(latency_seconds=0.08, rows=2, pack=pack, executor_tag="b", fires_by_strategy={})
+    record_score_completed(
+        latency_seconds=0.08, rows=2, pack=pack, executor_tag="b", fires_by_strategy={}
+    )
     snap = snapshot_engine_metrics()
     assert sum(snap["latency_ms_histogram"]) == 2
     assert snap["latency_ms_histogram"][0] >= 1
@@ -170,7 +193,7 @@ def test_rollout_config_from_environ(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_compare_v1_v2_single_rule() -> None:
-    drl = 'rule chk when $t : T ( $t.v == 3 ) then end'
+    drl = "rule chk when $t : T ( $t.v == 3 ) then end"
     v1, v2, ok = compare_v1_v2_single_rule_fired({"t": {"v": 3}}, drl)
     assert v1 and v2 and ok
 
@@ -187,14 +210,14 @@ rule b when $t : T ( true ) then end
 def test_classify_rule_with_rationale_codes() -> None:
     from sparkrules.parser import parse
 
-    r0 = parse('rule r when $t : T ( $t.x > 1 ) then end')
+    r0 = parse("rule r when $t : T ( $t.x > 1 ) then end")
     s, code = classify_rule_with_rationale(r0)
     assert s == Strategy.SQL_PUSHDOWN and code == "SQL_PUSH_TRANSLATABLE"
 
 
 def test_local_executor_logs_fired_at_info(caplog: pytest.LogCaptureFixture) -> None:
     set_engine_metrics_enabled(True)
-    ex = LocalRuleExecutor.from_drl('rule z when $t : T ( true ) then end')
+    ex = LocalRuleExecutor.from_drl("rule z when $t : T ( true ) then end")
     caplog.clear()
     with caplog.at_level(logging.INFO):
         ex.score({"t": {}})
