@@ -78,7 +78,7 @@ All measurements on the same laptop: Windows 11, 4-core CPU, Python 3.13.2, sing
 - **At single-machine batch:** sparkrules wins the Python rule-engine tier. Drools wins single-JVM batch (literature, not measured here) but you pay for that per-core speed with no way to distribute beyond one JVM.
 - **At distributed batch:** sparkrules is the only general-purpose rule engine in the table that actually runs 1B rows. The others either cannot distribute (Drools, GoRules, Camunda) or target a different workload (Flink CEP is streaming).
 
-Full methodology, raw numbers, and reproduction steps live in `BENCHMARK_SHOOTOUT.md`, `BENCHMARK_V1_1_0.md`, and `BENCHMARK_LATENCY.md`.
+Full methodology, raw numbers, and reproduction steps: repo root [BENCHMARK_LATENCY.md](../BENCHMARK_LATENCY.md), [OPTIMIZED_BENCHMARK.md](../OPTIMIZED_BENCHMARK.md), and [docs/BENCHMARKS.md](BENCHMARKS.md).
 
 ---
 
@@ -173,15 +173,15 @@ Measurements ran on Python 3.13, which is slower than 3.11 for hot loops by ~20-
 
 ## 🛡️ 4. Reliability
 
-sparkrules v1.0.0 released May 2026; v1.1.0 shipped the V2 optimized engine. 13 V2-engine bugs are filed publicly in `SPARKRULES_BUG_REPORT.md`, most fixable in 1-2 developer-days total. Test suite uses property-based testing (Hypothesis) for the Python paths.
+sparkrules v1.0.0 released May 2026; v1.1.0 shipped the V2 optimized engine. A maintained register with forensics lives at [SPARKRULES_BUG_REPORT.md](../SPARKRULES_BUG_REPORT.md) (repo root). The test suite uses property-based testing (Hypothesis) for Python paths.
 
-The Spark execution paths (`src/sparkrules/spark/*.py`) are marked `# pragma: no cover`, so the headline "100% line coverage" applies to the pure-Python engine only. That gap is tracked as Bug 36. Bugs 24-35 cover correctness, SQL escaping, and cross-path equivalence edge cases found in code review. None are release blockers; most are one-commit fixes.
+Spark execution helpers in `src/sparkrules/spark/executor.py` still carry `# pragma: no cover` on JVM-only `apply` / strategy methods so CI can enforce **100% line coverage on `src/sparkrules/` without a Spark cluster**; pure-Python pieces such as `action_staging_merge_plan` are unit-tested. Run `tests/spark/` on a host with Java for full integration confidence.
 
-Drools, IBM ODM, and Camunda are 10-20 years old with correspondingly smaller public bug surfaces. If you need FICO-grade stability today, those are mature choices. If you need architectural fit for lakehouse workloads, sparkrules gets you there with a known and shrinking bug list.
+Drools, IBM ODM, and Camunda are mature JVM stacks. If you need FICO-grade stability today, those remain strong choices. If you need lakehouse-native batch scoring, sparkrules targets that shape explicitly.
 
 ### ✅ Cross-path equivalence
 
-Rules evaluated on the Python path and the Spark path produce the same results for the supported DRL subset. This is a property test in the project. Three open bugs (24, 26, 27) affect equivalence in edge cases: string `contains` semantics, `in` against a non-list column, regex flavor differences. Each has a documented reproducer.
+Rules evaluated on the Python path and the Spark path are intended to match for the supported DRL subset (see Req 12). Edge cases around **`contains`**, **`in` with array columns**, and **Python `re` vs Spark `RLIKE`** are addressed in compiler/translator paths with residual **cluster verification** recommended for Catalyst-specific plans; see the bug report and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
 ---
 

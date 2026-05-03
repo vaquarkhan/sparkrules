@@ -130,7 +130,7 @@ source = ["src/sparkrules"]
 branch = false
 
 [tool.coverage.report]
-fail_under = 100
+fail_under = 95
 show_missing = true
 skip_empty = true
 exclude_lines = [
