@@ -18,7 +18,7 @@ For production scope, unsupported DRL/Spark edges, and execution caveats, see **
 - **RulePack** - structured, salience-ordered, classified rule collection
 - **Three execution strategies**: SQL_PUSHDOWN, ALPHA_SHARED, PYTHON_FALLBACK
 - **LocalRuleExecutor** - Python-native scoring with compiled closures + alpha network
-- **SparkRuleExecutor** - three-strategy Spark dispatch with typed output columns
+- **SparkRuleExecutor** - three-strategy Spark dispatch with typed output columns (Spark ``RLIKE`` vs Python ``re``: see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md))
 - **ReteNetwork** - FactView with `__slots__`, range-merged alpha nodes, frozenset membership
 - **Pandas batch evaluation** - `apply_pandas()` for vectorized evaluation without Spark
 - **Cross-path equivalence** - unit + property coverage in `tests/unit/test_cross_path_equivalence.py` and selected `tests/property/` cases

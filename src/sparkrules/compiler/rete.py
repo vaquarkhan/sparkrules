@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Sequence
 
-from sparkrules.compiler.closure import _resolve_identifier
+from sparkrules.compiler.closure import _resolve_identifier, contains_semantics
 from sparkrules.parser.ast import (
     BinaryOp,
     BinaryOperator,
@@ -223,9 +223,7 @@ def _compile_beta_checks(
         field_path = _get_field_path(expr.left)
         if field_path and field_path in path_to_slot:
             slot = path_to_slot[field_path]
-            values = frozenset(
-                item.value for item in expr.right.items if isinstance(item, Literal)
-            )
+            values = frozenset(item.value for item in expr.right.items if isinstance(item, Literal))
             membership_sets[slot] = values  # Req 25, AC 5
             if expr.negated:
                 return [BetaCheck("", slot, "not_in", values, lambda v, _s=values: v not in _s)]
@@ -244,7 +242,15 @@ def _compile_beta_checks(
         if field_path and field_path in path_to_slot and isinstance(expr.right, Literal):
             slot = path_to_slot[field_path]
             pattern = re.compile(str(expr.right.value))
-            return [BetaCheck("", slot, "matches", expr.right.value, lambda v, _p=pattern: bool(_p.search(str(v))) if v is not None else False)]
+            return [
+                BetaCheck(
+                    "",
+                    slot,
+                    "matches",
+                    expr.right.value,
+                    lambda v, _p=pattern: bool(_p.search(str(v))) if v is not None else False,
+                )
+            ]
 
     # Contains
     if isinstance(expr, BinaryOp) and expr.op == BinaryOperator.CONTAINS:
@@ -252,7 +258,15 @@ def _compile_beta_checks(
         if field_path and field_path in path_to_slot and isinstance(expr.right, Literal):
             slot = path_to_slot[field_path]
             target = expr.right.value
-            return [BetaCheck("", slot, "contains", target, lambda v, _t=target: _t in v if hasattr(v, "__contains__") else False)]
+            return [
+                BetaCheck(
+                    "",
+                    slot,
+                    "contains",
+                    target,
+                    lambda v, _t=target: contains_semantics(v, _t),
+                )
+            ]
 
     # OR expression - can't short-circuit as AND, fall back
     return None
@@ -285,7 +299,9 @@ def _make_comparison_fn(op: BinaryOperator, threshold: Any) -> Callable[[Any], b
     return None
 
 
-def _make_reversed_comparison_fn(op: BinaryOperator, threshold: Any) -> Callable[[Any], bool] | None:
+def _make_reversed_comparison_fn(
+    op: BinaryOperator, threshold: Any
+) -> Callable[[Any], bool] | None:
     """Create a reversed comparison: threshold OP value."""
     if op == BinaryOperator.GT:
         return lambda v, _t=threshold: v is not None and _t > v

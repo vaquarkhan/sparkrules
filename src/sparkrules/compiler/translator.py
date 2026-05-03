@@ -39,8 +39,9 @@ def _spark_rlike_pattern_literal(pattern: str) -> str:
     """Embed a regex pattern into a Spark SQL literal (Java regex consumes ``\\`` as ``\\\\``).
 
     ``matches`` in the closure uses Python ``re.search``; Spark uses Catalyst ``RLIKE`` (Java
-    ``java.util.regex``). Most POSIX-like patterns align; divergences (lookaround, backslash
-    classes, Unicode categories) are flagged for PYTHON_FALLBACK when detectable — see
+    ``java.util.regex``). Metacharacters in the pattern are regex-active in **both** engines;
+    there is no automatic ``re.escape`` / literal mode. For patterns that only work in Python
+    (lookaround, etc.), classification falls back to PYTHON_FALLBACK when detectable — see
     ``rulepack._has_python_only_regex`` and ``docs/KNOWN_LIMITATIONS.md``.
     """
 
@@ -104,14 +105,16 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
         if expr.op == BinaryOperator.OR:
             return f"({left} OR {right})"
         if expr.op == BinaryOperator.CONTAINS:
-            # Parity with ``closure._compare`` / Drools-ish semantics:
+            # Parity with ``closure.contains_semantics`` / Drools-ish semantics:
             # - collections -> membership (``array_contains``)
             # - maps -> key containment (``map_keys`` + ``array_contains``), same as ``key in dict``
             # - other scalars (incl. strings) -> substring via ``instr`` on string casts
+            # Null-safe: Spark ``instr``/``typeof`` on NULL must not yield NULL booleans in CASE.
             return (
-                f"(CASE WHEN typeof({left}) LIKE 'array%' THEN coalesce(array_contains({left}, {right}), false) "
+                f"(CASE WHEN {left} IS NULL OR {right} IS NULL THEN false "
+                f"WHEN typeof({left}) LIKE 'array%' THEN coalesce(array_contains({left}, {right}), false) "
                 f"WHEN typeof({left}) LIKE 'map%' THEN coalesce(array_contains(map_keys({left}), {right}), false) "
-                f"ELSE (instr(cast({left} AS STRING), cast({right} AS STRING)) > 0) END)"
+                f"ELSE coalesce((instr(cast({left} AS STRING), cast({right} AS STRING)) > 0), false) END)"
             )
 
         raise TranslationError(  # pragma: no cover

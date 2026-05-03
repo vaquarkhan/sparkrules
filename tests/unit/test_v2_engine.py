@@ -8,6 +8,7 @@ from unittest.mock import patch
 from sparkrules.compiler.closure import (
     compile_action,
     compile_predicate,
+    contains_semantics,
     _compile_value,
     _compare,
     _as_collection,
@@ -128,10 +129,18 @@ def test_translate_in_numeric_literal_rhs_negated() -> None:
 def test_translate_contains() -> None:
     expr = BinaryOp(BinaryOperator.CONTAINS, Identifier("$t.tags"), Literal("vip"))
     sql = translate_predicate(expr)
+    assert "IS NULL" in sql
     assert "typeof" in sql
     assert "array_contains" in sql
     assert "map_keys" in sql
     assert "instr" in sql
+
+
+def test_contains_semantics_string_list_and_map() -> None:
+    assert contains_semantics("food", "oo") is True
+    assert contains_semantics(["vip", "x"], "vip") is True
+    assert contains_semantics({"vip": 1}, "vip") is True
+    assert contains_semantics({"vip": 1}, "missing") is False
 
 
 def test_translate_contains_map_keys_branch() -> None:
@@ -427,7 +436,8 @@ def test_alpha_shared_action_sql_skips_rhs_that_fails_sql_translation(
         cr = rulepack_mod._build_classified_rule(fake_rule, source_order=0)
     assert cr.strategy == Strategy.ALPHA_SHARED
     assert cr.action_sql == {"a": "1"}
-    assert snapshot_engine_metrics()["translation_failures_total"] == 1
+    # classify records once for non-SQL predicate; ALPHA action_sql fill records again for ``b``.
+    assert snapshot_engine_metrics()["translation_failures_total"] == 2
 
 
 def test_rulepack_salience_ordering() -> None:

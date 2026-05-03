@@ -113,6 +113,9 @@ def classify_rule_with_rationale(rule: RuleAst) -> tuple[Strategy, str]:
         return Strategy.SQL_PUSHDOWN, "NO_WHEN_CONSTRAINT"  # pragma: no cover
 
     if not can_translate(pattern.constraint):
+        from sparkrules.runtime.engine_metrics import record_translation_failure
+
+        record_translation_failure()
         return Strategy.ALPHA_SHARED, "PREDICATE_NOT_SQL_TRANSLATABLE"
 
     if _has_python_only_regex(pattern.constraint):

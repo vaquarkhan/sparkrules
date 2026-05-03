@@ -53,6 +53,29 @@ def _action_fields_from_ast(rule: ClassifiedRule) -> list[str]:
     return [action.field_path.replace("result.", "") for action in rule.ast.then]
 
 
+def action_staging_merge_plan(
+    pack: RulePack, *, df_columns: frozenset[str]
+) -> dict[str, list[tuple[int, str, int, str]]]:
+    """Salience-sorted staging columns per merged ``action_<field>`` (Req 17), without Spark calls.
+
+    Each value list item is ``(salience, rule_name, source_order, staging_col_name)``.
+    """
+
+    action_fields: dict[str, list[tuple[int, str, int, str]]] = {}
+    for rule in pack.rules:
+        for action_field in _action_fields_from_ast(rule):
+            col_name = _staging_action_column(rule, action_field)
+            if col_name in df_columns:
+                if action_field not in action_fields:
+                    action_fields[action_field] = []
+                action_fields[action_field].append(
+                    (rule.salience, rule.name, rule.source_order, col_name),
+                )
+    for salience_cols in action_fields.values():
+        salience_cols.sort(key=lambda x: (-x[0], x[1], x[2]))
+    return action_fields
+
+
 def _assert_machine_generated_alias(alias: str) -> None:
     if not _SAFE_SPARK_IDENTIFIER.fullmatch(alias):
         raise SchemaValidationError(
@@ -304,29 +327,19 @@ class SparkRuleExecutor:
     def _merge_actions(self, df: Any) -> Any:  # pragma: no cover
         """Req 17: Cross-strategy salience resolution."""
         from pyspark.sql import functions as F
+        from pyspark.sql.types import StringType
 
-        # Collect all action columns grouped by field name (Req 17 tie-breakers)
-        action_fields: dict[str, list[tuple[int, str, int, str]]] = {}
-        for rule in self.rulepack.rules:
-            for action_field in _action_fields_from_ast(rule):
-                col_name = _staging_action_column(rule, action_field)
-                if col_name in df.columns:
-                    if action_field not in action_fields:
-                        action_fields[action_field] = []
-                    action_fields[action_field].append(
-                        (rule.salience, rule.name, rule.source_order, col_name),
-                    )
+        action_fields = action_staging_merge_plan(self.rulepack, df_columns=frozenset(df.columns))
 
         result = df
         for field_name, salience_cols in action_fields.items():
-            salience_cols.sort(key=lambda x: (-x[0], x[1], x[2]))
             merged_col = _safe_action_col(field_name)
 
-            # Build COALESCE chain (first non-null wins)
-            col_refs = [F.col(t[-1]).cast("string") for t in salience_cols]
+            # Uniform StringType avoids Catalyst COALESCE type widen errors across strategies
+            # (e.g. numeric SQL expr vs Strategy C string staging).
+            col_refs = [F.col(t[-1]).cast(StringType()) for t in salience_cols]
             result = result.withColumn(merged_col, F.coalesce(*col_refs))
 
-            # Drop intermediate salience-tagged columns
             for t in salience_cols:
                 result = result.drop(t[-1])
 

@@ -1,0 +1,10 @@
+version: 2
+
+# Project-level model index for dbt docs. Column-level contracts live next to models
+# (e.g. models/staging/schema.yml for stg_clinical_labs; seeds/schema.yml for CSV seeds).
+
+models:
+  - name: stg_clinical_labs
+    description: >
+      Normalized clinical lab staging (SparkRules / DRL demos consume the same column names
+      as `examples/usecases/clinical_research`).

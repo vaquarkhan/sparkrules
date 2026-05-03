@@ -28,6 +28,21 @@ PredicateFn = Callable[[FactDict], bool]
 ActionFn = Callable[[FactDict], Any]
 
 
+def contains_semantics(container: Any, needle: Any) -> bool:
+    """Drools-style ``contains``: collection membership, map key membership, else substring on text.
+
+    Shared by the closure compiler, Rete beta checks, and the AST evaluator so paths stay aligned.
+    """
+
+    if isinstance(container, (list, tuple, set, frozenset)):
+        return needle in container
+    if isinstance(container, ABCMapping) and not isinstance(container, (str, bytes)):
+        return needle in container
+    left_s = str(container) if container is not None else ""
+    right_s = str(needle) if needle is not None else ""
+    return right_s in left_s if left_s or right_s else False
+
+
 def _resolve_identifier(name: str, fact: FactDict) -> Any:
     """Resolve a dotted identifier path against a fact dict."""
     if name.startswith("$"):
@@ -164,13 +179,7 @@ def _compare(left: Any, right: Any, op: BinaryOperator) -> bool:
     if op == BinaryOperator.GE:
         return left >= right
     if op == BinaryOperator.CONTAINS:
-        if isinstance(left, (list, tuple, set, frozenset)):
-            return right in left
-        if isinstance(left, ABCMapping) and not isinstance(left, (str, bytes)):
-            return right in left
-        left_s = str(left) if left is not None else ""
-        right_s = str(right) if right is not None else ""
-        return right_s in left_s if left_s or right_s else False
+        return contains_semantics(left, right)
     if op == BinaryOperator.MATCHES:
         return bool(re.search(str(right), str(left)))
     return False
