@@ -1,6 +1,6 @@
 # AWS Glue
 
-1. Package this project into a Wheel or copy the `src/sre` tree into a Glue job script location.
+1. Package this project into a Wheel or copy the `src/sparkrules` tree into a Glue job script location.
 2. Set job **Python version** to match the cluster (3.11+).
 3. Set **Spark** to 3.x and align with `EngineConfig(spark_version="3.5", platform="glue", glue_dpu=...)`.
 4. Pass configuration as environment variables or a small `job_params.json` that your job reads and applies via `runtime_conf(EngineConfig(...))`.

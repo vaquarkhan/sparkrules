@@ -1,5 +1,7 @@
 ﻿# Features
 
+For production scope, unsupported DRL/Spark edges, and execution caveats, see **[KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)**.
+
 ## Core engine
 
 - DRL-style rule parsing and evaluation

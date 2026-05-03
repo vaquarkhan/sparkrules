@@ -38,8 +38,10 @@ def _sql_string_literal(value: str) -> str:
 def _spark_rlike_pattern_literal(pattern: str) -> str:
     """Embed a regex pattern into a Spark SQL literal (Java regex consumes ``\\`` as ``\\\\``).
 
-    Drools/Python ``matches`` semantics are anchored to Spark ``RLIKE``; backslashes must
-    survive SQL parsing before the regex engine interprets escapes like ``\\d``.
+    ``matches`` in the closure uses Python ``re.search``; Spark uses Catalyst ``RLIKE`` (Java
+    ``java.util.regex``). Most POSIX-like patterns align; divergences (lookaround, backslash
+    classes, Unicode categories) are flagged for PYTHON_FALLBACK when detectable — see
+    ``rulepack._has_python_only_regex`` and ``docs/KNOWN_LIMITATIONS.md``.
     """
 
     return "'" + pattern.replace("\\", "\\\\").replace("'", "''") + "'"
@@ -102,10 +104,13 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
         if expr.op == BinaryOperator.OR:
             return f"({left} OR {right})"
         if expr.op == BinaryOperator.CONTAINS:
-            # Python ``right in left``: arrays -> ``array_contains``; strings/other scalars ->
-            # substring containment via ``instr`` (parity with Drools-ish ``contains`` on text).
+            # Parity with ``closure._compare`` / Drools-ish semantics:
+            # - collections -> membership (``array_contains``)
+            # - maps -> key containment (``map_keys`` + ``array_contains``), same as ``key in dict``
+            # - other scalars (incl. strings) -> substring via ``instr`` on string casts
             return (
-                f"(CASE WHEN typeof({left}) LIKE 'array%' THEN array_contains({left}, {right}) "
+                f"(CASE WHEN typeof({left}) LIKE 'array%' THEN coalesce(array_contains({left}, {right}), false) "
+                f"WHEN typeof({left}) LIKE 'map%' THEN coalesce(array_contains(map_keys({left}), {right}), false) "
                 f"ELSE (instr(cast({left} AS STRING), cast({right} AS STRING)) > 0) END)"
             )
 
@@ -126,13 +131,7 @@ def translate_predicate(expr: Expr, *, strip_binding: bool = True) -> str:
             if expr.negated:
                 return f"({left} NOT IN ({items}))"
             return f"({left} IN ({items}))"
-        if isinstance(expr.right, Identifier):
-            raise TranslationError(
-                "``IN`` with a non-literal list cannot be reliably translated without "
-                "ARRAY-typed Spark columns — use ALPHA_SHARED / PYTHON_FALLBACK or expose "
-                "``array_contains`` explicitly",
-                node_type="InExpr",
-            )
+        # Column / expression RHS: Spark ``array_contains(<array col>, <value>)`` (RHS must be array-typed).
         right = translate_predicate(expr.right, strip_binding=strip_binding)
         if expr.negated:
             return f"(NOT array_contains({right}, {left}))"

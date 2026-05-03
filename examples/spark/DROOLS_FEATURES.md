@@ -23,4 +23,4 @@ The reference DRL [**`examples/usecases/lending_portfolio/drools_lending_premium
 **Performance on huge data**
 
 - `apply_drl` = **broadcast** DRL + **`mapPartitions`** → parse **once per partition**, evaluate per row.
-- Scale out with **more partitions**, **larger clusters**, and Spark tuning (AQE, shuffle). Smoke runs: **`python examples/usecases/lending_portfolio/spark_e2e.py --synthetic 100000 --partitions 32`**; production jobs set resources in **Glue / Databricks / Dataproc** (see `EngineConfig` in `src/sre/runtime/config_contract.py` and [deploy/README.md](../../deploy/README.md)).
+- Scale out with **more partitions**, **larger clusters**, and Spark tuning (AQE, shuffle). Smoke runs: **`python examples/usecases/lending_portfolio/spark_e2e.py --synthetic 100000 --partitions 32`**; production jobs set resources in **Glue / Databricks / Dataproc** (see `EngineConfig` in `src/sparkrules/runtime/config_contract.py` and [deploy/README.md](../../deploy/README.md)).

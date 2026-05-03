@@ -22,7 +22,7 @@ pytest tests/perf -m perf -q
 **`src/sparkrules` line coverage (required for CI-style gate):**
 
 ```bash
-pytest tests/unit/ -q --cov=src/sre
+pytest tests/unit/ -q --cov=sparkrules
 ```
 
 `pyproject.toml` sets `fail_under=100` for the `src/sparkrules` tree when coverage is run as above.

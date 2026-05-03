@@ -36,6 +36,8 @@ pip install sparkrules[spark]   # + PySpark cluster integration
 pip install sparkrules[all]     # everything
 ```
 
+Running `uvicorn sparkrules.api.app:create_app` without `[api]` installed raises a clear `ImportError` pointing at `pip install 'sparkrules[api]'`. See also [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
+
 ---
 
 ## Who is this for?

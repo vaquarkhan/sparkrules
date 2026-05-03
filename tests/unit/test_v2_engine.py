@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pickle
+from unittest.mock import patch
 
 from sparkrules.compiler.closure import (
     compile_action,
@@ -20,6 +21,7 @@ from sparkrules.compiler.translator import (
     translate_action,
     translate_predicate,
 )
+from sparkrules.compiler import rulepack as rulepack_mod
 from sparkrules.compiler.rulepack import (
     ClassifiedRule,
     RulePack,
@@ -128,7 +130,14 @@ def test_translate_contains() -> None:
     sql = translate_predicate(expr)
     assert "typeof" in sql
     assert "array_contains" in sql
+    assert "map_keys" in sql
     assert "instr" in sql
+
+
+def test_translate_contains_map_keys_branch() -> None:
+    expr = BinaryOp(BinaryOperator.CONTAINS, Identifier("$t.meta"), Literal("k"))
+    sql = translate_predicate(expr)
+    assert "map_keys(t.meta)" in sql
 
 
 def test_translate_strips_binding_prefix() -> None:
@@ -162,11 +171,11 @@ def test_translate_list_expr() -> None:
     assert "array(1, 2, 3)" == sql
 
 
-def test_translate_in_column_rhs_raises_translation_error() -> None:
-    with pytest.raises(TranslationError):
-        translate_predicate(InExpr(Literal("x"), Identifier("$t.allowed"), negated=False))
-    with pytest.raises(TranslationError):
-        translate_predicate(InExpr(Literal("x"), Identifier("$t.allowed"), negated=True))
+def test_translate_in_column_rhs_uses_array_contains() -> None:
+    sql = translate_predicate(InExpr(Literal("x"), Identifier("$t.allowed"), negated=False))
+    assert "array_contains(t.allowed" in sql
+    sqln = translate_predicate(InExpr(Literal("x"), Identifier("$t.allowed"), negated=True))
+    assert "NOT array_contains(t.allowed" in sqln
 
 
 def test_translate_unsupported_raises() -> None:
@@ -263,6 +272,13 @@ def test_closure_contains_substring_on_strings() -> None:
     assert fn({"t": {"msg": "nothing"}}) is False
 
 
+def test_closure_contains_dict_key_membership() -> None:
+    expr = BinaryOp(BinaryOperator.CONTAINS, Identifier("$t.meta"), Literal("k"))
+    fn = compile_predicate(expr)
+    assert fn({"t": {"meta": {"k": 1}}}) is True
+    assert fn({"t": {"meta": {"other": 1}}}) is False
+
+
 def test_closure_error_degrades_to_false() -> None:
     expr = BinaryOp(BinaryOperator.GT, Identifier("$t.missing"), Literal(5))
     fn = compile_predicate(expr)
@@ -333,6 +349,85 @@ rule "medium" when $t : T ( $t.name matches "^A.*" ) then result.m = 1; end
     assert len(pack.rules) == 2
     assert pack.summary()["total_rules"] == 2
     assert all(r.strategy in (Strategy.SQL_PUSHDOWN, Strategy.ALPHA_SHARED) for r in pack.rules)
+
+
+def test_alpha_shared_classified_rule_gets_action_sql() -> None:
+    """Non-SQL when-patterns still emit ``action_sql`` for translatable RHS (Spark Strategy B)."""
+
+    from sparkrules.model.rule import DEFAULT_AGENDA_GROUP
+    from sparkrules.parser.ast import FactPattern, RuleAst
+
+    class _OpaquePredicate:
+        pass
+
+    real = parse("rule r when $t : T ( true ) then result.score = 99; end")
+    fake_rule = RuleAst(
+        name="alpha_act",
+        salience=0,
+        agenda_group=DEFAULT_AGENDA_GROUP,
+        activation_group=None,
+        pass_name=None,
+        group_by=(),
+        reason_codes=(),
+        stop_on_fire=False,
+        when=(FactPattern("t", "T", _OpaquePredicate()),),  # type: ignore[arg-type]
+        then=real.then,
+    )
+    cr = rulepack_mod._build_classified_rule(fake_rule, source_order=0)
+    assert cr.strategy == Strategy.ALPHA_SHARED
+    assert cr.action_sql.get("score") == "99"
+
+
+def test_alpha_shared_action_sql_skips_rhs_that_fails_sql_translation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-action ``translate_action`` failures still populate earlier fields and record metrics."""
+
+    from sparkrules.model.rule import DEFAULT_AGENDA_GROUP
+    from sparkrules.parser.ast import FactPattern, RuleAst
+    from sparkrules.runtime.engine_metrics import (
+        reset_engine_metrics,
+        set_engine_metrics_enabled,
+        snapshot_engine_metrics,
+    )
+
+    monkeypatch.setenv("SPARKRULES_ENGINE_METRICS", "1")
+    set_engine_metrics_enabled(None)
+    reset_engine_metrics()
+
+    class _OpaquePredicate:
+        pass
+
+    real = parse(
+        "rule r when $t : T ( true ) then result.a = 1; result.b = 2; end",
+    )
+    fake_rule = RuleAst(
+        name="alpha_partial",
+        salience=0,
+        agenda_group=DEFAULT_AGENDA_GROUP,
+        activation_group=None,
+        pass_name=None,
+        group_by=(),
+        reason_codes=(),
+        stop_on_fire=False,
+        when=(FactPattern("t", "T", _OpaquePredicate()),),  # type: ignore[arg-type]
+        then=real.then,
+    )
+
+    def _ta_side_effect(action: object, *, strip_binding: bool = True) -> tuple[str, str]:
+        from sparkrules.parser.ast import Action as Act
+
+        assert isinstance(action, Act)
+        field = action.field_path.replace("result.", "")
+        if field == "a":
+            return field, "1"
+        raise TranslationError("skip-b", node_type="Action")
+
+    with patch("sparkrules.compiler.rulepack.translate_action", side_effect=_ta_side_effect):
+        cr = rulepack_mod._build_classified_rule(fake_rule, source_order=0)
+    assert cr.strategy == Strategy.ALPHA_SHARED
+    assert cr.action_sql == {"a": "1"}
+    assert snapshot_engine_metrics()["translation_failures_total"] == 1
 
 
 def test_rulepack_salience_ordering() -> None:
@@ -540,11 +635,6 @@ def test_translate_unsupported_binary_op() -> None:
 
     # Can't easily trigger this with real AST, so test can_translate instead
     assert can_translate(Literal(True)) is True
-
-
-def test_translate_in_identifier_rhs_always_raises() -> None:
-    with pytest.raises(TranslationError):
-        translate_predicate(InExpr(Literal("x"), Identifier("$t.arr"), negated=True))
 
 
 def test_rulepack_multi_fact_fallback() -> None:

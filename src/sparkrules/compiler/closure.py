@@ -7,6 +7,7 @@ eliminating per-node isinstance dispatch overhead during evaluation.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping as ABCMapping
 from typing import Any, Callable, Mapping
 
 from sparkrules.parser.ast import (
@@ -164,6 +165,8 @@ def _compare(left: Any, right: Any, op: BinaryOperator) -> bool:
         return left >= right
     if op == BinaryOperator.CONTAINS:
         if isinstance(left, (list, tuple, set, frozenset)):
+            return right in left
+        if isinstance(left, ABCMapping) and not isinstance(left, (str, bytes)):
             return right in left
         left_s = str(left) if left is not None else ""
         right_s = str(right) if right is not None else ""

@@ -121,7 +121,10 @@ def classify_rule_with_rationale(rule: RuleAst) -> tuple[Strategy, str]:
     for action in rule.then:
         try:
             translate_action(action)
-        except TranslationError:  # pragma: no cover
+        except TranslationError:
+            from sparkrules.runtime.engine_metrics import record_translation_failure
+
+            record_translation_failure()
             return Strategy.ALPHA_SHARED, "ACTION_NOT_SQL_TRANSLATABLE"
 
     return Strategy.SQL_PUSHDOWN, "SQL_PUSH_TRANSLATABLE"
@@ -170,6 +173,17 @@ def _build_classified_rule(rule: RuleAst, *, source_order: int) -> ClassifiedRul
                     rationale = "ACTION_TRANSLATION_RUNTIME_FAIL"
                     action_sql = {}
                     break
+
+    # ALPHA_SHARED: predicate may be non-SQL, but RHS actions can still push down as F.expr.
+    if strategy == Strategy.ALPHA_SHARED:
+        for action in rule.then:
+            try:
+                fname, sql = translate_action(action)
+                action_sql[fname] = sql
+            except TranslationError:
+                from sparkrules.runtime.engine_metrics import record_translation_failure
+
+                record_translation_failure()
 
     # Compute alpha hashes
     alpha_hashes: list[str] = []

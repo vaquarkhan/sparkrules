@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Author: Vaquar Khan
-"""POS checkout rules + Spark."""
+"""POS checkout rules + Spark (**V2** typed columns: ``r_*``, ``action_*``, ``fired_any``).
+
+Nested checkout fact ``t`` is built as a Spark ``StructType`` (``Row``), not a dict-backed ``MapType``.
+"""
 
 from __future__ import annotations
 
@@ -37,7 +40,7 @@ def _rows(path: Path) -> list[dict[str, object]]:
 
 def main() -> int:
     try:
-        from pyspark.sql import SparkSession
+        from pyspark.sql import Row, SparkSession
         from pyspark.sql import functions as F
     except ImportError:
         print('Install: pip install -e ".[test]"', file=sys.stderr)
@@ -57,18 +60,26 @@ def main() -> int:
         return 1
 
     try:
+        from sparkrules.compiler.rulepack import RulePack
         from sparkrules.spark import apply_drl
 
         drl = (sd / "pos_checkout_rules.drl").read_text(encoding="utf-8")
-        base = spark.createDataFrame(_rows(args.csv))
-        df_in = base.select("txn_id", F.col("t")).repartition(max(2, args.partitions))
+        print("RulePack:", RulePack.from_drl(drl).summary())
+
+        spark_rows = [Row(txn_id=r["txn_id"], t=Row(**r["t"])) for r in _rows(args.csv)]
+        df_in = spark.createDataFrame(spark_rows).repartition(max(2, args.partitions))
 
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="txn_id")
+        out = apply_drl(df_in, drl, fact_id_field="txn_id", use_v2=True)
         cnt = out.count()
-        fired = out.filter(F.col("fired") == True).count()  # noqa: E712
+        fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0
-        print(f"rows={cnt}  fired={fired}  elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}")
+        r_cols = [c for c in out.columns if c.startswith("r_")]
+        print(
+            f"rows={cnt}  fired_any={fired}  rule_cols={r_cols}  "
+            f"elapsed_s={elapsed:.3f}  rows_per_s={cnt / elapsed:.0f}"
+        )
+        out.printSchema()
         out.show(12, truncate=False)
     finally:
         spark.stop()
