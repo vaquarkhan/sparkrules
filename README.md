@@ -225,6 +225,11 @@ Start with **notebook 06** for the architecture overview, then **01** for hands-
 
 | Topic | Link |
 |-------|------|
+| **V2 bug register (forensics)** | [SPARKRULES_BUG_REPORT.md](SPARKRULES_BUG_REPORT.md) |
+| **Benchmarks & positioning** | [BENCHMARK_3WAY.md](BENCHMARK_3WAY.md), [BENCHMARK_LATENCY.md](BENCHMARK_LATENCY.md), [OPTIMIZED_BENCHMARK.md](OPTIMIZED_BENCHMARK.md) |
+| **Engine comparison (13-way)** | [RULE_ENGINE_COMPARISON.md](RULE_ENGINE_COMPARISON.md) |
+| **Spark V1 vs V2 design** | [DESIGN_REVIEW.md](DESIGN_REVIEW.md), [DESIGN_OPTIMAL.md](DESIGN_OPTIMAL.md) |
+| **dbt clinical mapping** | [dbt_mapping_sheet.md](dbt_mapping_sheet.md) |
 | Full feature list | [docs/FEATURES.md](docs/FEATURES.md) |
 | Architecture | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) |
 | Developer guide | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
