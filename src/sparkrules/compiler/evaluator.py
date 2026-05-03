@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, MutableMapping
 
 import sparkrules.parser.ast as A
+from sparkrules.compiler.closure import contains_semantics
 from sparkrules.compiler.exceptions import RuleEvaluationError
 from sparkrules.parser.ast import BinaryOperator, Expr, RuleAst
 
@@ -90,9 +91,7 @@ def _eval(e: Expr, env: dict[str, Any]) -> Any:
         if op == BinaryOperator.CONTAINS:
             if a is None or b is None:
                 return False
-            if isinstance(a, (list, tuple, set)):
-                return b in a
-            return str(b) in str(a)
+            return contains_semantics(a, b)
         if op == BinaryOperator.MATCHES:
             return re.search(str(b), str(a or "")) is not None
         if op == BinaryOperator.EQ:

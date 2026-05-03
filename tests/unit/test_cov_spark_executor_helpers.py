@@ -8,6 +8,22 @@ from sparkrules.compiler.rulepack import RulePack
 from sparkrules.spark import executor as sex
 
 
+def test_action_staging_merge_plan_sorts_by_salience() -> None:
+    drl = (
+        "rule lo salience 1 when $t : T ( true ) then result.score = 1; end\n"
+        "rule hi salience 9 when $t : T ( true ) then result.score = 9; end"
+    )
+    pack = RulePack.from_drl(drl)
+    cols: set[str] = set()
+    for rule in pack.rules:
+        for fname in sex._action_fields_from_ast(rule):
+            cols.add(sex._staging_action_column(rule, fname))
+    plan = sex.action_staging_merge_plan(pack, df_columns=frozenset(cols))
+    assert list(plan.keys()) == ["score"]
+    ordered = [t[0] for t in plan["score"]]
+    assert ordered == [9, 1]
+
+
 def test_assert_safe_generated_column_passes() -> None:
     sex._assert_machine_generated_alias("r_simple_rule")
 

@@ -101,6 +101,22 @@ def test_record_score_completed_skips_when_metrics_disabled() -> None:
     assert snapshot_engine_metrics()["evaluations_total"] == 0
 
 
+def test_classify_records_translation_when_predicate_not_sql_translatable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compile-time ``can_translate`` false counts as a translation failure when metrics on."""
+
+    monkeypatch.setenv("SPARKRULES_ENGINE_METRICS", "1")
+    set_engine_metrics_enabled(None)
+    reset_engine_metrics()
+    with patch("sparkrules.compiler.rulepack.can_translate", return_value=False):
+        r = parse("rule r when $t : T ( true ) then end")
+        strat, why = classify_rule_with_rationale(r)
+    assert strat == Strategy.ALPHA_SHARED
+    assert why == "PREDICATE_NOT_SQL_TRANSLATABLE"
+    assert snapshot_engine_metrics()["translation_failures_total"] == 1
+
+
 def test_classify_records_translation_failure_when_action_does_not_translate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

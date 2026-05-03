@@ -2,6 +2,8 @@
 
 **The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails  -  from laptop to lakehouse, no JVM required.
 
+**Design scope and known gaps:** [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) (Spark vs Python regex, strategy limits, production checklist).
+
 <p align="center">
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI downloads" src="https://img.shields.io/pypi/dm/sparkrules"></a>
