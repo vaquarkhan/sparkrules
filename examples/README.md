@@ -29,6 +29,10 @@ Sample rows for the smallest DRLs live next to them — see **[drl/README.md](dr
 | [python/refresh_rules_hot_swap.py](python/refresh_rules_hot_swap.py) | **Hot-swap**: `LocalRuleExecutor.refresh_rules()` without restart |
 | [python/benchmark_v2_local_throughput.py](python/benchmark_v2_local_throughput.py) | Quick local throughput sanity check (see `docs/BENCHMARKS.md` for methodology) |
 | [python/adverse_action_demo.py](python/adverse_action_demo.py) | **Regulatory**: ECOA/FCRA adverse-action notice generation |
+| [python/adverse_action_counterfactual_demo.py](python/adverse_action_counterfactual_demo.py) | **Regulatory**: Compare two ``AdverseActionContext`` snapshots (added/removed reason codes) |
+| [python/dmn_xml_minimal_demo.py](python/dmn_xml_minimal_demo.py) | **DMN**: Parse minimal Camunda DMN XML and evaluate a ``FIRST`` table |
+| [python/graph_enricher_demo.py](python/graph_enricher_demo.py) | **Graph**: Merge in-memory graph features into a fact (``GraphEnricher``) |
+| [python/dq_extended_checks_demo.py](python/dq_extended_checks_demo.py) | **DQ**: Table-scoped checks (unique, regex, sum, row count) |
 | [python/data_profiling_demo.py](python/data_profiling_demo.py) | **DQ**: Statistical profiling + quality checks before rule evaluation |
 | [python/opa_export_demo.py](python/opa_export_demo.py) | **Policy**: Export DRL rules to OPA Rego format |
 
