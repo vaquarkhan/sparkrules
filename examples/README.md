@@ -35,6 +35,16 @@ Sample rows for the smallest DRLs live next to them — see **[drl/README.md](dr
 | [python/dq_extended_checks_demo.py](python/dq_extended_checks_demo.py) | **DQ**: Table-scoped checks (unique, regex, sum, row count) |
 | [python/data_profiling_demo.py](python/data_profiling_demo.py) | **DQ**: Statistical profiling + quality checks before rule evaluation |
 | [python/opa_export_demo.py](python/opa_export_demo.py) | **Policy**: Export DRL rules to OPA Rego format |
+| [python/ai_rule_suggestion_workflow_demo.py](python/ai_rule_suggestion_workflow_demo.py) | **AI**: Stub provider suggestions, simulator evidence, approval (`AiService`) |
+| [python/chaos_and_perf_harness_demo.py](python/chaos_and_perf_harness_demo.py) | **Reliability / perf**: `run_chaos_scenario`, `run_perf_harness`, `scale_evidence` |
+| [python/governance_promotion_pins_demo.py](python/governance_promotion_pins_demo.py) | **Governance**: `PromotionRegistry` dev→stage→prod pins + `sync_dev_from_active` |
+| [python/kie_rest_migration_recipe_demo.py](python/kie_rest_migration_recipe_demo.py) | **KIE REST shim**: deploy container + stateless batch (`pip install sparkrules[api]`) |
+| [python/lsp_analyze_drl_demo.py](python/lsp_analyze_drl_demo.py) | **IDE / LSP**: `analyze_drl_for_lsp` diagnostics + completions (no language-server process) |
+| [python/policy_opa_ranger_demo.py](python/policy_opa_ranger_demo.py) | **Policy runtime**: OPA `query_opa` (optional live URL) + `ranger_allow_stub` |
+| [python/streaming_config_and_orchestrator_demo.py](python/streaming_config_and_orchestrator_demo.py) | **Streaming contracts**: Kafka/Kinesis `FactSourceSpec` + `EngineConfig` + `StreamingOrchestrator` |
+| [python/time_travel_debug_api_demo.py](python/time_travel_debug_api_demo.py) | **Debug replay**: `/debug/time-travel/capture` + `/replay` (`pip install sparkrules[api]`) |
+| [python/two_pass_orchestrator_demo.py](python/two_pass_orchestrator_demo.py) | **Two-pass**: `TwoPassOrchestrator` with `group_by` aggregates + per-group quota |
+| [python/udf_registry_demo.py](python/udf_registry_demo.py) | **UDF registry**: versioned `UserDefinedFunctionRegistry` + `eval_registered_pure_udf` |
 
 ## Decision tables
 
@@ -56,6 +66,7 @@ Sample rows for the smallest DRLs live next to them — see **[drl/README.md](dr
 | Script | What it demonstrates |
 |--------|---------------------|
 | [spark/apply_drl_local.py](spark/apply_drl_local.py) | **V2** `SparkRuleExecutor.apply(df)` — typed columns, classifier printout, optional `--explain` (Catalyst) |
+| [spark/apply_drl_v2_lakehouse_sink.py](spark/apply_drl_v2_lakehouse_sink.py) | **V2 + sinks**: score with `SparkRuleExecutor`, write each `create_result_sink` format (JSON snapshots; swap for real Iceberg/Delta tables in prod) |
 | [spark/iter_rule_rows_no_jvm.py](spark/iter_rule_rows_no_jvm.py) | Pure-Python row iterator (no JVM needed) |
 
 ## Rule store (DuckDB / Postgres)
@@ -67,7 +78,7 @@ Sample rows for the smallest DRLs live next to them — see **[drl/README.md](dr
 
 ## End-to-end use cases
 
-Complete domain examples with DRL rules, sample CSV data, validation scripts, and Spark E2E jobs:
+Complete domain examples with DRL rules, sample CSV data, validation scripts, and Spark jobs. Each use case includes `spark_e2e.py` calling `apply_drl(..., use_v2=True)` with `Row`/struct facts (typed V2 columns: `r_*`, `action_*`, `fired_any`).
 
 | Use case | Domain | Files |
 |----------|--------|-------|
@@ -76,6 +87,25 @@ Complete domain examples with DRL rules, sample CSV data, validation scripts, an
 | [usecases/credit_card/](usecases/credit_card/) | Payments | Card authorization rules |
 | [usecases/point_of_sale/](usecases/point_of_sale/) | Retail | POS checkout rules |
 | [usecases/reward_loyalty/](usecases/reward_loyalty/) | Loyalty | Reward tier assignment |
+
+## Feature coverage (ships in the library)
+
+These rows map **previously undocumented gaps** to runnable scripts in this folder (no separate guide file). “Full stack” items (Kafka consumer, Databricks catalog ACLs, real Iceberg commits) remain operator-owned; the examples show the **APIs and contracts** SparkRules exposes.
+
+| Topic | Example | What you get vs production |
+|-------|---------|---------------------------|
+| Spark DataFrame V2 typed columns | `usecases/*/spark_e2e.py`, `spark/apply_drl_local.py`, `spark/apply_drl_v2_lakehouse_sink.py` | Same Catalyst/V2 path as clusters; local `local[*]` master. |
+| Lakehouse result sinks | `spark/apply_drl_v2_lakehouse_sink.py` | Writes JSON snapshots via `create_result_sink` labels (`iceberg`, `delta`, `hudi`, `parquet`). Replace with your table writer using the same row dicts. |
+| Streaming (Kafka / Kinesis) | `python/streaming_config_and_orchestrator_demo.py` | Validates `FactSourceSpec` + `EngineConfig` + micro-batch **rule refresh**; does not start a broker consumer. |
+| KIE-compatible REST | `python/kie_rest_migration_recipe_demo.py` | `PUT` deploy + `POST` stateless execute against `/kie-server/services/rest/...`. |
+| Governance promotion pins | `python/governance_promotion_pins_demo.py` | `sync_dev_from_active` + adjacent `promote` calls on `PromotionRegistry`. |
+| Two-pass / `group_by` | `python/two_pass_orchestrator_demo.py` | Pass1 qualify, Pass2 with per-group quota + aggregate counts. |
+| UDF registry | `python/udf_registry_demo.py` | Versioned resolve + `eval_registered_pure_udf` (`sum` / `len` bodies). |
+| OPA / Ranger clients | `python/policy_opa_ranger_demo.py` | Live `query_opa` when `SPARKRULES_OPA_URL` is set; `ranger_allow_stub` local vs HTTP modes. |
+| Time-travel debug replay | `python/time_travel_debug_api_demo.py` | FastAPI `TestClient` against capture + replay endpoints (same as production routes). |
+| LSP / editor diagnostics | `python/lsp_analyze_drl_demo.py` | In-process `analyze_drl_for_lsp`; wire the function into your LSP server or extension. |
+| Chaos / perf harness | `python/chaos_and_perf_harness_demo.py` | `ChaosPolicy` retry paths + `run_perf_harness` / `scale_evidence`. |
+| AI rule suggestions | `python/ai_rule_suggestion_workflow_demo.py` | Offline `StubAiProvider`; set `SPARKRULES_AI_PROVIDER=openai` + key for generative path. |
 
 ## dbt integration
 

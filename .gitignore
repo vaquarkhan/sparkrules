@@ -229,6 +229,16 @@ docs/PHASE1_STATUS.md
 docs/fix-needed.md
 docs/FEATURE_COMPARE_HISTORY.md
 FUTURE_WORK.md
+BENCHMARK_3WAY.md
+BENCHMARK_LATENCY.md
+BENCHMARK_V1_1_0.md
+BENCHMARK_SHOOTOUT.md
+dbt_mapping_sheet.md
+DESIGN_OPTIMAL.md
+DESIGN_REVIEW.md
+OPTIMIZED_BENCHMARK.md
+RULE_ENGINE_COMPARISON.md
+SPARKRULES_BUG_REPORT.md
 
 # Historical recovery artifacts (local reference only)
 docs/history/
