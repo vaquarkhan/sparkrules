@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from sparkrules.api import AppDeps, create_app
@@ -101,6 +103,21 @@ def test_governance_sync_no_rule_400() -> None:
     assert r.status_code == 400
 
 
+def test_governance_sync_dev_valueerror_maps_to_400() -> None:
+    c = TestClient(create_app(AppDeps()))
+    c.post(
+        "/rules",
+        json={"rule_handle": "ve", "group": "g", "namespace": "n1", "drl": _DRL},
+    )
+    with patch("sparkrules.api.app.sync_dev_from_active", side_effect=ValueError("unexpected")):
+        r = c.post(
+            "/governance/sync-dev",
+            json={"namespace": "n1", "rule_handle": "ve"},
+        )
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "GOVERNANCE_SYNC_FAILED"
+
+
 def test_governance_pins_query_filter() -> None:
     deps = AppDeps()
     c = TestClient(create_app(deps))
@@ -179,19 +196,81 @@ def test_governance_promote_non_adjacent_400() -> None:
     assert r.status_code == 400
 
 
-def test_governance_sync_namespace_mismatch_400() -> None:
+def test_governance_sync_namespace_mismatch_rejected() -> None:
+    """rule_admin body namespace must match X-Tenant-Id (403 before sync)."""
     deps = AppDeps()
     app = create_app(deps)
     c = TestClient(app)
+    h = {"X-Roles": "rule_admin", "X-Tenant-Id": "a", "X-Principal": "u1"}
     c.post(
         "/rules",
         json={"rule_handle": "g2", "group": "g", "namespace": "a", "drl": _DRL},
+        headers=h,
     )
     r = c.post(
         "/governance/sync-dev",
         json={"namespace": "wrong", "rule_handle": "g2"},
+        headers=h,
     )
-    assert r.status_code == 400
+    assert r.status_code == 403
+
+
+def test_governance_sync_rule_namespace_mismatch_400() -> None:
+    """rule_admin cannot sync when body namespace matches tenant but not the active rule."""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    hp = {"X-Roles": "platform_admin", "X-Tenant-Id": "default", "X-Principal": "p"}
+    c.post(
+        "/rules",
+        json={"rule_handle": "g3", "group": "g", "namespace": "ns-rule", "drl": _DRL},
+        headers=hp,
+    )
+    h = {"X-Roles": "rule_admin", "X-Tenant-Id": "ns-rule", "X-Principal": "u1"}
+    r = c.post(
+        "/governance/sync-dev",
+        json={"namespace": "ns-rule", "rule_handle": "g3"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    c.patch(
+        "/rules/g3/version/1",
+        json={"is_active": False},
+        headers={"X-Roles": "rule_admin", "X-Tenant-Id": "ns-rule", "X-Principal": "u1"},
+    )
+    c.post(
+        "/rules",
+        json={"rule_handle": "g3", "group": "g", "namespace": "other-ns", "drl": _DRL},
+        headers=hp,
+    )
+    r2 = c.post(
+        "/governance/sync-dev",
+        json={"namespace": "ns-rule", "rule_handle": "g3"},
+        headers=h,
+    )
+    assert r2.status_code == 400
+
+
+def test_governance_sync_dev_platform_admin_uses_rule_namespace() -> None:
+    """BUG-39 / G-39: platform_admin may send a body namespace that does not match the rule."""
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    c.post(
+        "/rules",
+        json={"rule_handle": "px", "group": "g", "namespace": "real-ns", "drl": _DRL},
+    )
+    h = {"X-Roles": "platform_admin", "X-Tenant-Id": "default", "X-Principal": "ops"}
+    r = c.post(
+        "/governance/sync-dev",
+        json={"namespace": "wrong-body-ns", "rule_handle": "px"},
+        headers=h,
+    )
+    assert r.status_code == 200
+    assert r.json()["environment"] == "dev"
+    pins = c.get("/governance/pins", params={"namespace": "real-ns"}, headers=h).json()
+    assert any(
+        x["namespace"] == "real-ns" and x["rule_handle"] == "px" and x["environment"] == "dev"
+        for x in pins
+    )
 
 
 def test_governance_deprecation_flow_and_scope() -> None:

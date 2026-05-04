@@ -1216,6 +1216,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 salience=r.salience,
                 is_active=r.is_active,
                 drl=r.rule_definition.source,
+                created_at=r.created_at,
+                author=r.author_principal,
             )
             for r in rows
         ]
@@ -1261,6 +1263,8 @@ def create_app(deps: AppDeps | None = None) -> Any:
             salience=r.salience,
             is_active=r.is_active,
             drl=r.rule_definition.source,
+            created_at=r.created_at,
+            author=r.author_principal,
         )
 
     @app.patch(
@@ -1565,6 +1569,29 @@ def create_app(deps: AppDeps | None = None) -> Any:
             ],
         }
 
+    @app.get("/workbench/cost-estimate", tags=["workbench"])
+    def workbench_cost_estimate(
+        req: Request,
+        rows: float = Query(100_000_000.0, ge=1.0, description="Estimated batch row count"),
+        rules: int = Query(50, ge=1, description="Approximate rule count in the pack"),
+        cluster: str = Query("databricks", description="Platform label for the heuristic"),
+    ) -> dict[str, object]:
+        p = principal_from_request(req)
+        require_any_role(
+            p,
+            {
+                "rule_reader",
+                "rule_author",
+                "rule_admin",
+                "run_operator",
+                "dq_steward",
+                "ai_reviewer",
+            },
+        )
+        from sparkrules.tools.cost_estimate import estimate_batch_cost_usd
+
+        return estimate_batch_cost_usd(rows=rows, rules=rules, cluster=cluster)
+
     @app.post(
         "/dq/evaluate",
         response_model=DqEvaluateResponse,
@@ -1707,15 +1734,27 @@ def create_app(deps: AppDeps | None = None) -> Any:
         p = principal_from_request(req)
         require_any_role(p, {"rule_admin", "platform_admin"})
         require_tenant_match(p, b.namespace)
+        r_active = d.store.resolve(b.rule_handle, datetime.now(UTC))
+        if r_active is None:
+            raise _http_bad_request(
+                "no active rule for that handle at the current time",
+                code="GOVERNANCE_SYNC_FAILED",
+            )
+        ns = r_active.namespace if "platform_admin" in p.roles else b.namespace
+        if "platform_admin" not in p.roles and r_active.namespace != b.namespace:
+            raise _http_bad_request(
+                "namespace does not match the active rule's namespace",
+                code="GOVERNANCE_SYNC_FAILED",
+            )
         try:
-            v = sync_dev_from_active(d.store, d.promotion, b.namespace, b.rule_handle)
+            v = sync_dev_from_active(d.store, d.promotion, ns, b.rule_handle)
         except ValueError as e:
             raise _http_bad_request(str(e), code="GOVERNANCE_SYNC_FAILED") from e
         _audit(
             req,
             action="governance_sync_dev",
             resource=f"/governance/sync-dev/{b.rule_handle}",
-            tenant_id=b.namespace,
+            tenant_id=ns,
             status=200,
             payload=b.model_dump(),
         )

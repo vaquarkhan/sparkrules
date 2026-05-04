@@ -47,6 +47,13 @@ def test_sync_wrong_namespace() -> None:
         sync_dev_from_active(s, reg, "n2", "h")
 
 
+def test_sync_dev_from_active_no_active_rule() -> None:
+    s = InMemoryRuleMetadataStore()
+    reg = PromotionRegistry()
+    with pytest.raises(ValueError, match="no active rule"):
+        sync_dev_from_active(s, reg, "n1", "missing")
+
+
 def test_validate_version_namespace() -> None:
     s = InMemoryRuleMetadataStore()
     t0 = datetime(2020, 1, 1, tzinfo=UTC)
