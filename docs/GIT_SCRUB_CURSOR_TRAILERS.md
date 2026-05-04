@@ -33,6 +33,10 @@ GitHub’s **Insights → Contributors** graph is driven by **commits that reach
 
 3. **If you find hits on a branch**: rewrite **all** branches that still contain them (including old feature branches), then `git push --force-with-lease --all` and `git push --force-with-lease --tags` (only after coordinating with collaborators). Dependabot branches usually do not matter; **default branch + long-lived branches** do.
 
+   After a `filter-repo` mailmap pass, **re-fetch** (`git fetch --all`) and compare local tips to `origin/*`. If `git shortlog -sne origin/dev/...` still shows **`Vaquar Khan <vaquar.cna@gmail.com>`** or an old email on a **remote-tracking** branch, that branch was never force-pushed — run e.g. `git push origin dev/workbench-next --force` for each stale head so GitHub stops serving old SHAs on branch tips.
+
+   You **cannot** delete GitHub’s internal `refs/pull/*/head` snapshots from your laptop; those point at whatever was last pushed to each PR. If search still finds bad SHAs only under old PRs, the contributors list usually updates once **default branch** history is clean, but extreme cases may need [GitHub Support](https://support.github.com/).
+
 4. **If `cursoragent` is a GitHub user** shown under **Settings → Collaborators** (or a pending invite), remove access there—that is separate from the contributors graph.
 
 5. **After history is clean**, allow up to **~24 hours** for the contributors graph to update.
