@@ -59,6 +59,7 @@ nav:
     - Benchmarks: BENCHMARKS.md
   - Operations:
     - Architecture Scope: KNOWN_LIMITATIONS.md
+    - Non-blocking Backlog: PENDING_NON_BLOCKING.md
     - Comparison vs Alternatives: SPARKRULES_VS_THE_WORLD.md
     - Publishing: PUBLISHING.md
     - Roadmap: ROADMAP.md

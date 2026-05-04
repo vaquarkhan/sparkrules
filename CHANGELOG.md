@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`docs/PENDING_NON_BLOCKING.md`** — backlog matrix (non-blocking items + pointers to examples); linked from **`KNOWN_LIMITATIONS.md`**.
+- **`examples/production/`** — operator bundle: `DEPLOY_PRODUCTION`, `GOVERNANCE_WORKFLOW`, `THREAT_MODEL`, `SECURITY_SBOM`, `SEC_HARDENING`, Grafana dashboard JSON, Kubernetes canary (Argo Rollouts), cluster benchmark protocol; **`examples/streaming/`** Kafka→Iceberg Structured Streaming reference; **`examples/native/`** PyO3 template + Python bridge; **`examples/vscode-sparkrules/`** extension scaffold; **`examples/databricks/07_production_governance_deploy.ipynb`**.
 - `docs/REQUIREMENTS_V2_ENGINE.md`: full normative Req 1–37 set with phased Spec A/B/C delivery model, explicit **non-goals**, rollout/migration (**Req 30**), observability (**Req 31**), resource bounds (**Req 32**), security (**Req 33**), **`RulePack` serialization policy** (**Req 34**), cluster performance evidence (**Req 35**), `use_v2` deprecation (**Req 36**), native program (**Req 37**), deterministic salience/agenda tie-breakers (**Req 17**, **Req 24**), and risk register.
 - **`RulePack.debug_classification()`** + per-rule **`classification_rationale`** stable codes (**Req 31**).
 - **`sparkrules.runtime.engine_metrics`** — opt-in counters / latency buckets (**`SPARKRULES_ENGINE_METRICS=1`**, **`snapshot_engine_metrics()`**); wired **`LocalRuleExecutor`** + **`apply_pandas`**.

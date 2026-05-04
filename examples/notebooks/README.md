@@ -40,3 +40,9 @@ python -m uvicorn sparkrules.api.app:create_app --factory --port 8042
 4. **04 - Credit Underwriting** - real-world lending pipeline
 5. **05 - Fraud Detection** - real-time authorization rules
 6. **03 - API & Simulation** - REST API and Workbench
+
+## Production (Databricks)
+
+| # | Notebook | What you'll learn |
+|---|----------|-------------------|
+| 07 | [Databricks: production governance & deploy](../databricks/07_production_governance_deploy.ipynb) | Pinning, Delta/Iceberg scoring, links to `examples/production/` runbooks |

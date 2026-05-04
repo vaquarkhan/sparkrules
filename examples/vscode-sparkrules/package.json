@@ -1,0 +1,42 @@
+{
+  "name": "vscode-sparkrules",
+  "displayName": "SparkRules DRL",
+  "description": "DRL diagnostics via sparkrules CLI (lsp-check).",
+  "version": "0.1.0",
+  "publisher": "sparkrules-examples",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Programming Languages", "Linters"],
+  "activationEvents": ["onLanguage:drl"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "drl",
+        "aliases": ["Drools DRL", "SparkRules DRL"],
+        "extensions": [".drl"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "SparkRules",
+      "properties": {
+        "sparkrules.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python executable with sparkrules installed."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.0"
+  }
+}

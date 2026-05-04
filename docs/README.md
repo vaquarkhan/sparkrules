@@ -25,9 +25,11 @@
 |----------|---------|
 | [GOVERNANCE.md](GOVERNANCE.md) | Namespaces, dev/stage/prod promotion, deprecation workflow |
 | [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) | Architecture scope, extension points, deployment patterns |
+| [PENDING_NON_BLOCKING.md](PENDING_NON_BLOCKING.md) | Optional backlog: native engine, streaming topology, cluster evidence, ecosystem (not blocking adoption) |
 | [BENCHMARKS.md](BENCHMARKS.md) | Performance methodology and measured throughput |
 | [PUBLISHING.md](PUBLISHING.md) | PyPI, GitHub Container Registry, CI release process |
 | [GIT_SCRUB_CURSOR_TRAILERS.md](GIT_SCRUB_CURSOR_TRAILERS.md) | Removing IDE vendor lines from commit history (rare; maintainers only) |
+| [WORKBENCH_UX_IMPACT.md](WORKBENCH_UX_IMPACT.md) | Workbench UI improvements ranked by user impact (namespace picker, onboarding, toasts, catalog, cost tab) |
 | [ROADMAP.md](ROADMAP.md) | Phases and future scope |
 | [REQUIREMENTS_V2_ENGINE.md](REQUIREMENTS_V2_ENGINE.md) | **Normative V2 requirements** Req 1–37 (core + phased Spec A/B/C, non-goals, rollout, observability, security); implementation status summarized in-document |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment: Glue, Databricks, Dataproc, Synapse, K8s |

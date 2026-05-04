@@ -1,4 +1,4 @@
-﻿# Architecture Scope & Extension Points
+# Architecture Scope & Extension Points
 
 This document describes SparkRules' architecture decisions and where to extend the system for your deployment. It complements [FEATURES.md](FEATURES.md) (capabilities) and [ROADMAP.md](ROADMAP.md) (planned work).
 
@@ -123,6 +123,12 @@ SparkRules runs on any platform that supports Python 3.11+:
 | **Azure Synapse** | Config-driven | See `deploy/azure-synapse/` |
 
 Platform switching is configuration-only  -  no code changes between environments.
+
+---
+
+## Non-blocking backlog
+
+Optional items (native acceleration, full streaming topology, large-cluster evidence, ecosystem activities) are summarized in **[PENDING_NON_BLOCKING.md](PENDING_NON_BLOCKING.md)**. They do not block using the core engine or API in production.
 
 ---
 

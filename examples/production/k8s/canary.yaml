@@ -1,0 +1,97 @@
+# Production canary pattern: shadow scoring + parity gate + optional auto-promote.
+# This manifest is illustrative for Argo Rollouts; adapt names/labels to your mesh.
+#
+# Preconditions:
+# - stable Service routes 100% to "stable" Deployment
+# - canary Service or HTTPRoute sends a % of traffic to "canary" revision
+# - parity job compares stable vs canary outputs (shadow_parity_summary or custom SQL)
+
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: sparkrules-api
+  namespace: rules-system
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: sparkrules-api
+  strategy:
+    canary:
+      steps:
+        - setWeight: 5
+        - pause: { duration: 10m }
+        - analysis:
+            templates:
+              - templateName: sparkrules-shadow-parity
+        - setWeight: 25
+        - pause: { duration: 10m }
+        - analysis:
+            templates:
+              - templateName: sparkrules-shadow-parity
+        - setWeight: 100
+  template:
+    metadata:
+      labels:
+        app: sparkrules-api
+    spec:
+      serviceAccountName: sparkrules-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: ghcr.io/yourorg/sparkrules-api:1.1.0-canary
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8042
+          env:
+            - name: SPARKRULES_AUTH_MODE
+              value: "oidc"
+            - name: SPARKRULES_MAX_RULEPACK_BYTES
+              value: "5242880"
+            - name: SPARKRULES_ENGINE_METRICS
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8042
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: sparkrules-shadow-parity
+  namespace: rules-system
+spec:
+  metrics:
+    - name: parity-pass
+      interval: 2m
+      count: 3
+      successCondition: result[0] >= 0.999
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: parity
+                    image: ghcr.io/yourorg/sparkrules-parity:1.0.0
+                    command:
+                      - /bin/sh
+                      - -c
+                      - |
+                        set -e
+                        echo "Call shadow_parity_summary() or diff scored outputs here."
+                        echo "Exit 0 if gate passes."
+                        exit 0

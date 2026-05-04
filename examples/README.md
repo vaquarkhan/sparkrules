@@ -112,3 +112,47 @@ These rows map **previously undocumented gaps** to runnable scripts in this fold
 | Example | What it demonstrates |
 |---------|---------------------|
 | [dbt_clinical/](dbt_clinical/) | dbt + DuckDB staging for clinical lab data |
+
+## Production / enterprise bundle
+
+Operator reference (runbooks, SBOM, STRIDE, Grafana, canary, cluster benchmarks):
+
+| Path | What it contains |
+|------|------------------|
+| [production/README.md](production/README.md) | Index into docs, `grafana/`, `k8s/`, `benchmarks/` |
+| [production/docs/DEPLOY_PRODUCTION.md](production/docs/DEPLOY_PRODUCTION.md) | Databricks / Glue / EMR sizing and secrets |
+| [production/docs/GOVERNANCE_WORKFLOW.md](production/docs/GOVERNANCE_WORKFLOW.md) | Dev → stage → prod, rollback, deprecation |
+| [production/docs/THREAT_MODEL.md](production/docs/THREAT_MODEL.md) | STRIDE threat model |
+| [production/docs/SECURITY_SBOM.md](production/docs/SECURITY_SBOM.md) | CycloneDX / SPDX + CI fragment |
+| [production/docs/SEC_HARDENING.md](production/docs/SEC_HARDENING.md) | Controls beyond metrics + rule-pack bytes |
+| [production/grafana/grafana-sparkrules.json](production/grafana/grafana-sparkrules.json) | Starter Grafana dashboard (Prometheus) |
+| [production/k8s/canary.yaml](production/k8s/canary.yaml) | Argo Rollouts canary + parity analysis hook |
+| [production/benchmarks/BENCHMARK_CLUSTER.md](production/benchmarks/BENCHMARK_CLUSTER.md) | Large-cluster benchmark protocol |
+
+## Native acceleration (example)
+
+| Path | What it demonstrates |
+|------|------------------------|
+| [native/README.md](native/README.md) | Contract for future `sparkrules_native` hot loop |
+| [native/bridge.py](native/bridge.py) | Python facade with V2 fallback |
+| [native/pyo3_template/](native/pyo3_template/) | Minimal PyO3 Rust crate template (`maturin`) |
+
+## Kafka → Iceberg streaming (example)
+
+| Path | What it demonstrates |
+|------|------------------------|
+| [streaming/README.md](streaming/README.md) | Ops checklist |
+| [streaming/kafka_iceberg_structured_streaming.py](streaming/kafka_iceberg_structured_streaming.py) | Spark Structured Streaming + `apply_drl` + Iceberg append |
+
+## VS Code extension (example)
+
+| Path | What it demonstrates |
+|------|------------------------|
+| [vscode-sparkrules/README.md](vscode-sparkrules/README.md) | Build / package `.vsix` |
+| [vscode-sparkrules/src/extension.ts](vscode-sparkrules/src/extension.ts) | Diagnostics on save via `sparkrules-cli lsp-check` |
+
+## Databricks notebooks
+
+| Notebook | Topic |
+|----------|-------|
+| [databricks/07_production_governance_deploy.ipynb](databricks/07_production_governance_deploy.ipynb) | Governance hooks + Delta write + deploy notes |

@@ -1,0 +1,31 @@
+# Example fragment: SBOM + audit in CI (GitHub Actions style).
+# Copy into your repository; paths are illustrative.
+
+name: sbom-and-audit
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install with locked deps
+        run: |
+          python -m pip install -U pip
+          pip install cyclonedx-bom pip-audit
+          pip install -e ".[test]"
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment -o cyclonedx.json
+      - name: CVE audit
+        run: pip-audit -r <(pip freeze) --desc on
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclonedx-sbom
+          path: cyclonedx.json

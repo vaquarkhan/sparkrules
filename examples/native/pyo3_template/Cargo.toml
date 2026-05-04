@@ -1,0 +1,13 @@
+[package]
+name = "sparkrules_native_template"
+version = "0.1.0"
+edition = "2021"
+description = "Template PyO3 module for SparkRules native acceleration (rename before publish)."
+license = "Apache-2.0"
+
+[lib]
+name = "sparkrules_native_template"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
