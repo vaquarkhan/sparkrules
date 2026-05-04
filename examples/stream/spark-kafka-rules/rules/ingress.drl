@@ -1,0 +1,18 @@
+// Streaming ingress rules — fact JSON maps to binding $t : T (see Python schema in spark job).
+
+rule "high_amount_hold"
+  salience 100
+  when
+    $t : T( $t.amount > 10000 )
+  then
+    result.status = "hold";
+    result.reason = "AMT_HIGH";
+end
+
+rule "default_ok"
+  salience 0
+  when
+    $t : T( true )
+  then
+    result.status = "ok";
+end

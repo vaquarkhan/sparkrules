@@ -1,20 +1,47 @@
-# Kafka → Iceberg (Spark Structured Streaming)
+# Streaming examples — SparkRules
 
-| File | Description |
-|------|-------------|
-| [kafka_iceberg_structured_streaming.py](kafka_iceberg_structured_streaming.py) | Runnable **reference** job: read Kafka → `foreachBatch` → `apply_drl` → append Iceberg |
+ Runnable paths for **Kafka / Iceberg production jobs**, **Spark Structured Streaming simulators** (no broker),
+**Flink-style per-event** scoring, and **pure-Python** local simulators so you can test DRL without
+a cluster.
 
-## Requirements
+## Quick test (no JVM, no Kafka)
 
-- JVM + **PySpark** on the classpath used by your cluster.
-- `pip install 'sparkrules[spark]'` on the driver (same version as CI-tested).
-- Iceberg Spark runtime JARs and catalog configuration (Glue, Hive, REST) per your platform.
-- Kafka ACLs allowing the job’s principal to **consume** the facts topic.
+| File | Command | What it does |
+|------|---------|----------------|
+| [local_stream_simulator.py](local_stream_simulator.py) | `python local_stream_simulator.py --count 20` | Random facts → `LocalRuleExecutor` |
+| [local_stream_simulator.py](local_stream_simulator.py) | `python local_stream_simulator.py --jsonl sample_events.jsonl` | Same, from [sample_events.jsonl](sample_events.jsonl) |
+| [flink_style_event_simulator.py](flink_style_event_simulator.py) | `python flink_style_event_simulator.py --demo` | One-at-a-time events (Flink *processElement* style) |
 
-## Operations
+Requires: `pip install sparkrules` (core). Uses shared DRL: [rules/ingress.drl](rules/ingress.drl).
 
-1. Set **checkpoint** path exclusively for this job (S3 / ADLS).
-2. Tune `maxOffsetsPerTrigger` for back-pressure.
-3. Reload DRL on a schedule inside `foreachBatch` or subscribe to a **rules** topic; keep packs under `SPARKRULES_MAX_RULEPACK_BYTES`.
+## Spark Structured Streaming (simulated or production)
 
-The CLI helper `python -m sparkrules.tools.stream_kafka_iceberg` still prints a **plan JSON** only — use this folder for an executable streaming outline.
+| File | Command | What it does |
+|------|---------|----------------|
+| [spark_structured_streaming_rate_simulator.py](spark_structured_streaming_rate_simulator.py) | `pip install 'sparkrules[spark]'` then `python spark_structured_streaming_rate_simulator.py` | **`rate` source** micro-batches + `foreachBatch` + `apply_drl` — no Kafka |
+| [kafka_iceberg_structured_streaming.py](kafka_iceberg_structured_streaming.py) | `spark-submit` with Kafka + Iceberg packages | Reference **Kafka → Iceberg** job for operators |
+
+Env hints for the rate simulator: `RATE_ROWS_PER_SECOND`, `STREAM_SECONDS`, `CHECKPOINT_DIR`, `STREAM_TRIGGER`.
+
+## Flink + Kafka (Python sidecar pattern)
+
+Same DRL semantics as streaming ingress rules; production Flink jobs usually call HTTP or a sidecar
+instead of embedding Python. See **[../stream/flink-kafka-rules/](../stream/flink-kafka-rules/)** for
+`python_sidecar_consumer.py` and **optional** Kafka:
+
+```text
+python flink_style_event_simulator.py   # --demo or stdin — no broker
+pip install kafka-python
+python flink_style_event_simulator.py --kafka   # needs KAFKA_BOOTSTRAP / KAFKA_TOPIC
+```
+
+## Spark + Kafka (full pipeline)
+
+Parity job with Parquet sink: **[../stream/spark-kafka-rules/](../stream/spark-kafka-rules/)**
+(`spark_kafka_structured_streaming.py` + `rules/ingress.drl`). You can point `SPARKRULES_DRL_PATH`
+to **this** folder’s [rules/ingress.drl](rules/ingress.drl) for identical rules.
+
+## Shared rule file
+
+[rules/ingress.drl](rules/ingress.drl) — `high_amount_hold` / `default_ok` on fact type **`T`** with `amount`.
+Edit paths or set **`SPARKRULES_DRL_PATH`** to use your own pack.

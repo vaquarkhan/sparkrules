@@ -64,9 +64,9 @@ def _build_spark() -> SparkSession:
     catalog = os.environ.get("ICEBERG_CATALOG", "glue")
     warehouse = os.environ.get("ICEBERG_WAREHOUSE", "")
     if warehouse:
-        b = b.config(f"spark.sql.catalog.{catalog}", "org.apache.iceberg.spark.SparkCatalog").config(
-            f"spark.sql.catalog.{catalog}.warehouse", warehouse
-        )
+        b = b.config(
+            f"spark.sql.catalog.{catalog}", "org.apache.iceberg.spark.SparkCatalog"
+        ).config(f"spark.sql.catalog.{catalog}.warehouse", warehouse)
     return b.getOrCreate()
 
 

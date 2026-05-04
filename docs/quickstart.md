@@ -53,7 +53,7 @@ pip install sparkrules[api]
 python -m uvicorn sparkrules.api.app:create_app --factory --port 8042
 ```
 
-Open http://127.0.0.1:8042/workbench/ for the browser-based Rules Workbench.
+Open http://127.0.0.1:8042/workbench/ for the browser-based Rules Workbench (**Overview** is the main dashboard). Optional Workbench login and default dev credentials **`admin` / `admin`** are documented in [WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md); without `SPARKRULES_WORKBENCH_AUTH`, no login screen appears.
 
 ## Adverse-action notice
 

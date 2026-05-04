@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 import hashlib
+import os
 import uuid
 
 from sparkrules.api._http_deps import (
@@ -80,6 +81,7 @@ from sparkrules.api.schemas import (
 )
 from sparkrules.ai import AiService, create_default_ai_provider
 from sparkrules.api.security import (
+    api_key_matches_request,
     enforce_drl_byte_cap,
     install_optional_api_key_middleware,
     principal_from_request,
@@ -1950,7 +1952,106 @@ def create_app(deps: AppDeps | None = None) -> Any:
             details=details,
         )
 
+    @app.get("/api/workbench/auth/config", tags=["workbench"])
+    def workbench_auth_config() -> dict[str, object]:
+        from sparkrules.api.workbench_auth import (
+            workbench_auth_enabled,
+            workbench_expected_credentials,
+            workbench_http_gate_active,
+        )
+
+        u, _ = workbench_expected_credentials()
+        pwd_set = bool((os.environ.get("SPARKRULES_WORKBENCH_PASSWORD", "") or "").strip())
+        deny_def = (os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or "").strip().lower() in (
+            "0",
+            "false",
+            "no",
+        )
+        # True when implicit dev password (admin) can be used: no custom password env and not explicitly opted out.
+        allow = not pwd_set and not deny_def
+        return {
+            "auth_enabled": workbench_auth_enabled(),
+            "gate_active": workbench_http_gate_active(),
+            "default_credentials_allowed": allow,
+            "password_configured": pwd_set,
+            "hint_username": u,
+        }
+
+    @app.post("/api/workbench/auth/login", tags=["workbench"])
+    def workbench_auth_login(body: dict[str, Any]) -> dict[str, object]:
+        from sparkrules.api.workbench_auth import (
+            create_workbench_token,
+            verify_credentials,
+            workbench_auth_enabled,
+            workbench_expected_credentials,
+        )
+
+        if not workbench_auth_enabled():
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "WORKBENCH_AUTH_DISABLED",
+                    "message": "Workbench login is not enabled on this server",
+                },
+            )
+        u = str(body.get("username") or "").strip()
+        p = str(body.get("password") or "").strip()
+        if not verify_credentials(u, p):
+            eu, _ep = workbench_expected_credentials()
+            pwd_set = bool((os.environ.get("SPARKRULES_WORKBENCH_PASSWORD", "") or "").strip())
+            deny_def = (os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or "").strip().lower() in (
+                "0",
+                "false",
+                "no",
+            )
+            dev_ok = not pwd_set and not deny_def
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "code": "WORKBENCH_LOGIN_FAILED",
+                    "message": "Invalid username or password",
+                    "hint_username": eu,
+                    "password_configured_on_server": pwd_set,
+                    "implicit_admin_password_allowed": dev_ok,
+                },
+            )
+        eu2, _ = workbench_expected_credentials()
+        return {"token": create_workbench_token(eu2), "principal": eu2}
+
     install_optional_api_key_middleware(app)
+
+    def _register_workbench_gate(application: FastAPI) -> None:
+        from sparkrules.api.workbench_auth import (
+            is_path_exempt_from_workbench_gate,
+            verify_workbench_token,
+            workbench_http_gate_active,
+        )
+
+        @application.middleware("http")
+        async def _workbench_gate(request: Request, call_next: Any) -> Any:
+            if request.method == "OPTIONS":
+                return await call_next(request)
+            if not workbench_http_gate_active():
+                return await call_next(request)
+            pth = request.url.path
+            if is_path_exempt_from_workbench_gate(pth):
+                return await call_next(request)
+            if api_key_matches_request(request):
+                return await call_next(request)
+            tok = (request.headers.get("x-workbench-token") or "").strip()
+            if tok and verify_workbench_token(tok):
+                return await call_next(request)
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": {
+                        "code": "WORKBENCH_TOKEN_REQUIRED",
+                        "message": "Workbench session token or X-API-Key required",
+                    },
+                },
+            )
+
+    _register_workbench_gate(app)
 
     app.include_router(kie_router)
 

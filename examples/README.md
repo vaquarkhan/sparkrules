@@ -113,6 +113,31 @@ These rows map **previously undocumented gaps** to runnable scripts in this fold
 |---------|---------------------|
 | [dbt_clinical/](dbt_clinical/) | dbt + DuckDB staging for clinical lab data |
 
+## Infrastructure as code (Terraform)
+
+**Production-style Terraform**: reusable [modules](infrastructure/modules/README.md), per-service roots with **`terraform.tfvars.example`**, optional [EMR production runbook](infrastructure/deployments/aws-emr-production/README.md), and [docs/INFRASTRUCTURE_TERRAFORM.md](../docs/INFRASTRUCTURE_TERRAFORM.md) (design, validate-only workflow, state). Use **`create_resources = false`** (default) for local **`terraform validate`** without provisioning.
+
+| Path | Contents |
+|------|----------|
+| [infrastructure/README.md](infrastructure/README.md) | Layout: modules, roots, runbook pointer |
+| [infrastructure/modules/](infrastructure/modules/README.md) | **S3 artifacts**, **EMR EC2 roles** (composed by `aws/emr`) |
+| [infrastructure/aws/README.md](infrastructure/aws/README.md) | AWS: EMR / Glue / EKS quick links |
+| [infrastructure/aws/emr/](infrastructure/aws/emr/) | EMR: modules + IAM + artifact bucket + `backend.tf.example` |
+| [infrastructure/aws/glue/](infrastructure/aws/glue/) | Glue job role + workspace bucket |
+| [infrastructure/aws/eks/](infrastructure/aws/eks/) | EKS cluster / node IAM roles |
+| [infrastructure/databricks/](infrastructure/databricks/) | Databricks provider variables + job hints |
+| [infrastructure/gcp/](infrastructure/gcp/) | GCS bucket + Dataproc SA (with `project_id`) |
+| [infrastructure/azure/](infrastructure/azure/) | Resource group + storage for DRL artifacts |
+
+## Stream processing (Kafka + rules)
+
+| Path | Contents |
+|------|----------|
+| [streaming/README.md](streaming/README.md) | **Simulators** (local + rate micro-batch), Flink-style, Kafka→Iceberg ref |
+| [stream/README.md](stream/README.md) | Index: Spark vs Flink integration |
+| [stream/spark-kafka-rules/](stream/spark-kafka-rules/) | PySpark Structured Streaming + `rules/ingress.drl` |
+| [stream/flink-kafka-rules/](stream/flink-kafka-rules/) | Parity DRL + Flink REST / PyFlink notes + Python sidecar |
+
 ## Production / enterprise bundle
 
 Operator reference (runbooks, SBOM, STRIDE, Grafana, canary, cluster benchmarks):
@@ -143,6 +168,8 @@ Operator reference (runbooks, SBOM, STRIDE, Grafana, canary, cluster benchmarks)
 |------|------------------------|
 | [streaming/README.md](streaming/README.md) | Ops checklist |
 | [streaming/kafka_iceberg_structured_streaming.py](streaming/kafka_iceberg_structured_streaming.py) | Spark Structured Streaming + `apply_drl` + Iceberg append |
+
+See **[stream/](stream/)** for Kafka + DRL layouts split between **Spark** and **Flink**-oriented integration notes.
 
 ## VS Code extension (example)
 

@@ -1,6 +1,8 @@
 # Native engine acceleration (reference)
 
-The PyPI namespace **`sparkrules_native`** is reserved (`src/sparkrules_native/` in this repo). A future release may ship a **Rust / Cython** hot loop for Drools-class per-row latency.
+**Status:** This is **not** a finished, supported accelerator shipped with the main `sparkrules` wheel. It is a **contract + bridge template + PyO3 starter** for a **separate** Cython/Rust implementation (see [PENDING_NON_BLOCKING.md](../../docs/PENDING_NON_BLOCKING.md)).
+
+The PyPI namespace **`sparkrules_native`** is reserved (`src/sparkrules_native/` in this repo). A future release *may* ship a **Rust / Cython** hot loop for Drools-class per-row latency; until then, production use relies on the **pure Python V2** executor (`LocalRuleExecutor` / Spark).
 
 This folder documents the **ABI contract** and ships:
 

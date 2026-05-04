@@ -1,0 +1,11 @@
+# Copy to backend.tf and fill. Keeps state out of git for team applies.
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "myorg-terraform-state"
+#     key            = "sparkrules/aws-emr/terraform.tfstate"
+#     region         = "us-east-1"
+#     dynamodb_table = "terraform-locks"
+#     encrypt        = true
+#   }
+# }

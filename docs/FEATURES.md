@@ -1,4 +1,4 @@
-﻿# Features
+# Features
 
 For production scope, unsupported DRL/Spark edges, and execution caveats, see **[KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)**.
 
@@ -69,6 +69,8 @@ For production scope, unsupported DRL/Spark edges, and execution caveats, see **
 
 - FastAPI endpoints for health, rules, rule-pack import/export, version diff, governance (pins + **deprecations** with enforce), **LSP** (`/ide/lsp/analyze`), simulations (default, shadow, coverage, **counterfactual**, **chain**), time-travel **debug** capture/replay, deployment config, DQ, Workbench helper routes
 - Browser **Rules Workbench** at `/workbench/`: **Monaco** DRL editor, **validate** (parse) + **LSP** diagnostics, **Overview** (stats, charts), **light/dark theme** synced with editor, assets with filters, per-version **activate/deactivate** (see API), simulation, deployment readout, template helper, **Phase 3** pack + diff, **Phase 4** governance pane
+- Optional **browser login** for Workbench (`SPARKRULES_WORKBENCH_AUTH`) — **the shipped static shell hides the sign-in form by default** (`WORKBENCH_LOGIN_UI_ENABLED = false`); use **`SPARKRULES_API_KEY`** or leave workbench auth unset for typical dev ([WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md))
+- **Infrastructure as code (Terraform)** — reusable **AWS modules** (`s3-artifacts-aws`, `emr-ec2-roles-aws`), roots for **EMR / Glue / EKS / Databricks / GCP / Azure**, **`terraform.tfvars.example`** per root, and a production **deployment runbook** — [INFRASTRUCTURE_TERRAFORM.md](INFRASTRUCTURE_TERRAFORM.md), [examples/infrastructure/](../examples/infrastructure/)
 - Python package APIs for parser, compiler, executor, store, and runtime modules
 - Data quality API endpoint for check evaluation and summarized violation outputs
 - Optional **`SPARKRULES_API_KEY`**: also required for sensitive **GET**s on rules, deployment, and governance when set (public: `/health`, OpenAPI, `OPTIONS`, static `/workbench/-` shell)

@@ -4,6 +4,7 @@ import os
 import json
 import base64
 import binascii
+import hmac
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
@@ -27,6 +28,19 @@ def _supplied_key(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         return auth[7:].strip()
     return h
+
+
+def api_key_matches_request(request: Request) -> bool:
+    """True when ``SPARKRULES_API_KEY`` is set and the request supplies that exact key."""
+
+    expected = _env_api_key()
+    if not expected:
+        return False
+    got = _supplied_key(request)
+    try:
+        return hmac.compare_digest(got.encode("utf-8"), expected.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def _bearer_token(request: Request) -> str | None:

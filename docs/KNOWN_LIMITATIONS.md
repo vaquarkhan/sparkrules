@@ -90,6 +90,7 @@ The browser-based Rules Workbench provides:
 - Governance pane (promotion pins, deprecations)
 - Light/dark theme
 - Overview dashboard with stats and charts
+- Optional **browser login** (`SPARKRULES_WORKBENCH_AUTH`): default **`admin` / `admin`** only in documented dev settings; production operators set **`SPARKRULES_WORKBENCH_USER`** / **`SPARKRULES_WORKBENCH_PASSWORD`** and redeploy—see **[WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md)**.
 
 **Extension point:** The Workbench is a static HTML/JS shell calling the REST API. Add custom views by extending the API and the static shell, or build a separate React/Vue frontend against the same endpoints.
 
@@ -128,7 +129,9 @@ Platform switching is configuration-only  -  no code changes between environment
 
 ## Non-blocking backlog
 
-Optional items (native acceleration, full streaming topology, large-cluster evidence, ecosystem activities) are summarized in **[PENDING_NON_BLOCKING.md](PENDING_NON_BLOCKING.md)**. They do not block using the core engine or API in production.
+Optional items are summarized in **[PENDING_NON_BLOCKING.md](PENDING_NON_BLOCKING.md)**. They do not block using the core engine or API in production.
+
+**Native Cython/Rust acceleration:** Not implemented as a supported wheel in this repository—the **`examples/native/`** tree is a **bridge template and PyO3 starter**, not a finished hot loop. The engine you install from PyPI uses **CPython** paths unless you build and wire your own native extension separately.
 
 ---
 

@@ -1,0 +1,18 @@
+// Keep in sync with ../spark-kafka-rules/rules/ingress.drl for cross-engine parity.
+
+rule "high_amount_hold"
+  salience 100
+  when
+    $t : T( $t.amount > 10000 )
+  then
+    result.status = "hold";
+    result.reason = "AMT_HIGH";
+end
+
+rule "default_ok"
+  salience 0
+  when
+    $t : T( true )
+  then
+    result.status = "ok";
+end

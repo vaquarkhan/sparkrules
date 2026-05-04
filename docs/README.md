@@ -29,10 +29,12 @@
 | [BENCHMARKS.md](BENCHMARKS.md) | Performance methodology and measured throughput |
 | [PUBLISHING.md](PUBLISHING.md) | PyPI, GitHub Container Registry, CI release process |
 | [GIT_SCRUB_CURSOR_TRAILERS.md](GIT_SCRUB_CURSOR_TRAILERS.md) | Removing IDE vendor lines from commit history (rare; maintainers only) |
+| [WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md) | **Default `admin`/`admin` (dev), env-based credentials, redeploy to change password**; API key bypass |
 | [WORKBENCH_UX_IMPACT.md](WORKBENCH_UX_IMPACT.md) | Workbench UI improvements ranked by user impact (namespace picker, onboarding, toasts, catalog, cost tab) |
 | [ROADMAP.md](ROADMAP.md) | Phases and future scope |
 | [REQUIREMENTS_V2_ENGINE.md](REQUIREMENTS_V2_ENGINE.md) | **Normative V2 requirements** Req 1–37 (core + phased Spec A/B/C, non-goals, rollout, observability, security); implementation status summarized in-document |
 | [../deploy/README.md](../deploy/README.md) | Cloud platform deployment: Glue, Databricks, Dataproc, Synapse, K8s |
+| [INFRASTRUCTURE_TERRAFORM.md](INFRASTRUCTURE_TERRAFORM.md) | **Terraform modules**, `tfvars.example`, cost/apply/**destroy** for experiments, roots under `examples/infrastructure/` |
 
 ## Quick links
 

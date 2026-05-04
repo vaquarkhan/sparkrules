@@ -28,6 +28,8 @@ pip install sparkrules[api]
 
 Then start the API and open **Workbench** in a browser (e.g. `http://127.0.0.1:8042/workbench/` if you bind uvicorn to that port). The UI is a static shell plus Monaco: use the in-app **Namespace** picker and **Get started** card when the store is empty so governance headers stay aligned. UX changes are summarized by impact in **[WORKBENCH_UX_IMPACT.md](WORKBENCH_UX_IMPACT.md)**.
 
+If you enable Workbench login (`SPARKRULES_WORKBENCH_AUTH=1`), the documented **default sign-in is username `admin` and password `admin`** only when dev defaults are allowed—see **[WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md)** for the exact conditions and **how to set your own username/password via env vars and redeploy** (there is no password change screen inside the app).
+
 For the DuckDB and Postgres metadata stores:
 
 ```
@@ -1300,14 +1302,20 @@ pip install sparkrules[api]
 python -m uvicorn sparkrules.api.app:create_app --factory --host 127.0.0.1 --port 8042
 ```
 
-Open `http://127.0.0.1:8042/workbench/`. You get:
+Open `http://127.0.0.1:8042/workbench/`.
 
+**Login vs no login:** By default, **Workbench does not show a login page**—you land straight in the app. To **test the login screen locally**, set `SPARKRULES_WORKBENCH_AUTH=1` and reload `/workbench/`; if you have not set `SPARKRULES_WORKBENCH_PASSWORD`, sign in with **`admin` / `admin`** (set `SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS=0` only if you want to block that until a real password is configured). Full details: **[WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md)**.
+
+**Main UI dashboard:** After a successful login (when auth is enabled), the shell opens on **Overview**—that is the **Workbench dashboard** (aggregate stats and charts by namespace/group). You can switch views from the left nav.
+
+You also get:
+
+- **Overview** (dashboard) — charts of active rules by group and namespace
 - **Monaco DRL editor** with syntax highlighting and LSP diagnostics (powered by §22)
 - **Simulate tab** - upload a CSV of facts, paste DRL, see rule fires with bound fields (powered by §29)
 - **Decision table grid** - edit rows directly in the browser, export to XLSX (powered by §7)
 - **Rule catalog** - search, filter by namespace, see version history (powered by §6 + §20)
 - **Governance pane** - promote dev to stage to prod with pinned versions (powered by §20)
-- **Overview dashboard** - charts of active rules by group and namespace
 
 The Workbench is a thin shell over the REST API. Everything it shows is also available via `POST /rules`, `POST /simulations`, `POST /rules/validate`, `POST /ide/lsp/analyze`, and the governance endpoints. Swagger docs live at `/docs` for the full API surface.
 
@@ -1322,6 +1330,7 @@ The Workbench is a thin shell over the REST API. Everything it shows is also ava
 | Benchmarks with numbers | `BENCHMARK_V1_1_0.md` |
 | V2 engine design | `docs/HOW_IT_WORKS.md` |
 | Governance / promotion | `docs/GOVERNANCE.md` |
+| Workbench login, default `admin`/`admin`, env vars | `docs/WORKBENCH_LOGIN.md` |
 | Comparison with Drools / Camunda / others | `SPARKRULES_VS_THE_WORLD.md` |
 
 ---

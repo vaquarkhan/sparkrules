@@ -1,0 +1,3 @@
+aws_region       = "us-east-1"
+name_prefix      = "acme-prod-glue-sparkrules"
+create_resources = false

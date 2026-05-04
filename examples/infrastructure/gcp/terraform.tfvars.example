@@ -1,0 +1,5 @@
+# Required when create_resources = true
+project_id       = "my-gcp-project-id"
+region           = "us-central1"
+name_prefix      = "sparkrules"
+create_resources = false

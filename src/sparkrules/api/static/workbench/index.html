@@ -198,6 +198,16 @@
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
+    .wb-session-flex {
+      display: none;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .wb-session-flex:not(.hidden) {
+      display: inline-flex;
+    }
     html[data-theme="light"] textarea:focus,
     html[data-theme="light"] input:focus,
     html[data-theme="light"] select:focus {
@@ -409,6 +419,26 @@
     }
     details.hdr-security summary { list-style: none; }
     details.hdr-security summary::-webkit-details-marker { display: none; }
+    details.wb-auth-help {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.2rem 0.5rem;
+      background: var(--panel);
+      max-width: min(400px, 96vw);
+    }
+    details.wb-auth-help summary {
+      cursor: pointer;
+      font-size: 0.72rem;
+      color: var(--muted);
+      list-style: none;
+    }
+    details.wb-auth-help summary::-webkit-details-marker { display: none; }
+    details.wb-auth-help .wb-auth-help-body {
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: var(--muted);
+      padding: 0.35rem 0 0;
+    }
     .wb-modal-backdrop {
       position: fixed;
       inset: 0;
@@ -442,6 +472,64 @@
       transition: border-color 0.15s, background 0.15s;
     }
     .wb-drop-zone.wb-drop-hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    .wb-login-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: var(--bg-elevated);
+      background-image: linear-gradient(160deg, rgba(15, 23, 42, 0.97) 0%, rgba(6, 10, 16, 0.99) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    .wb-login-overlay.hidden { display: none !important; }
+    /* When browser login is disabled in the shell (see WORKBENCH_LOGIN_UI_ENABLED), hide overlay + session strip. */
+    body.wb-login-ui-off #wb-login-overlay,
+    body.wb-login-ui-off #wb-session-strip,
+    body.wb-login-ui-off #btn-wb-logout { display: none !important; }
+    /* Hide entire Workbench chrome until auth gate clears (no main UI behind login). */
+    #wb-app.wb-app-pending-init {
+      display: none !important;
+    }
+    .wb-login-card {
+      width: min(400px, 96vw);
+      background: var(--panel-solid);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.35rem 1.4rem;
+      box-shadow: var(--shadow);
+    }
+    .wb-login-card h2 { font-size: 1.1rem; margin: 0 0 0.5rem; text-transform: none; letter-spacing: 0; color: var(--text); }
+    .wb-login-card label { display: block; font-size: 0.76rem; color: var(--muted); margin: 0.65rem 0 0.2rem; }
+    .wb-login-card input { margin-bottom: 0.35rem; }
+    .wb-snippet-tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.5rem 0 0.65rem;
+      align-items: center;
+    }
+    .wb-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.28rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      cursor: grab;
+      color: var(--text);
+      user-select: none;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .wb-chip:hover { border-color: var(--accent); background: var(--nav-hover); }
+    .wb-chip:active { cursor: grabbing; }
+    .wb-chip-hint { font-size: 0.72rem; color: var(--muted); margin: 0 0 0.35rem; }
     main.wb-fetch-loading { opacity: 0.72; transition: opacity 0.15s; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
@@ -472,6 +560,21 @@
 </head>
 <body>
   <div id="wb-toasts" aria-live="polite" aria-relevant="additions"></div>
+  <div id="wb-login-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="wb-login-title">
+    <div class="wb-login-card">
+      <h2 id="wb-login-title">Sign in to Workbench</h2>
+      <p id="wb-login-blurb" class="wb-chip-hint">Use the operator-configured username and password. If no custom password is set on the server, try <span class="mono">admin</span> / <span class="mono">admin</span> unless the server opted out (<span class="mono">DEFAULT_CREDENTIALS=0</span>).</p>
+      <label for="wb-login-user">Username</label>
+      <input type="text" id="wb-login-user" autocomplete="username" />
+      <label for="wb-login-pass">Password</label>
+      <input type="password" id="wb-login-pass" autocomplete="current-password" />
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" class="btn" id="wb-login-submit">Sign in</button>
+      </div>
+      <p id="wb-login-err" class="status-err hidden" style="margin:0.6rem 0 0;font-size:0.82rem"></p>
+    </div>
+  </div>
+  <div id="wb-app" class="wb-app-shell wb-app-pending-init" aria-hidden="true">
   <header>
     <div class="header-brand">
       <img
@@ -490,8 +593,24 @@
     </div>
     <div class="header-tools">
       <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark theme">Theme</button>
-      <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
+      <input type="password" id="api-key" placeholder="X-API-Key (match server SPARKRULES_API_KEY)" style="max-width:280px" title="Same value as SPARKRULES_API_KEY on the API process; then Save" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
+      <details class="wb-auth-help" id="wb-auth-help">
+        <summary title="Why 401 / token messages?">API access help</summary>
+        <div class="wb-auth-help-body">
+          <p style="margin:0 0 0.4rem"><strong>Workbench session token or X-API-Key required</strong> is the server saying each API call must be authenticated when the HTTP gate is on (<span class="mono">SPARKRULES_WORKBENCH_AUTH=1</span>).</p>
+          <ul style="margin:0;padding-left:1.05rem">
+            <li><strong>X-API-Key</strong> — Paste the same secret as server <span class="mono">SPARKRULES_API_KEY</span>, click <strong>Save</strong> (stored in this browser). Set that env in systemd, Docker, or k8s.</li>
+            <li><strong>Session token</strong> — Shown after browser sign-in when <span class="mono">WORKBENCH_LOGIN_UI_ENABLED</span> is true in this page’s script and the server has workbench auth; sent as <span class="mono">X-Workbench-Token</span>.</li>
+            <li><strong>Optional / open local</strong> — Leave <span class="mono">SPARKRULES_WORKBENCH_AUTH</span> unset, or run <span class="mono">python scripts/dev_server.py</span> (it clears that variable by default for this process). Use <span class="mono">--with-workbench-auth</span> to keep your shell value. To keep login endpoints but skip the gate: <span class="mono">SPARKRULES_DISABLE_WORKBENCH_GATE=1</span>.</li>
+          </ul>
+          <p style="margin:0.45rem 0 0"><a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a> · <a class="link-quiet" href="https://sparkrules.readthedocs.io/en/latest/" target="_blank" rel="noopener">Docs</a></p>
+        </div>
+      </details>
+      <span id="wb-session-strip" class="hidden wb-session-flex">
+        <span class="mono" id="wb-session-name" title="From Workbench login"></span>
+        <button type="button" class="btn btn-sm btn-ghost" id="btn-wb-logout">Logout</button>
+      </span>
       <label for="hdr-tenant-select" class="link-quiet" style="font-size:0.75rem;white-space:nowrap">Namespace</label>
       <select id="hdr-tenant-select" style="max-width:160px" title="Sent as X-Tenant-Id (governance / BUG-39 safe pinning)"><option value="default">default</option></select>
       <input type="text" id="hdr-tenant-custom" placeholder="Custom namespace…" style="max-width:150px;display:none" title="When Namespace = Other" />
@@ -670,6 +789,16 @@ end</pre>
           <p class="mono" style="color:var(--muted);font-size:0.8rem;margin:0.35rem 0 0.5rem">Monaco DRL editor &middot; Validate runs parse + LSP diagnostics</p>
           <div class="wb-drop-zone" id="author-dnd-hint" tabindex="0">Drop a <span class="mono">.drl</span> file here or click to browse</div>
           <input type="file" id="inp-author-dnd" accept=".drl,.txt,text/plain" style="display:none" />
+          <div class="panel" style="margin:0.5rem 0;padding:0.65rem 0.75rem">
+            <p class="wb-chip-hint" style="margin:0 0 0.35rem"><strong>Rule snippets</strong> — drag into the editor or click to insert at the cursor.</p>
+            <div class="wb-snippet-tray" id="author-snippet-tray" aria-label="DRL snippets">
+              <button type="button" class="wb-chip" draggable="true" data-drl='when&#10;    $t : T ( $t.amount &gt; 1000 )&#10;'>Condition: amount &gt; 1000</button>
+              <button type="button" class="wb-chip" draggable="true" data-drl='then&#10;    result.tier = &quot;gold&quot;;&#10;    result.score = 100;&#10;'>Action: tier + score</button>
+              <button type="button" class="wb-chip" draggable="true" data-drl='salience 10&#10;reason_codes [&quot;R001&quot;]&#10;'>Salience + codes</button>
+              <button type="button" class="wb-chip" draggable="true" data-drl='rule &quot;my-rule&quot;&#10;'>Rule header</button>
+              <button type="button" class="wb-chip" draggable="true" data-drl='agenda-group &quot;stage1&quot;&#10;'>Agenda group</button>
+            </div>
+          </div>
           <div id="monaco-drl-new" class="monaco-wrap" role="region" aria-label="DRL editor"></div>
           <div class="row" style="margin-top:0.5rem">
             <button class="btn" type="button" id="btn-validate">Validate</button>
@@ -1075,10 +1204,18 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       <pre id="modal-test-out" class="mono" style="margin-top:0.5rem;max-height:180px;overflow:auto;font-size:0.78rem"></pre>
     </div>
   </div>
+  </div>
   <!-- Monaco + Chart load after DOM so the shell paints immediately (CDN blocked/slow no longer blanks the page). -->
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script>
+    /** Browser login gate for Workbench. Set true only when you want the sign-in overlay with SPARKRULES_WORKBENCH_AUTH (off by default in this shell). */
+    var WORKBENCH_LOGIN_UI_ENABLED = false;
+    if (!WORKBENCH_LOGIN_UI_ENABLED) {
+      try {
+        document.body.classList.add("wb-login-ui-off");
+      } catch (e) {}
+    }
     var assetsState = { all: [], page: 1, pageSize: 20 };
     var drlNewEditor = null;
     var drlSimEditor = null;
@@ -1183,17 +1320,31 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       if (sel && sel.value) return sel.value;
       return "default";
     }
+    function workbenchTokenHeaders() {
+      var t = sessionStorage.getItem("sparkrulesWorkbenchToken");
+      if (!t) return {};
+      return { "X-Workbench-Token": t };
+    }
     function roleHeaders() {
       var o = {};
       var r = document.getElementById("hdr-roles");
       var rv = r && r.value.trim() ? r.value.trim() : "platform_admin";
       o["X-Roles"] = rv;
       o["X-Tenant-Id"] = getTenantHeader();
+      var pr = sessionStorage.getItem("sparkrulesWorkbenchPrincipal");
+      if (pr) o["X-Principal"] = pr;
       return o;
     }
+    var _wbToastDedupe = { text: "", at: 0 };
     function wbToast(msg, kind) {
       var c = document.getElementById("wb-toasts");
       if (!c || !msg) return;
+      var t = String(msg);
+      var now = Date.now();
+      if (t === _wbToastDedupe.text && now - _wbToastDedupe.at < 14000) {
+        return;
+      }
+      _wbToastDedupe = { text: t, at: now };
       var el = document.createElement("div");
       el.className = "wb-toast wb-toast-" + (kind || "err");
       el.setAttribute("role", "alert");
@@ -1201,11 +1352,126 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       c.appendChild(el);
       setTimeout(function () { try { el.remove(); } catch (e) {} }, 9000);
     }
+    function revealAppShell() {
+      var a = document.getElementById("wb-app");
+      if (a) {
+        a.classList.remove("wb-app-pending-init");
+        a.setAttribute("aria-hidden", "false");
+      }
+    }
+    function concealAppShell() {
+      var a = document.getElementById("wb-app");
+      if (a) {
+        a.classList.add("wb-app-pending-init");
+        a.setAttribute("aria-hidden", "true");
+      }
+    }
+    function showLoginOverlay() {
+      concealAppShell();
+      var el = document.getElementById("wb-login-overlay");
+      if (el) {
+        el.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        setTimeout(function () {
+          var inp = document.getElementById("wb-login-user");
+          if (inp) inp.focus();
+        }, 0);
+      }
+    }
+    function hideLoginOverlay() {
+      var el = document.getElementById("wb-login-overlay");
+      if (el) {
+        el.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+      revealAppShell();
+    }
+    function updateSessionStrip() {
+      var nm = sessionStorage.getItem("sparkrulesWorkbenchPrincipal");
+      var st = document.getElementById("wb-session-strip");
+      var n = document.getElementById("wb-session-name");
+      if (nm && st && n) {
+        n.textContent = nm;
+        st.classList.remove("hidden");
+      } else if (st) {
+        st.classList.add("hidden");
+      }
+    }
+    function initWorkbenchAuth() {
+      if (!WORKBENCH_LOGIN_UI_ENABLED) {
+        try {
+          sessionStorage.removeItem("sparkrulesWorkbenchToken");
+          sessionStorage.removeItem("sparkrulesWorkbenchPrincipal");
+        } catch (e) {}
+        hideLoginOverlay();
+        updateSessionStrip();
+        /* Server may still require SPARKRULES_WORKBENCH_AUTH; without the login overlay, only X-API-Key bypass works. */
+        return fetch("/api/workbench/auth/config")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (cfg) {
+            var hasKey = false;
+            try {
+              var inp = document.getElementById("api-key");
+              var v = (inp && inp.value) || localStorage.getItem("sparkrulesApiKey") || "";
+              hasKey = !!String(v).trim();
+            } catch (e2) {}
+            var gateOn =
+              cfg.gate_active === undefined ? cfg.auth_enabled === true : cfg.gate_active === true;
+            if (cfg && gateOn && !hasKey) {
+              setMessage(
+                "HTTP gate on: paste SPARKRULES_API_KEY in X-API-Key and Save, set SPARKRULES_DISABLE_WORKBENCH_GATE=1, or restart with python scripts/dev_server.py (clears SPARKRULES_WORKBENCH_AUTH by default).",
+                "warn"
+              );
+            }
+            return true;
+          })
+          .catch(function () {
+            return true;
+          });
+      }
+      return fetch("/api/workbench/auth/config")
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (cfg) {
+          var hu = document.getElementById("wb-login-user");
+          if (hu && cfg.hint_username) hu.placeholder = cfg.hint_username;
+          if (!cfg.auth_enabled) {
+            hideLoginOverlay();
+            updateSessionStrip();
+            return true;
+          }
+          var tok = sessionStorage.getItem("sparkrulesWorkbenchToken");
+          if (!tok) {
+            showLoginOverlay();
+            return false;
+          }
+          return getJson("/rules/assets").then(function () {
+            hideLoginOverlay();
+            updateSessionStrip();
+            return true;
+          }).catch(function () {
+            sessionStorage.removeItem("sparkrulesWorkbenchToken");
+            sessionStorage.removeItem("sparkrulesWorkbenchPrincipal");
+            showLoginOverlay();
+            return false;
+          });
+        })
+        .catch(function () {
+          hideLoginOverlay();
+          return true;
+        });
+    }
     function parseHttpErrorText(status, text) {
       try {
         var j = JSON.parse(text);
         if (typeof j.detail === "string") return j.detail;
-        if (j.detail && typeof j.detail.message === "string") return j.detail.message;
+        if (j.detail && typeof j.detail.message === "string") {
+          /* WORKBENCH_TOKEN_REQUIRED: keep short; startup banner + status strip carry the fix-it hint. */
+          return j.detail.message;
+        }
         if (j.detail && j.detail.code) return (j.detail.code + ": ") + (j.detail.message || JSON.stringify(j.detail));
         if (j.detail && typeof j.detail === "object") return JSON.stringify(j.detail);
       } catch (e) { /* ignore */ }
@@ -1225,9 +1491,11 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
     }
     async function getJson(path, opts) {
       opts = opts || {};
+      const hw = opts.skipWorkbenchToken ? {} : workbenchTokenHeaders();
       const h = Object.assign(
         { "Accept": "application/json" },
         apiKeyHeaders(),
+        hw,
         roleHeaders(),
         opts.headers || {}
       );
@@ -1240,13 +1508,17 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       }
       return r.json();
     }
-    async function postJson(path, body) {
+    async function postJson(path, body, opts) {
+      opts = opts || {};
+      const hw = opts.skipWorkbenchToken ? {} : workbenchTokenHeaders();
       const r = await fetchWithTimeout(path, {
         method: "POST",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
           apiKeyHeaders(),
-          roleHeaders()
+          hw,
+          roleHeaders(),
+          opts.headers || {}
         ),
         body: JSON.stringify(body),
       }, 60000);
@@ -1258,13 +1530,17 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       }
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
     }
-    async function patchJson(path, body) {
+    async function patchJson(path, body, opts) {
+      opts = opts || {};
+      const hw = opts.skipWorkbenchToken ? {} : workbenchTokenHeaders();
       const r = await fetchWithTimeout(path, {
         method: "PATCH",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
           apiKeyHeaders(),
-          roleHeaders()
+          hw,
+          roleHeaders(),
+          opts.headers || {}
         ),
         body: JSON.stringify(body),
       }, 60000);
@@ -1407,6 +1683,54 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         applyWorkbenchMonacoTheme();
         var h = document.getElementById("lsp-hint");
         if (h) h.textContent = "Ctrl+Space: LSP completions · Ctrl+Enter: run simulation (open Simulate tab first).";
+        window.insertDrlSnippetInAuthor = function (txt) {
+          if (!drlNewEditor || txt == null || txt === "") return;
+          drlNewEditor.executeEdits("sre-snippet", [
+            { range: drlNewEditor.getSelection(), text: String(txt), forceMoveMarkers: true }
+          ]);
+          drlNewEditor.focus();
+        };
+        function decodeDrlAttr(s) {
+          if (!s) return "";
+          return String(s)
+            .replace(/&#10;/g, "\n")
+            .replace(/&#13;/g, "\r")
+            .replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, "&");
+        }
+        (function wireSnippetChips() {
+          var tray = document.getElementById("author-snippet-tray");
+          if (!tray) return;
+          tray.querySelectorAll(".wb-chip").forEach(function (chip) {
+            chip.addEventListener("dragstart", function (ev) {
+              var raw = chip.getAttribute("data-drl") || "";
+              var t = decodeDrlAttr(raw);
+              ev.dataTransfer.effectAllowed = "copy";
+              ev.dataTransfer.setData("text/plain", t);
+            });
+            chip.addEventListener("click", function () {
+              var raw = chip.getAttribute("data-drl") || "";
+              var t = decodeDrlAttr(raw);
+              if (window.insertDrlSnippetInAuthor) window.insertDrlSnippetInAuthor(t + "\n");
+            });
+          });
+          var mw = document.getElementById("monaco-drl-new");
+          if (mw) {
+            ["dragover", "dragenter"].forEach(function (evn) {
+              mw.addEventListener(evn, function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+              });
+            });
+            mw.addEventListener("drop", function (e) {
+              e.preventDefault();
+              var tx = e.dataTransfer.getData("text/plain");
+              if (tx && window.insertDrlSnippetInAuthor) window.insertDrlSnippetInAuthor(tx);
+            });
+          }
+        })();
         window.addEventListener("resize", function () { layoutDrlMonaco(); });
       });
     })();
@@ -1561,7 +1885,20 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       }
       var sb = document.getElementById("spark-badge");
       if (sb) { sb.textContent = "Spark: not active (pure Python)"; sb.style.background = "rgba(148,163,184,0.35)"; }
-      } catch (e) { setMessage("Dashboard error: " + e.message, "err"); console.error("loadDashboard:", e); }
+      } catch (e) {
+        var msg = (e && e.message) ? e.message : String(e);
+        if (/Workbench session|X-API-Key required|WORKBENCH_TOKEN/i.test(msg)) {
+          var det = document.getElementById("wb-auth-help");
+          if (det) { try { det.open = true; } catch (e2) {} }
+          setMessage(
+            "Dashboard blocked: API requires workbench auth. Quick fix — stop the server, run: python scripts/dev_server.py (clears SPARKRULES_WORKBENCH_AUTH). Or set X-API-Key = SPARKRULES_API_KEY and Save. PowerShell: Remove-Item Env:SPARKRULES_WORKBENCH_AUTH. Open \"API access help\" above.",
+            "warn"
+          );
+        } else {
+          setMessage("Dashboard error: " + msg, "err");
+        }
+        console.error("loadDashboard:", e);
+      }
       finally { refreshNamespacePicker().catch(function () {}); }
     }
     function assetQuery() {
@@ -2458,7 +2795,70 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         "  -d '" + j.replace(/'/g, "'\\''") + "'";
       navigator.clipboard.writeText(curl).then(function () { wbToast("curl copied (bash-style)", "ok"); }).catch(function () { wbToast("Clipboard unavailable", "warn"); });
     });
-    showView("overview");
+    document.getElementById("wb-login-submit").addEventListener("click", function () {
+      var u = ((document.getElementById("wb-login-user") && document.getElementById("wb-login-user").value) || "").trim();
+      var p = ((document.getElementById("wb-login-pass") && document.getElementById("wb-login-pass").value) || "").trim();
+      var err = document.getElementById("wb-login-err");
+      fetch("/api/workbench/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ username: u, password: p }),
+      })
+        .then(function (r) {
+          return r.json().then(function (j) {
+            if (!r.ok) {
+              var d = j.detail;
+              var m =
+                (d && d.message) ||
+                (typeof d === "string" ? d : "") ||
+                JSON.stringify(d || j) ||
+                r.status;
+              if (d && typeof d === "object" && r.status === 401) {
+                if (d.hint_username) {
+                  m += " Server expects username: " + d.hint_username + ".";
+                }
+                if (d.password_configured_on_server) {
+                  m += " A custom password is set on the server (SPARKRULES_WORKBENCH_PASSWORD)—use that value.";
+                } else if (d.implicit_admin_password_allowed === false) {
+                  m += " Dev password disabled (SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS=0). Set SPARKRULES_WORKBENCH_PASSWORD or allow dev defaults.";
+                }
+              }
+              throw new Error(m);
+            }
+            return j;
+          });
+        })
+        .then(function (j) {
+          sessionStorage.setItem("sparkrulesWorkbenchToken", j.token);
+          sessionStorage.setItem("sparkrulesWorkbenchPrincipal", j.principal);
+          if (err) {
+            err.classList.add("hidden");
+            err.textContent = "";
+          }
+          hideLoginOverlay();
+          updateSessionStrip();
+          wbToast("Signed in.", "ok");
+          showView("overview");
+          if (typeof loadDashboard === "function") loadDashboard().catch(function () {});
+        })
+        .catch(function (e) {
+          if (err) {
+            err.textContent = e.message || String(e);
+            err.classList.remove("hidden");
+          }
+        });
+    });
+    document.getElementById("btn-wb-logout").addEventListener("click", function () {
+      sessionStorage.removeItem("sparkrulesWorkbenchToken");
+      sessionStorage.removeItem("sparkrulesWorkbenchPrincipal");
+      updateSessionStrip();
+      initWorkbenchAuth().then(function () {
+        wbToast("Signed out.", "ok");
+      });
+    });
+    initWorkbenchAuth().then(function (ready) {
+      if (ready) showView("overview");
+    });
   </script>
 </body>
 </html>

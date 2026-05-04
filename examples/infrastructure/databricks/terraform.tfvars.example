@@ -1,0 +1,4 @@
+prefix           = "acme_sparkrules"
+create_resources = false
+
+# export DATABRICKS_HOST / DATABRICKS_TOKEN before terraform apply when create_resources = true

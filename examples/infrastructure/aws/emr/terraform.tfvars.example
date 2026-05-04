@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars (do not commit secrets). Example production-style naming.
+# terraform apply -var="create_resources=true"
+
+aws_region       = "us-east-1"
+name_prefix      = "acme-prod-sparkrules"
+create_resources = false
+
+# Dev sandbox only — allows terraform destroy to remove non-empty bucket
+# artifacts_force_destroy = true

@@ -40,7 +40,9 @@ If the browser shows **ERR_CONNECTION_REFUSED**, nothing is listening: confirm t
 
 ## Rules Workbench (browser)
 
-After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port) for rule assets, **Monaco** DRL editing, **Validate** (parse) plus **LSP** diagnostics, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
+After starting the API, open `http://127.0.0.1:8042/workbench/` (or your port). The default entry view is **Overview** (dashboard: aggregate stats and charts). From there, use the left nav for rule assets, **Monaco** DRL editing, **Validate** (parse) plus **LSP** diagnostics, simulation, and deployment readout. Same routes are available under `/docs` (OpenAPI).
+
+**Optional browser login:** Set `SPARKRULES_WORKBENCH_AUTH=1` to gate the API behind a Workbench session; dev default **`admin` / `admin`** is documented in [WORKBENCH_LOGIN.md](WORKBENCH_LOGIN.md). Without that env, there is **no** login page—useful for local smoke tests.
 
 **Spark vs Python:** the server does **not** "enable Spark" with one flag. Simulations are **pure Python** by default. To run rules on a **cluster DataFrame**, see [SPARK_INTEGRATION.md](SPARK_INTEGRATION.md).
 

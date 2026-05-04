@@ -1,0 +1,3 @@
+location         = "eastus"
+name_prefix      = "sparkrules"
+create_resources = false
