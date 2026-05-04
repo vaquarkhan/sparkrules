@@ -28,6 +28,79 @@ class SchemaValidationError(TypeError):
 _SAFE_SPARK_IDENTIFIER = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
+def _common_coalesce_sql_type(dtypes: list[Any]) -> str:
+    """Spark SQL type name so every branch of ``coalesce`` shares one Catalyst type (Req 17).
+
+    Without a uniform cast, mixed Strategy A/B numeric literals vs Strategy C string
+    staging columns can make ``coalesce`` fail type widening.
+    """
+
+    from pyspark.sql.types import (
+        BooleanType,
+        ByteType,
+        DateType,
+        DecimalType,
+        DoubleType,
+        FloatType,
+        IntegerType,
+        LongType,
+        ShortType,
+        StringType,
+        TimestampType,
+    )
+
+    if not dtypes:
+        return "string"
+
+    def category(dt: Any) -> str:
+        if isinstance(dt, BooleanType):
+            return "bool"
+        if isinstance(dt, (ByteType, ShortType, IntegerType, LongType)):
+            return "integral"
+        if isinstance(dt, (FloatType, DoubleType, DecimalType)):
+            return "fractional"
+        if isinstance(dt, StringType):
+            return "str"
+        if isinstance(dt, (TimestampType, DateType)):
+            return "temporal"
+        return "other"
+
+    cats = {category(d) for d in dtypes}
+    if len(cats) > 1:
+        return "string"
+    only = next(iter(cats))
+    if only == "bool":
+        return "boolean"
+    if only == "integral":
+        return "bigint"
+    if only == "fractional":
+        return "double"
+    if only == "str":
+        return "string"
+    if only == "temporal":
+        if len({type(d).__name__ for d in dtypes}) > 1:
+            return "string"
+        if isinstance(dtypes[0], TimestampType):
+            return "timestamp"
+        return "date"
+    return "string"
+
+
+def _staging_dtypes_for_merge(df: Any, salience_cols: list[tuple[int, str, int, str]]) -> list[Any]:
+    """Collect non-null Spark data types for staging columns present on ``df``."""
+
+    from pyspark.sql.types import NullType
+
+    by_name = {f.name: f.dataType for f in df.schema.fields}
+    out: list[Any] = []
+    for t in salience_cols:
+        col = t[-1]
+        dt = by_name.get(col)
+        if dt is not None and not isinstance(dt, NullType):
+            out.append(dt)
+    return out
+
+
 def _safe_rule_col(name: str) -> str:
     """Sanitize rule name for use as a Spark column name."""
     return "r_" + name.replace("-", "_").replace(" ", "_").replace('"', "")
@@ -95,7 +168,7 @@ class SparkRuleExecutor:
         pack = RulePack.from_drl(drl)
         return SparkRuleExecutor(rulepack=pack, _drl=drl)
 
-    def apply(self, df: Any) -> Any:  # pragma: no cover
+    def apply(self, df: Any) -> Any:
         """Execute all rules against a Spark DataFrame.
 
         Returns DataFrame with: original columns + r_<rule> booleans +
@@ -141,7 +214,7 @@ class SparkRuleExecutor:
 
         return result
 
-    def _apply_strategy_a(self, df: Any) -> Any:  # pragma: no cover
+    def _apply_strategy_a(self, df: Any) -> Any:
         """Strategy A: SQL_PUSHDOWN - Catalyst-native execution (Req 6)."""
         from pyspark.sql import functions as F
 
@@ -170,7 +243,7 @@ class SparkRuleExecutor:
 
         return result
 
-    def _apply_strategy_b(self, df: Any) -> Any:  # pragma: no cover
+    def _apply_strategy_b(self, df: Any) -> Any:
         """Strategy B: ALPHA_SHARED - shared alpha boolean columns (Req 7)."""
         from pyspark.sql import functions as F
 
@@ -234,7 +307,7 @@ class SparkRuleExecutor:
 
         return result
 
-    def _apply_strategy_c(self, df: Any) -> Any:  # pragma: no cover
+    def _apply_strategy_c(self, df: Any) -> Any:
         """Strategy C: PYTHON_FALLBACK - mapPartitions with broadcast (Req 8, 20)."""
         from pyspark.sql import Row
         from pyspark.sql.types import (
@@ -324,10 +397,9 @@ class SparkRuleExecutor:
         result_schema = StructType(new_fields)
         return spark.createDataFrame(result_rdd, result_schema)
 
-    def _merge_actions(self, df: Any) -> Any:  # pragma: no cover
+    def _merge_actions(self, df: Any) -> Any:
         """Req 17: Cross-strategy salience resolution."""
         from pyspark.sql import functions as F
-        from pyspark.sql.types import StringType
 
         action_fields = action_staging_merge_plan(self.rulepack, df_columns=frozenset(df.columns))
 
@@ -335,9 +407,9 @@ class SparkRuleExecutor:
         for field_name, salience_cols in action_fields.items():
             merged_col = _safe_action_col(field_name)
 
-            # Uniform StringType avoids Catalyst COALESCE type widen errors across strategies
-            # (e.g. numeric SQL expr vs Strategy C string staging).
-            col_refs = [F.col(t[-1]).cast(StringType()) for t in salience_cols]
+            dtypes = _staging_dtypes_for_merge(result, salience_cols)
+            sql_type = _common_coalesce_sql_type(dtypes)
+            col_refs = [F.col(t[-1]).cast(sql_type) for t in salience_cols]
             result = result.withColumn(merged_col, F.coalesce(*col_refs))
 
             for t in salience_cols:

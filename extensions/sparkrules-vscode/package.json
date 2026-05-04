@@ -1,0 +1,34 @@
+{
+  "name": "sparkrules-vscode",
+  "displayName": "SparkRules DRL",
+  "description": "DRL file basics and links to SparkRules docs (Workbench uses server-side LSP).",
+  "version": "0.1.0",
+  "publisher": "sparkrules",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaquarkhan/sparkrules"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages", "Other"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:drl", "onCommand:sparkrules.openDocs"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "drl",
+        "aliases": ["Drools DRL", "SparkRules DRL"],
+        "extensions": [".drl"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "sparkrules.openDocs",
+        "title": "SparkRules: Open documentation"
+      }
+    ]
+  }
+}

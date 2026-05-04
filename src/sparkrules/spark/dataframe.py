@@ -72,16 +72,16 @@ def iter_rule_rows(
                         if fname not in action_out:
                             try:
                                 action_out[fname] = fn(fact)
-                            except Exception:  # noqa: BLE001  # pragma: no cover
-                                action_out[fname] = None  # pragma: no cover
+                            except Exception:  # noqa: BLE001
+                                action_out[fname] = None
             out = {"action": action_out, "bound": bound}
             yield str(dct.get(fact_id_field, "")), any_fired, json.dumps(out)
     else:
-        # V1 legacy path: AST walking  # pragma: no cover
-        yield from _iter_rule_rows_v1(part, drl, fact_id_field=fact_id_field)  # pragma: no cover
+        # V1 legacy path: AST walking
+        yield from _iter_rule_rows_v1(part, drl, fact_id_field=fact_id_field)
 
 
-def _iter_rule_rows_v1(  # pragma: no cover
+def _iter_rule_rows_v1(
     part: Iterator[Any],
     drl: str,
     *,
@@ -133,7 +133,7 @@ def _iter_rule_rows_v1(  # pragma: no cover
         yield str(dct.get(fact_id_field, "")), m2.fired, json.dumps(out)
 
 
-def mpartition_rows(  # pragma: no cover
+def mpartition_rows(
     part: Any,
     drl_source: str,
     *,
@@ -168,16 +168,16 @@ def apply_drl(
         V1 path returns (fact_id, fired, out_json).
     """
     if use_v2:
-        from sparkrules.spark.executor import SparkRuleExecutor  # pragma: no cover
+        from sparkrules.spark.executor import SparkRuleExecutor
 
-        executor = SparkRuleExecutor.from_drl(drl)  # pragma: no cover
-        return executor.apply(df)  # pragma: no cover
+        executor = SparkRuleExecutor.from_drl(drl)
+        return executor.apply(df)
 
-    # V1 legacy path  # pragma: no cover
-    return _apply_drl_v1(df, drl, fact_id_field=fact_id_field)  # pragma: no cover
+    # V1 legacy path
+    return _apply_drl_v1(df, drl, fact_id_field=fact_id_field)
 
 
-def _apply_drl_v1(df: Any, drl: str, *, fact_id_field: str = "id") -> Any:  # pragma: no cover
+def _apply_drl_v1(df: Any, drl: str, *, fact_id_field: str = "id") -> Any:
     from pyspark.sql.types import (
         BooleanType,
         StringType,

@@ -6,9 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark light" />
   <title>SparkRules Workbench</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- No render-blocking third-party fonts: first paint uses system stack (air-gapped / slow CDN friendly). -->
   <style>
     html[data-theme="dark"] {
       --bg: #070a0f;
@@ -64,7 +62,7 @@
       }
     }
     body {
-      font-family: "Inter", "Segoe UI", system-ui, Roboto, sans-serif;
+      font-family: "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
       background: var(--bg-elevated);
       color: var(--text);
@@ -400,8 +398,6 @@
       nav button.active { border-left: none; border-bottom: 2px solid var(--accent); }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header>
@@ -943,6 +939,9 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       </section>
     </main>
   </div>
+  <!-- Monaco + Chart load after DOM so the shell paints immediately (CDN blocked/slow no longer blanks the page). -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script>
     var assetsState = { all: [], page: 1, pageSize: 20 };
     var drlNewEditor = null;
@@ -1042,6 +1041,18 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       o["X-Tenant-Id"] = t && t.value.trim() ? t.value.trim() : "default";
       return o;
     }
+    /** Bound fetch so hung API/CDN tabs recover instead of waiting forever. */
+    function fetchWithTimeout(url, options, timeoutMs) {
+      timeoutMs = timeoutMs || 30000;
+      options = options || {};
+      var ctrl = new AbortController();
+      var t = setTimeout(function () {
+        ctrl.abort();
+      }, timeoutMs);
+      return fetch(url, Object.assign({}, options, { signal: ctrl.signal })).finally(function () {
+        clearTimeout(t);
+      });
+    }
     async function getJson(path, opts) {
       opts = opts || {};
       const h = Object.assign(
@@ -1050,12 +1061,12 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         roleHeaders(),
         opts.headers || {}
       );
-      const r = await fetch(path, Object.assign({}, opts, { headers: h }));
+      const r = await fetchWithTimeout(path, Object.assign({}, opts, { headers: h }), opts.timeoutMs || 30000);
       if (!r.ok) throw new Error((await r.text()) || r.status);
       return r.json();
     }
     async function postJson(path, body) {
-      const r = await fetch(path, {
+      const r = await fetchWithTimeout(path, {
         method: "POST",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
@@ -1063,13 +1074,13 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           roleHeaders()
         ),
         body: JSON.stringify(body),
-      });
+      }, 60000);
       const t = await r.text();
       if (!r.ok) throw new Error(t || r.status);
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
     }
     async function patchJson(path, body) {
-      const r = await fetch(path, {
+      const r = await fetchWithTimeout(path, {
         method: "PATCH",
         headers: Object.assign(
           { "Content-Type": "application/json", "Accept": "application/json" },
@@ -1077,7 +1088,7 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           roleHeaders()
         ),
         body: JSON.stringify(body),
-      });
+      }, 60000);
       const t = await r.text();
       if (!r.ok) throw new Error(t || r.status);
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
@@ -1240,7 +1251,12 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
     var _chartColors = ["#3b82f6","#8b5cf6","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#a855f7"];
     async function loadDashboard() {
       try {
-      const data = await getJson("/rules/assets");
+      const [data, healthOrNull] = await Promise.all([
+        getJson("/rules/assets"),
+        getJson("/health", { timeoutMs: 12000 }).catch(function () {
+          return null;
+        }),
+      ]);
       const handles = {};
       const byG = {};
       const byN = {};
@@ -1287,14 +1303,16 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         }
       }
       setMessage("Dashboard: " + data.length + " rules, " + ac + " active, " + iac + " inactive.", "ok");
-      /* Health + Spark status badges */
-      try {
-        var hb = document.getElementById("health-badge");
-        var health = await getJson("/health");
-        if (hb) { hb.textContent = "API: " + (health.status || "ok"); hb.className = "badge badge-on"; }
-      } catch (he) {
-        var hb2 = document.getElementById("health-badge");
-        if (hb2) { hb2.textContent = "API: error"; hb2.className = "badge badge-off"; }
+      /* Health + Spark status badges (health fetched in parallel with assets above) */
+      var hb = document.getElementById("health-badge");
+      if (hb) {
+        if (healthOrNull) {
+          hb.textContent = "API: " + (healthOrNull.status || "ok");
+          hb.className = "badge badge-on";
+        } else {
+          hb.textContent = "API: unreachable";
+          hb.className = "badge badge-off";
+        }
       }
       var sb = document.getElementById("spark-badge");
       if (sb) { sb.textContent = "Spark: not active (pure Python)"; sb.style.background = "rgba(148,163,184,0.35)"; }
@@ -1576,7 +1594,7 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           apiKeyHeaders(),
           roleHeaders()
         );
-        const r = await fetch("/rules/export", { method: "GET", headers: h });
+        const r = await fetchWithTimeout("/rules/export", { method: "GET", headers: h }, 120000);
         if (!r.ok) { throw new Error((await r.text()) || r.status); }
         const blob = await r.blob();
         const u = URL.createObjectURL(blob);

@@ -60,18 +60,18 @@ def main() -> int:
         return 1
 
     try:
-        from sparkrules.compiler.rulepack import RulePack
-        from sparkrules.spark import apply_drl
+        from sparkrules.spark.executor import SparkRuleExecutor
 
         drl = (sd / "loyalty_reward_rules.drl").read_text(encoding="utf-8")
-        print("RulePack:", RulePack.from_drl(drl).summary())
+        executor = SparkRuleExecutor.from_drl(drl)
+        print("RulePack:", executor.rulepack.summary())
 
         spark_rows = [
             Row(redemption_ref=r["redemption_ref"], m=Row(**r["m"])) for r in _rows(args.csv)
         ]
         df_in = spark.createDataFrame(spark_rows).repartition(max(2, args.partitions))
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="redemption_ref", use_v2=True)
+        out = executor.apply(df_in)
         cnt = out.count()
         fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
         r_cols = [c for c in out.columns if c.startswith("r_")]

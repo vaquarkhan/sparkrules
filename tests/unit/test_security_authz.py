@@ -10,9 +10,11 @@ from starlette.requests import Request
 from sparkrules.api.security import (
     _bearer_token,
     _decode_jwt_claims_unverified,
+    enforce_drl_byte_cap,
     principal_from_request,
     require_any_role,
     require_tenant_match,
+    tenant_context_from_principal,
 )
 
 
@@ -125,3 +127,32 @@ def test_principal_auth_mode_iam(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert p.principal.startswith("arn:")
     assert "rule_admin" in p.roles
+
+
+def test_tenant_context_from_principal(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_MAX_RULEPACK_BYTES", "1024")
+    p = principal_from_request(_req({"X-Roles": "rule_reader", "X-Tenant-Id": "acme"}))
+    ctx = tenant_context_from_principal(p, "acme")
+    assert ctx.tenant_id == "acme"
+    assert ctx.namespace == "acme"
+    assert ctx.max_rule_pack_bytes == 1024
+
+
+def test_enforce_drl_byte_cap_ok_and_413() -> None:
+    enforce_drl_byte_cap("x", max_bytes=10)
+    with pytest.raises(HTTPException) as ei:
+        enforce_drl_byte_cap("abcdefghijk", max_bytes=10)
+    assert ei.value.status_code == 413
+    assert ei.value.detail["code"] == "RULEPACK_TOO_LARGE"
+
+
+def test_enforce_drl_byte_cap_reads_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_MAX_RULEPACK_BYTES", "4")
+    enforce_drl_byte_cap("abc")
+    with pytest.raises(HTTPException):
+        enforce_drl_byte_cap("abcde")
+
+
+def test_enforce_drl_byte_cap_no_env_allows_large(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SPARKRULES_MAX_RULEPACK_BYTES", raising=False)
+    enforce_drl_byte_cap("x" * 50_000)

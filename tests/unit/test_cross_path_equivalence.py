@@ -18,7 +18,13 @@ from sparkrules.compiler.rete import ReteNetwork
 from sparkrules.compiler.rulepack import RulePack, Strategy, _has_python_only_regex
 from sparkrules.executor.local_executor import LocalRuleExecutor
 from sparkrules.parser import parse, parse_rules
-from sparkrules.parser.ast import BinaryOp, BinaryOperator, Literal
+from sparkrules.parser.ast import (
+    BinaryOp,
+    BinaryOperator,
+    CallExpr,
+    ListExpr,
+    Literal,
+)
 from sparkrules.spark.dataframe import iter_rule_rows
 
 
@@ -119,8 +125,16 @@ def test_closure_matches_reference_all_operators() -> None:
         ('rule "r" when $t : T ( $t.x > 5 and $t.y < 10 ) then end', {"t": {"x": 8, "y": 3}}, True),
         ('rule "r" when $t : T ( $t.x > 5 or $t.y < 10 ) then end', {"t": {"x": 3, "y": 3}}, True),
         ('rule "r" when $t : T ( not $t.x == 5 ) then end', {"t": {"x": 3}}, True),
-        ('rule "r" when $t : T ( $t.name matches "^A.*" ) then end', {"t": {"name": "Alice"}}, True),
-        ('rule "r" when $t : T ( $t.tags contains "vip" ) then end', {"t": {"tags": ["vip"]}}, True),
+        (
+            'rule "r" when $t : T ( $t.name matches "^A.*" ) then end',
+            {"t": {"name": "Alice"}},
+            True,
+        ),
+        (
+            'rule "r" when $t : T ( $t.tags contains "vip" ) then end',
+            {"t": {"tags": ["vip"]}},
+            True,
+        ),
     ]
     for drl, fact, expected in test_cases:
         r = parse(drl)
@@ -164,8 +178,16 @@ def test_case_insensitive_regex() -> None:
 
 
 def test_has_python_only_regex_detection() -> None:
-    assert _has_python_only_regex(BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("(?=foo)bar"))) is True
-    assert _has_python_only_regex(BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("^foo.*"))) is False
+    assert (
+        _has_python_only_regex(
+            BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("(?=foo)bar"))
+        )
+        is True
+    )
+    assert (
+        _has_python_only_regex(BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("^foo.*")))
+        is False
+    )
     assert _has_python_only_regex(BinaryOp(BinaryOperator.GT, Literal(1), Literal(2))) is False
     assert _has_python_only_regex(Literal(True)) is False
 
@@ -208,7 +230,18 @@ def test_local_executor_latency_under_1ms() -> None:
 def test_has_python_only_regex_in_not() -> None:
     """Cover _has_python_only_regex Not branch."""
     from sparkrules.parser.ast import Not as AstNot
+
     expr = AstNot(BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("(?=foo)bar")))
     assert _has_python_only_regex(expr) is True
     expr2 = AstNot(BinaryOp(BinaryOperator.GT, Literal(1), Literal(2)))
     assert _has_python_only_regex(expr2) is False
+
+
+def test_has_python_only_regex_nested_in_list_expr() -> None:
+    inner = BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("(?=foo)bar"))
+    assert _has_python_only_regex(ListExpr((inner,))) is True
+
+
+def test_has_python_only_regex_nested_in_call_expr_args() -> None:
+    inner = BinaryOp(BinaryOperator.MATCHES, Literal("x"), Literal("(?=bad)pat"))
+    assert _has_python_only_regex(CallExpr("noop", (inner,))) is True

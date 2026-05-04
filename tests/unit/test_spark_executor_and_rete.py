@@ -69,8 +69,7 @@ def test_rete_evaluate_no_fire() -> None:
 def test_rete_range_merged_alpha() -> None:
     """Req 26: range predicates on same field share extraction."""
     drl = "\n".join(
-        f'rule "r{i}" when $f : App( $f.score >= {600 + i * 10} ) then end'
-        for i in range(10)
+        f'rule "r{i}" when $f : App( $f.score >= {600 + i * 10} ) then end' for i in range(10)
     )
     rules = parse_rules(drl)
     net = ReteNetwork.from_rules(rules)
@@ -177,7 +176,14 @@ def test_comparison_fns() -> None:
 
 
 def test_comparison_all_ops() -> None:
-    for op in [BinaryOperator.GT, BinaryOperator.GE, BinaryOperator.LT, BinaryOperator.LE, BinaryOperator.EQ, BinaryOperator.NE]:
+    for op in [
+        BinaryOperator.GT,
+        BinaryOperator.GE,
+        BinaryOperator.LT,
+        BinaryOperator.LE,
+        BinaryOperator.EQ,
+        BinaryOperator.NE,
+    ]:
         fn = _make_comparison_fn(op, 5)
         assert fn is not None
         fn2 = _make_reversed_comparison_fn(op, 5)
@@ -263,6 +269,16 @@ def test_iter_rule_rows_v1_backward_compat() -> None:
     results = list(iter_rule_rows(iter(rows), drl, use_v2=False))
     assert len(results) == 1
     assert results[0][1] is True
+
+
+def test_iter_rule_rows_v1_multi_rule_chain_path() -> None:
+    drl = """
+rule "a" when $t : T ( true ) then end
+rule "b" when $t : T ( true ) then end
+"""
+    rows = [{"id": "1", "t": {}}]
+    results = list(iter_rule_rows(iter(rows), drl, use_v2=False))
+    assert len(results) == 1 and results[0][1] is True
 
 
 def test_iter_rule_rows_empty_drl() -> None:

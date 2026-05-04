@@ -51,6 +51,7 @@ def test_api_key_blocks_sensitive_get_without_key(
     assert c.get("/rules/export").status_code == 401
     assert c.get("/governance/namespaces").status_code == 401
     assert c.get("/system/deployment").status_code == 401
+    assert c.get("/metrics").status_code == 401
     a = c.get(
         "/rules/assets",
         headers={"X-API-Key": "secret"},
@@ -61,6 +62,8 @@ def test_api_key_blocks_sensitive_get_without_key(
         headers={"X-API-Key": "secret"},
     )
     assert ex.status_code == 200
+    m = c.get("/metrics", headers={"X-API-Key": "secret"})
+    assert m.status_code == 200
 
 
 def test_api_key_post_with_x_api_key_ok(monkeypatch: pytest.MonkeyPatch) -> None:

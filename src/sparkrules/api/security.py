@@ -59,6 +59,42 @@ class Principal:
     roles: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class TenantContext:
+    """Resolved tenant scope for governance hooks (rule pack limits, namespaces)."""
+
+    tenant_id: str
+    namespace: str
+    max_rule_pack_bytes: int | None = None
+
+
+def tenant_context_from_principal(p: Principal, namespace: str) -> TenantContext:
+    from sparkrules.runtime.engine_metrics import max_rulepack_bytes_from_environ
+
+    return TenantContext(
+        tenant_id=p.tenant_id,
+        namespace=namespace,
+        max_rule_pack_bytes=max_rulepack_bytes_from_environ(),
+    )
+
+
+def enforce_drl_byte_cap(drl_text: str, *, max_bytes: int | None = None) -> None:
+    """Reject oversized DRL payloads when ``SPARKRULES_MAX_RULEPACK_BYTES`` is set (or *max_bytes*)."""
+    cap = max_bytes
+    if cap is None:
+        from sparkrules.runtime.engine_metrics import max_rulepack_bytes_from_environ
+
+        cap = max_rulepack_bytes_from_environ()
+    if cap is None:
+        return
+    n = len(drl_text.encode("utf-8"))
+    if n > cap:
+        raise HTTPException(
+            status_code=413,
+            detail={"code": "RULEPACK_TOO_LARGE", "max_bytes": cap, "bytes": n},
+        )
+
+
 def principal_from_request(request: Request) -> Principal:
     """Extract principal/tenant/roles from Bearer claims or explicit headers.
 
@@ -151,6 +187,8 @@ def _sensitive_get_path(path: str) -> bool:
     if path.startswith("/governance/"):
         return True
     if path == "/rules" or path.startswith("/rules/"):
+        return True
+    if path == "/metrics":
         return True
     return False
 

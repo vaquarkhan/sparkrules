@@ -139,17 +139,20 @@ def test_cli_simulate_shadow_ok_and_errors(tmp_path: Path, capsys) -> None:
     )
     out = json.loads(capsys.readouterr().out.strip())
     assert out["drifted"] is True and out["run_id"] == "r99"
-    assert cli.main(
-        [
-            "simulate-shadow",
-            "--primary-drl",
-            _DRL,
-            "--shadow-drl",
-            _DRL,
-            "--fact-json",
-            "null",
-        ],
-    ) == 2
+    assert (
+        cli.main(
+            [
+                "simulate-shadow",
+                "--primary-drl",
+                _DRL,
+                "--shadow-drl",
+                _DRL,
+                "--fact-json",
+                "null",
+            ],
+        )
+        == 2
+    )
     assert "invalid fact-json" in capsys.readouterr().err
     assert (
         cli.main(
@@ -264,7 +267,12 @@ def test_cli_dmn_evaluate_unexpected_error(capsys, monkeypatch: pytest.MonkeyPat
 def test_cli_dmn_counterfactual_parse_and_unexpected_error(
     capsys, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    assert cli.main(["dmn-counterfactual", "--xml", "<<<", "--base-env-json", "{}", "--patch-json", "{}"]) == 2
+    assert (
+        cli.main(
+            ["dmn-counterfactual", "--xml", "<<<", "--base-env-json", "{}", "--patch-json", "{}"]
+        )
+        == 2
+    )
     assert "dmn parse error" in capsys.readouterr().err
 
     def _boom(*_a: object, **_k: object) -> object:
@@ -329,7 +337,20 @@ def test_cli_dmn_counterfactual_ok_and_bad_json(capsys) -> None:
     )
     out = json.loads(capsys.readouterr().out.strip())
     assert out["outputs_differ"] is False
-    assert cli.main(["dmn-counterfactual", "--xml", _MINI_DMN_CLI, "--base-env-json", "[]", "--patch-json", "{}"]) == 2
+    assert (
+        cli.main(
+            [
+                "dmn-counterfactual",
+                "--xml",
+                _MINI_DMN_CLI,
+                "--base-env-json",
+                "[]",
+                "--patch-json",
+                "{}",
+            ]
+        )
+        == 2
+    )
     assert "invalid json" in capsys.readouterr().err
 
 
@@ -399,3 +420,14 @@ def test_cli_runpy_as_main(monkeypatch: pytest.MonkeyPatch) -> None:
         runpy.run_module("sparkrules.tools.cli", run_name="__main__")
     except SystemExit as e:
         assert e.code == 1
+
+
+def test_cli_cost_and_stream_kafka_iceberg(capsys) -> None:
+    assert cli.main(["cost", "--rows", "1000", "--rules", "10", "--cluster", "glue"]) == 0
+    out = json.loads(capsys.readouterr().out.strip())
+    assert out["cluster"] == "glue"
+    assert "estimate_usd" in out
+    assert cli.main(["stream-kafka-iceberg", "--topic", "t1", "--dry-run"]) == 0
+    stream_out = json.loads(capsys.readouterr().out.strip())
+    assert stream_out["dry_run"] is True
+    assert stream_out["plan"]["source"]["topic"] == "t1"

@@ -13,6 +13,16 @@ def test_health() -> None:
     assert r.json()["status"] == "ok"
 
 
+def test_metrics_prometheus_text() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.get("/metrics")
+    assert r.status_code == 200
+    assert "text/plain" in (r.headers.get("content-type") or "")
+    body = r.text
+    assert "#" in body or "python" in body.lower()
+
+
 def test_simulation() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)

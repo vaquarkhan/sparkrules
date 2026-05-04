@@ -109,7 +109,10 @@ def test_classify_records_translation_when_predicate_not_sql_translatable(
     monkeypatch.setenv("SPARKRULES_ENGINE_METRICS", "1")
     set_engine_metrics_enabled(None)
     reset_engine_metrics()
-    with patch("sparkrules.compiler.rulepack.can_translate", return_value=False):
+    with patch(
+        "sparkrules.compiler.translator.translate_predicate",
+        side_effect=TranslationError("simulated", node_type="Expr"),
+    ):
         r = parse("rule r when $t : T ( true ) then end")
         strat, why = classify_rule_with_rationale(r)
     assert strat == Strategy.ALPHA_SHARED

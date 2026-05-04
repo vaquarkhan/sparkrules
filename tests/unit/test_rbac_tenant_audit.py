@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from sparkrules.api import AppDeps, create_app
@@ -12,6 +13,20 @@ $t : T ( true )
 then
 end
 """
+
+
+def test_post_rule_rejects_oversized_drl(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_MAX_RULEPACK_BYTES", "20")
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    big = _DRL + (" " * 100)
+    r = c.post(
+        "/rules",
+        json={"rule_handle": "big", "group": "g", "namespace": "n1", "drl": big},
+        headers={"X-Roles": "rule_admin", "X-Tenant-Id": "n1", "X-Principal": "u1"},
+    )
+    assert r.status_code == 413
+    assert r.json()["detail"]["code"] == "RULEPACK_TOO_LARGE"
 
 
 def test_rbac_blocks_rule_create_for_reader() -> None:

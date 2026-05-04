@@ -133,6 +133,24 @@ def main(argv: list[str] | None = None) -> int:
     dmn_cf.add_argument("--base-env-json", default="{}")
     dmn_cf.add_argument("--patch-json", default="{}")
 
+    cost = sub.add_parser(
+        "cost",
+        help="Rough batch cost heuristic (not a billing quote).",
+    )
+    cost.add_argument("--rows", type=float, default=1_000_000_000.0)
+    cost.add_argument("--rules", type=int, default=50)
+    cost.add_argument("--cluster", default="databricks")
+
+    sk = sub.add_parser(
+        "stream-kafka-iceberg",
+        help="Print a stub Kafka → Iceberg structured-streaming plan (JSON).",
+    )
+    sk.add_argument("--topic", default="facts")
+    sk.add_argument("--catalog", default="glue")
+    sk.add_argument("--table", default="db.facts_scored")
+    sk.add_argument("--checkpoint", default="s3://bucket/checkpoints/rules")
+    sk.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args(argv)
     if not args.command:
         parser.print_help()
@@ -140,6 +158,32 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "health":
         sys.stdout.write(json.dumps({"status": "ok"}) + "\n")
         return 0
+    if args.command == "cost":
+        from sparkrules.tools.cost_estimate import estimate_batch_cost_usd
+
+        out = estimate_batch_cost_usd(
+            rows=float(args.rows),
+            rules=int(args.rules),
+            cluster=str(args.cluster),
+        )
+        sys.stdout.write(json.dumps(out) + "\n")
+        return 0
+    if args.command == "stream-kafka-iceberg":
+        from sparkrules.tools.stream_kafka_iceberg import main as stream_main
+
+        sk_argv: list[str] = [
+            "--topic",
+            str(args.topic),
+            "--catalog",
+            str(args.catalog),
+            "--table",
+            str(args.table),
+            "--checkpoint",
+            str(args.checkpoint),
+        ]
+        if bool(args.dry_run):
+            sk_argv.append("--dry-run")
+        return stream_main(sk_argv)
     if args.command == "validate":
         try:
             parse(_resolve_drl(args))

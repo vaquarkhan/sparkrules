@@ -2,13 +2,29 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 pytest.importorskip("pyspark")
 
 from sparkrules.spark.dataframe import apply_drl, iter_rule_rows, rows_from_session
+
+
+def test_apply_drl_v2_delegates_to_spark_rule_executor() -> None:
+    drl = "rule r when $t : T ( true ) then end"
+    out_df = MagicMock(name="out_v2")
+    df = MagicMock()
+    df.sparkSession = MagicMock()
+
+    with patch("sparkrules.spark.executor.SparkRuleExecutor") as M:
+        inst = MagicMock()
+        inst.apply.return_value = out_df
+        M.from_drl.return_value = inst
+        res = apply_drl(df, drl, use_v2=True)
+    assert res is out_df
+    M.from_drl.assert_called_once_with(drl)
+    inst.apply.assert_called_once_with(df)
 
 
 def test_apply_drl_with_mock_spark() -> None:

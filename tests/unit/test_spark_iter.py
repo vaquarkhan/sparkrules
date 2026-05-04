@@ -114,3 +114,45 @@ def test_iter_rule_rows_sequence_row_dict_fallback() -> None:
     row = [("id", "seq1"), ("z", {"n": 1})]
     t = list(iter_rule_rows(iter([row]), _DRL))
     assert t[0][0] == "seq1" and t[0][1] is True
+
+
+def test_iter_rule_rows_v1_sequence_row_dict_fallback() -> None:
+    row = [("id", "v1seq"), ("z", {"n": 1})]
+    t = list(iter_rule_rows(iter([row]), _DRL, use_v2=False))
+    assert t[0][0] == "v1seq" and t[0][1] is True
+
+
+def test_iter_rule_rows_v1_row_asdict_typeerror_fallback() -> None:
+    class RowLegacy:
+        def asDict(self, recursive: bool = False) -> dict:
+            if recursive:
+                raise TypeError("no recursive")
+            return {"id": "v1r", "z": {"n": 1}}
+
+    t = list(iter_rule_rows(iter([RowLegacy()]), _DRL, use_v2=False))
+    assert t[0][0] == "v1r" and t[0][1] is True
+
+
+def test_iter_rule_rows_v2_action_exception_sets_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sparkrules.compiler import closure as closure_mod
+
+    real_ca = closure_mod.compile_action
+
+    def wrapping_ca(action: object) -> tuple[str, object]:
+        fname, fn = real_ca(action)
+        if fname == "x":
+
+            def _boom(_fact: object) -> int:
+                raise RuntimeError("simulated action failure")
+
+            return fname, _boom
+        return fname, fn
+
+    monkeypatch.setattr(closure_mod, "compile_action", wrapping_ca)
+    drl = "rule r when $t : T ( true ) then result.x = 1; end"
+    rows = [{"id": "1", "t": {}}]
+    results = list(iter_rule_rows(iter(rows), drl, use_v2=True))
+    out = json.loads(results[0][2])
+    assert out["action"]["x"] is None

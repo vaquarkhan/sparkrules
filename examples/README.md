@@ -1,4 +1,4 @@
-﻿# Examples
+# Examples
 
 ## Quick start
 
@@ -78,7 +78,7 @@ Sample rows for the smallest DRLs live next to them — see **[drl/README.md](dr
 
 ## End-to-end use cases
 
-Complete domain examples with DRL rules, sample CSV data, validation scripts, and Spark jobs. Each use case includes `spark_e2e.py` calling `apply_drl(..., use_v2=True)` with `Row`/struct facts (typed V2 columns: `r_*`, `action_*`, `fired_any`).
+Complete domain examples with DRL rules, sample CSV data, validation scripts, and Spark jobs. Each use case includes `spark_e2e.py` calling `SparkRuleExecutor.from_drl(drl).apply(df)` with `Row`/struct facts (typed V2 columns: `r_*`, `action_*`, `fired_any`).
 
 | Use case | Domain | Files |
 |----------|--------|-------|

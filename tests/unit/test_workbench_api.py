@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from sparkrules.api import AppDeps, create_app
@@ -60,6 +61,14 @@ def test_rules_validate_422() -> None:
     r = c.post("/rules/validate", json={"drl": "not drl at all {{"})
     assert r.status_code == 422
     assert r.json()["detail"]["code"] == "DRL_PARSE_ERROR"
+
+
+def test_rules_validate_413_when_cap_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SPARKRULES_MAX_RULEPACK_BYTES", "5")
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.post("/rules/validate", json={"drl": "123456"})
+    assert r.status_code == 413
 
 
 def test_deployment_status() -> None:

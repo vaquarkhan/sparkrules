@@ -14,6 +14,7 @@ from sparkrules.api._http_deps import (
     JSONResponse,
     Query,
     Request,
+    Response,
     StaticFiles,
 )
 from sparkrules.api.kie import router as kie_router
@@ -79,6 +80,7 @@ from sparkrules.api.schemas import (
 )
 from sparkrules.ai import AiService, create_default_ai_provider
 from sparkrules.api.security import (
+    enforce_drl_byte_cap,
     install_optional_api_key_middleware,
     principal_from_request,
     require_any_role,
@@ -306,6 +308,15 @@ def create_app(deps: AppDeps | None = None) -> Any:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/metrics", tags=["system"])
+    def prometheus_metrics() -> Response:
+        from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
+
+        return Response(
+            content=generate_latest(REGISTRY),
+            media_type=CONTENT_TYPE_LATEST,
+        )
+
     @app.get("/rules", tags=["rules"])
     def list_rules(req: Request) -> list[str]:
         p = principal_from_request(req)
@@ -333,6 +344,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         p = principal_from_request(req)
         require_any_role(p, {"rule_author", "rule_admin"})
         require_tenant_match(p, b.namespace)
+        enforce_drl_byte_cap(b.drl)
         try:
             parse(b.drl)
         except (ParseError, ValueError) as e:
@@ -1377,6 +1389,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
         out: list[dict[str, object]] = []
         for it in b.items:
             require_tenant_match(p, it.namespace)
+            enforce_drl_byte_cap(it.drl)
             try:
                 parse(it.drl)
             except (ParseError, ValueError) as e:
@@ -1433,6 +1446,7 @@ def create_app(deps: AppDeps | None = None) -> Any:
                 "ai_reviewer",
             },
         )
+        enforce_drl_byte_cap(b.drl)
         try:
             parse(b.drl)
         except (ParseError, ValueError) as e:

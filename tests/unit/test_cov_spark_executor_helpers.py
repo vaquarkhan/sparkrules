@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from sparkrules.compiler.rulepack import RulePack
@@ -60,3 +62,44 @@ def test_spark_rule_executor_construct_and_refresh() -> None:
     assert ex._drl == drl1 and len(ex.rulepack.rules) == 1
     ex.refresh_rules(drl2)
     assert ex._drl == drl2 and ex.rulepack.rules[0].name == "ry"
+
+
+def test_common_coalesce_sql_type_branches() -> None:
+    pytest.importorskip("pyspark")
+    from pyspark.sql.types import (
+        ArrayType,
+        BooleanType,
+        DateType,
+        DoubleType,
+        IntegerType,
+        LongType,
+        StringType,
+        TimestampType,
+    )
+
+    assert sex._common_coalesce_sql_type([]) == "string"
+    assert sex._common_coalesce_sql_type([BooleanType(), BooleanType()]) == "boolean"
+    assert sex._common_coalesce_sql_type([IntegerType(), LongType()]) == "bigint"
+    assert sex._common_coalesce_sql_type([DoubleType(), DoubleType()]) == "double"
+    assert sex._common_coalesce_sql_type([StringType()]) == "string"
+    assert sex._common_coalesce_sql_type([IntegerType(), StringType()]) == "string"
+    assert sex._common_coalesce_sql_type([TimestampType()]) == "timestamp"
+    assert sex._common_coalesce_sql_type([DateType()]) == "date"
+    assert sex._common_coalesce_sql_type([DateType(), TimestampType()]) == "string"
+    assert sex._common_coalesce_sql_type([ArrayType(StringType())]) == "string"
+
+
+def test_staging_dtypes_for_merge_collects_known_columns() -> None:
+    pytest.importorskip("pyspark")
+    from pyspark.sql.types import IntegerType, StringType
+
+    f1 = MagicMock()
+    f1.name = "action_x__s10_o0"
+    f1.dataType = IntegerType()
+    f2 = MagicMock()
+    f2.name = "other"
+    f2.dataType = StringType()
+    df = MagicMock()
+    df.schema.fields = (f1, f2)
+    plan = [(10, "r", 0, "action_x__s10_o0")]
+    assert sex._staging_dtypes_for_merge(df, plan) == [IntegerType()]

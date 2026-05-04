@@ -1,8 +1,8 @@
-﻿# Domain use-case examples
+# Domain use-case examples
 
 **Author:** Vaquar Khan  
 
-Each subdirectory is a **self-contained SparkRules demo**: sample **DRL**, **CSV** tuned for that storyline, **`validate_csv.py`** (no JVM — uses `iter_rule_rows`), **`spark_e2e.py`** (PySpark + `apply_drl` when Java is available; **defaults to V2** typed columns), and **`EXAMPLE.md`** with detailed rule explanations.
+Each subdirectory is a **self-contained SparkRules demo**: sample **DRL**, **CSV** tuned for that storyline, **`validate_csv.py`** (no JVM — uses `iter_rule_rows`), **`spark_e2e.py`** (PySpark + `SparkRuleExecutor.from_drl(drl).apply(df)` when Java is available; **V2** typed columns), and **`EXAMPLE.md`** with detailed rule explanations.
 
 | Folder | Scenario | Narrative |
 |--------|-----------|-----------|

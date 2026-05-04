@@ -3,7 +3,7 @@
 """Lending prime tier DRL + Spark (**V2** typed columns: ``r_*``, ``action_*``, ``fired_any``).
 
 Same rule outcomes as the local ``lending_e2e`` demo; this script showcases Catalyst-friendly
-facts (``LoanApp`` as a Spark ``StructType``) and the default ``apply_drl(..., use_v2=True)`` path.
+facts (``LoanApp`` as a Spark ``StructType``) via ``SparkRuleExecutor.from_drl(drl).apply(df)`` (typed ``r_*`` / ``action_*`` / ``fired_any``).
 """
 
 from __future__ import annotations
@@ -49,12 +49,12 @@ def main() -> int:
         return 1
 
     try:
-        from sparkrules.compiler.rulepack import RulePack
-        from sparkrules.spark import apply_drl
+        from sparkrules.spark.executor import SparkRuleExecutor
 
         sd = _here()
         drl = (sd / "drools_lending_premium.drl").read_text(encoding="utf-8")
-        print("RulePack:", RulePack.from_drl(drl).summary())
+        executor = SparkRuleExecutor.from_drl(drl)
+        print("RulePack:", executor.rulepack.summary())
 
         if args.synthetic > 0:
             n = args.synthetic
@@ -131,7 +131,7 @@ def main() -> int:
         ).repartition(max(2, args.partitions))
 
         t0 = time.perf_counter()
-        out = apply_drl(df_in, drl, fact_id_field="id", use_v2=True)
+        out = executor.apply(df_in)
         cnt = out.count()
         fired = out.filter(F.col("fired_any") == True).count()  # noqa: E712
         elapsed = time.perf_counter() - t0

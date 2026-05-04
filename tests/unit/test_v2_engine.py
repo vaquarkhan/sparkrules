@@ -28,8 +28,10 @@ from sparkrules.compiler.rulepack import (
     RulePack,
     Strategy,
     classify_rule,
+    classify_rule_with_rationale,
     _flatten_and_chain,
     _hash_expr,
+    _has_in_against_non_list,
 )
 from sparkrules.parser import parse
 from sparkrules.parser.ast import (
@@ -202,6 +204,47 @@ def test_can_translate() -> None:
         pass
 
     assert not can_translate(FakeExpr())  # type: ignore[arg-type]
+
+
+def test_can_translate_records_translation_failure_when_metrics_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sparkrules.runtime.engine_metrics import (
+        reset_engine_metrics,
+        set_engine_metrics_enabled,
+        snapshot_engine_metrics,
+    )
+
+    class _Bad:
+        pass
+
+    monkeypatch.setenv("SPARKRULES_ENGINE_METRICS", "1")
+    set_engine_metrics_enabled(None)
+    reset_engine_metrics()
+    assert not can_translate(_Bad())  # type: ignore[arg-type]
+    assert snapshot_engine_metrics()["translation_failures_total"] == 1
+
+
+def test_classify_in_against_non_list_is_python_fallback() -> None:
+    r = parse('rule r when $t : T ( "x" in $t.allowed ) then end')
+    s, why = classify_rule_with_rationale(r)
+    assert s == Strategy.PYTHON_FALLBACK and why == "IN_AGAINST_NON_LIST"
+
+
+def test_has_in_against_non_list_not_and_call_branches() -> None:
+    assert _has_in_against_non_list(Not(InExpr(Literal(1), Identifier("$t.z"), False))) is True
+    assert (
+        _has_in_against_non_list(
+            CallExpr("wrap", (InExpr(Literal(1), Identifier("$t.q"), False),)),
+        )
+        is True
+    )
+    assert (
+        _has_in_against_non_list(
+            InExpr(Literal(3), ListExpr((Literal(1), Literal(2))), False),
+        )
+        is False
+    )
 
 
 def test_translate_action() -> None:

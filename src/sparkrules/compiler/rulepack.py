@@ -23,7 +23,17 @@ from sparkrules.compiler.translator import (
 from sparkrules.compiler.exceptions import RulePackVersionError
 from sparkrules.compiler.safe_pickle import loads_rulepack_payload
 from sparkrules.parser import parse_rules
-from sparkrules.parser.ast import BinaryOp, BinaryOperator, Expr, InExpr, Literal, Not, RuleAst
+from sparkrules.parser.ast import (
+    BinaryOp,
+    BinaryOperator,
+    CallExpr,
+    Expr,
+    InExpr,
+    ListExpr,
+    Literal,
+    Not,
+    RuleAst,
+)
 
 
 _LOG = logging.getLogger(__name__)
@@ -75,6 +85,24 @@ def _flatten_and_chain(expr: Expr) -> list[Expr]:
     return [expr]
 
 
+def _has_in_against_non_list(expr: Expr) -> bool:
+    """True if any ``in`` / ``not in`` uses a non-literal list RHS (dynamic membership)."""
+
+    if isinstance(expr, BinaryOp):
+        return _has_in_against_non_list(expr.left) or _has_in_against_non_list(expr.right)
+    if isinstance(expr, Not):
+        return _has_in_against_non_list(expr.expr)
+    if isinstance(expr, InExpr):
+        if not isinstance(expr.right, ListExpr):
+            return True
+        return _has_in_against_non_list(expr.left) or _has_in_against_non_list(expr.right)
+    if isinstance(expr, ListExpr):
+        return any(_has_in_against_non_list(it) for it in expr.items)
+    if isinstance(expr, CallExpr):
+        return any(_has_in_against_non_list(a) for a in expr.args)
+    return False
+
+
 def _has_python_only_regex(expr: Expr) -> bool:
     """Check if expression contains regex patterns with Python-only features (Req 21).
 
@@ -99,6 +127,10 @@ def _has_python_only_regex(expr: Expr) -> bool:
         return _has_python_only_regex(expr.expr)
     if isinstance(expr, InExpr):
         return _has_python_only_regex(expr.left) or _has_python_only_regex(expr.right)
+    if isinstance(expr, ListExpr):
+        return any(_has_python_only_regex(it) for it in expr.items)
+    if isinstance(expr, CallExpr):
+        return any(_has_python_only_regex(a) for a in expr.args)
     return False
 
 
@@ -112,10 +144,10 @@ def classify_rule_with_rationale(rule: RuleAst) -> tuple[Strategy, str]:
     if pattern.constraint is None:
         return Strategy.SQL_PUSHDOWN, "NO_WHEN_CONSTRAINT"  # pragma: no cover
 
-    if not can_translate(pattern.constraint):
-        from sparkrules.runtime.engine_metrics import record_translation_failure
+    if _has_in_against_non_list(pattern.constraint):
+        return Strategy.PYTHON_FALLBACK, "IN_AGAINST_NON_LIST"
 
-        record_translation_failure()
+    if not can_translate(pattern.constraint):
         return Strategy.ALPHA_SHARED, "PREDICATE_NOT_SQL_TRANSLATABLE"
 
     if _has_python_only_regex(pattern.constraint):

@@ -8,6 +8,7 @@ expressions for Strategy A (SQL_PUSHDOWN).
 from __future__ import annotations
 
 from sparkrules.parser.ast import (
+    Action,
     BinaryOp,
     BinaryOperator,
     CallExpr,
@@ -17,8 +18,8 @@ from sparkrules.parser.ast import (
     ListExpr,
     Literal,
     Not,
-    Action,
 )
+from sparkrules.runtime.engine_metrics import record_translation_failure
 
 
 class TranslationError(Exception):
@@ -171,4 +172,5 @@ def can_translate(expr: Expr) -> bool:
         translate_predicate(expr)
         return True
     except TranslationError:
+        record_translation_failure()
         return False

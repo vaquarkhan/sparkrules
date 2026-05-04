@@ -10,7 +10,7 @@ _MSG = (
 
 try:
     from fastapi import FastAPI, HTTPException, Query, Request
-    from fastapi.responses import JSONResponse
+    from fastapi.responses import JSONResponse, Response
     from starlette.staticfiles import StaticFiles
 except ImportError as exc:  # pragma: no cover — CI always installs ``[api]``
     raise ImportError(_MSG) from exc
@@ -21,5 +21,6 @@ __all__ = [
     "JSONResponse",
     "Query",
     "Request",
+    "Response",
     "StaticFiles",
 ]

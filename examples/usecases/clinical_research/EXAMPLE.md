@@ -1,4 +1,4 @@
-﻿**Author:** Vaquar Khan  
+**Author:** Vaquar Khan  
 
 ## Clinical research  -  lab harmonization and dedupe
 
@@ -10,7 +10,7 @@ Each CSV row expands into **`{ record_id, f: { ... } }`** after **`staging.enric
 
 ### Rule cheat sheet (`clinical_trials_rules.drl`)
 
-Rules run as a **`parse_rules` chain** (see `apply_drl` / `run_rule_chain`).
+Rules run as a **`parse_rules` chain** (see `SparkRuleExecutor` / `run_rule_chain`).
 
 | Rule (salience) | Intent | Mechanics |
 |-----------------|--------|------------|

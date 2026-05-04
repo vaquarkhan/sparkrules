@@ -34,8 +34,9 @@ def validate_zero_code_change(cfg: EngineConfig) -> None:
         raise ValueError("unsupported input source")
     if cfg.output_source not in {"iceberg", "delta", "hudi", "parquet"}:
         raise ValueError("unsupported output source")
-    if normalize_spark_version(cfg.spark_version).split(".")[0] != "3":
-        raise ValueError("only Spark 3.x is supported")
+    major = normalize_spark_version(cfg.spark_version).split(".")[0]
+    if major not in {"3", "4"}:
+        raise ValueError("only Spark 3.x and 4.x are supported")
     if cfg.platform not in {"local", "glue", "databricks", "gcp-dataproc", "azure-synapse"}:
         raise ValueError("unsupported platform")
     if cfg.executor_cores < 1 or cfg.executor_workers < 1 or cfg.executor_memory_gb < 1:

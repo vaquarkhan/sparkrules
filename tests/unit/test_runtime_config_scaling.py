@@ -55,6 +55,16 @@ def test_runtime_conf_platform_switching() -> None:
     assert dbt["sparkrules.dbt.target"] == "prod"
 
 
+def test_spark_4_runtime_conf() -> None:
+    c = runtime_conf(EngineConfig(spark_version="4.2"))
+    assert c["spark.version.target"].startswith("4.")
+
+
+def test_spark_major_5_rejected() -> None:
+    with pytest.raises(ValueError, match="Spark 3.x and 4.x"):
+        validate_zero_code_change(EngineConfig(spark_version="5.0"))
+
+
 def test_config_validation_errors() -> None:
     with pytest.raises(ValueError):
         validate_zero_code_change(EngineConfig(spark_version="2.4"))
