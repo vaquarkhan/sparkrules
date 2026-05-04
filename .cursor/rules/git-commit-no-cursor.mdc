@@ -1,0 +1,13 @@
+---
+description: Git commits must not include Cursor vendor trailers or attribution footers
+alwaysApply: true
+---
+
+# Git commits — no Cursor trailers
+
+- **Do not** add commit message trailers or footers such as:
+  - `Co-authored-by: Cursor <...>`
+  - `Made-with: Cursor` / `Made with Cursor`
+  - Any similar tool/vendor attribution unless the user explicitly asks for it in plain language.
+- When committing from this environment, prefer **`git -c core.hooksPath=.git/hooks commit ...`** if a global hook re-injects those lines (see `CONTRIBUTING.md`).
+- In Cursor: keep **Agent → Attribution** disabled (Settings, search `attribution`).

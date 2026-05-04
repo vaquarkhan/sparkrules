@@ -195,7 +195,9 @@ cython_debug/
 .abstra/
 
 # Cursor (local project/session; do not commit agent cache)
-.cursor/
+.cursor/**
+!.cursor/rules/
+!.cursor/rules/**
 
 # Visual Studio Code
 #   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 

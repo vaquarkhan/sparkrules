@@ -269,6 +269,7 @@ pip install sparkrules[test]    # dev/test dependencies
 - Update `CHANGELOG.md` for user-facing changes
 - Do not commit `__pycache__/`, `.vscode/`, or temporary files
 - Use conventional commit messages: `feat:`, `fix:`, `docs:`, `test:`, `chore:`
+- **Do not** add Cursor (or other vendor) footers to commits: no `Co-authored-by: Cursor`, no `Made-with: Cursor`, no similar trailers unless the maintainer explicitly asks. Turn off Cursor **Agent → Attribution** in settings; see `.cursor/rules/git-commit-no-cursor.mdc` and `CONTRIBUTING.md`.
 
 ## Architecture decisions
 

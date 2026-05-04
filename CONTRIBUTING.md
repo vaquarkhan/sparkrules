@@ -1,4 +1,4 @@
-﻿# Contributing to sparkrules
+# Contributing to sparkrules
 
 ## Environment
 
@@ -31,7 +31,8 @@ Line coverage for `sparkrules` is enforced at 100% in `pyproject.toml` when you 
 ## Pull requests
 
 - Keep changes focused; pair behavior changes with tests.
-- Do not add vendor-specific footers to commit messages unless asked.
+- Do not add vendor-specific footers to commit messages unless asked. In particular, **never** add `Co-authored-by: Cursor …`, `Made-with: Cursor`, or similar IDE attribution trailers. Shared guidance lives in [`.cursor/rules/git-commit-no-cursor.mdc`](.cursor/rules/git-commit-no-cursor.mdc).
+- If a global Git `commit-msg` / `prepare-commit-msg` hook keeps appending those lines, commit with the repo’s hooks only: `git -c core.hooksPath=.git/hooks commit …` (this repo’s `.git/hooks` has no such hook).
 - Update user-facing docs in `docs/` when behavior or usage changes.
 
 ## Documentation
