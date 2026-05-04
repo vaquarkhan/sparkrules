@@ -372,6 +372,77 @@
     .wb-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--ok)); width: 0%; transition: width 0.2s ease; }
     details.raw-json > summary { cursor: pointer; font-size: 0.75rem; color: var(--muted); margin-top: 0.35rem; }
     details.raw-json pre { margin-top: 0.35rem; }
+    #wb-toasts {
+      position: fixed;
+      top: 4.5rem;
+      right: 1rem;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-width: min(420px, 92vw);
+      pointer-events: none;
+    }
+    .wb-toast {
+      pointer-events: auto;
+      padding: 0.55rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      background: var(--panel-solid);
+      animation: wb-toast-in 0.22s ease;
+    }
+    .wb-toast-err { border-left: 3px solid var(--err); }
+    .wb-toast-warn { border-left: 3px solid var(--warn); }
+    .wb-toast-ok { border-left: 3px solid var(--ok); }
+    @keyframes wb-toast-in {
+      from { opacity: 0; transform: translateX(12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    details.hdr-security {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.25rem 0.55rem;
+      background: var(--panel);
+      max-width: 320px;
+    }
+    details.hdr-security summary { list-style: none; }
+    details.hdr-security summary::-webkit-details-marker { display: none; }
+    .wb-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .wb-modal-backdrop.open { display: flex; }
+    .wb-modal {
+      background: var(--panel-solid);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: min(900px, 96vw);
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 1rem 1.1rem;
+      box-shadow: var(--shadow);
+    }
+    .wb-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 0.5rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .wb-drop-zone.wb-drop-hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    main.wb-fetch-loading { opacity: 0.72; transition: opacity 0.15s; }
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       nav {
@@ -400,6 +471,7 @@
   </style>
 </head>
 <body>
+  <div id="wb-toasts" aria-live="polite" aria-relevant="additions"></div>
   <header>
     <div class="header-brand">
       <img
@@ -417,11 +489,19 @@
       </div>
     </div>
     <div class="header-tools">
-      <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark">Light</button>
+      <button type="button" class="btn btn-ghost" id="btn-theme" title="Switch light / dark theme">Theme</button>
       <input type="password" id="api-key" placeholder="X-API-Key (if server requires it)" style="max-width:280px" title="Enter the same value as the server environment variable" />
       <button type="button" class="btn" id="btn-api-key-save">Save</button>
-      <input type="text" id="hdr-roles" placeholder="X-Roles (default: platform_admin)" style="max-width:220px" title="Comma-separated RBAC roles. Blank uses platform_admin so Overview shows all rules across namespaces." />
-      <input type="text" id="hdr-tenant" placeholder="X-Tenant-Id" value="default" style="max-width:120px" />
+      <label for="hdr-tenant-select" class="link-quiet" style="font-size:0.75rem;white-space:nowrap">Namespace</label>
+      <select id="hdr-tenant-select" style="max-width:160px" title="Sent as X-Tenant-Id (governance / BUG-39 safe pinning)"><option value="default">default</option></select>
+      <input type="text" id="hdr-tenant-custom" placeholder="Custom namespace…" style="max-width:150px;display:none" title="When Namespace = Other" />
+      <details class="hdr-security">
+        <summary title="Headers for RBAC testing">Security</summary>
+        <div style="padding:0.35rem 0 0">
+          <input type="text" id="hdr-roles" placeholder="X-Roles (blank = platform_admin)" style="max-width:260px" title="Comma-separated. Leave blank for platform_admin (see all namespaces)." />
+          <p class="mono" style="font-size:0.68rem;color:var(--muted);margin:0.25rem 0 0">Shortcuts: Ctrl+S save rule draft (local) · Ctrl+Enter run simulation</p>
+        </div>
+      </details>
       <span class="mono" style="font-size:0.8rem">
         <a class="link-quiet" href="/docs" target="_blank" rel="noopener">OpenAPI</a>
         <span class="link-quiet" style="padding:0 0.2rem;pointer-events:none">&middot;</span>
@@ -437,6 +517,7 @@
       <button type="button" data-view="author">Author / validate</button>
       <button type="button" data-view="sim">Simulate</button>
       <button type="button" data-view="advanced">Advanced tools</button>
+      <button type="button" data-view="benchmark">Cost estimate</button>
       <p class="nav-label">Ship &amp; control</p>
       <button type="button" data-view="deploy">Deployment</button>
       <button type="button" data-view="template">Template helper</button>
@@ -459,6 +540,18 @@
             </div>
           </div>
         </div>
+        <div id="overview-onboarding" class="panel hidden" style="border-left:4px solid var(--ok);margin-bottom:1rem">
+          <h2 style="margin:0 0 0.5rem;font-size:1rem;text-transform:none;letter-spacing:0;color:var(--text)">Get started</h2>
+          <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">The rule store is empty. Namespace is set in the header dropdown so governance pins match your tenant (avoids mismatched <span class="mono">X-Tenant-Id</span> text typos).</p>
+          <div class="row" style="margin:0">
+            <button class="btn" type="button" id="btn-seed-demo">Seed demo rules</button>
+            <button class="btn btn-ghost" type="button" id="btn-import-drl-overview">Import a .drl file</button>
+            <input type="file" id="inp-import-drl-overview" accept=".drl,.txt,text/plain" style="display:none" />
+            <a class="btn btn-ghost" href="https://sparkrules.readthedocs.io/en/latest/quickstart.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Read quick start</a>
+            <button class="btn btn-ghost" type="button" onclick="showView('author')">Author tab</button>
+          </div>
+        </div>
+        <div id="overview-rich">
         <div class="stat-cards" id="stat-cards">
           <div class="stat-card"><span class="ic" aria-hidden="true">&#x1F4E6;</span><div class="l">Rule versions</div><div class="n" id="st-versions">-</div></div>
           <div class="stat-card"><span class="ic" aria-hidden="true">&#x2705;</span><div class="l">Active</div><div class="n" id="st-active" style="color:var(--ok)">-</div></div>
@@ -505,6 +598,7 @@
           <div class="spark-callout" id="spark-callout">
             Spark execution check: default Workbench uses pure Python in this process (no SparkSession). Cluster scale needs mapPartitions + broadcast rule package  -  see repo <span class="mono">docs/KNOWN_LIMITATIONS.md</span>.
           </div>
+        </div>
         </div>
       </section>
       <section id="view-assets" class="view hidden">
@@ -574,6 +668,8 @@ end</pre>
             <input type="text" id="in-namespace" placeholder="namespace" value="default" style="max-width:140px" title="Project / org scope for governance" />
           </div>
           <p class="mono" style="color:var(--muted);font-size:0.8rem;margin:0.35rem 0 0.5rem">Monaco DRL editor &middot; Validate runs parse + LSP diagnostics</p>
+          <div class="wb-drop-zone" id="author-dnd-hint" tabindex="0">Drop a <span class="mono">.drl</span> file here or click to browse</div>
+          <input type="file" id="inp-author-dnd" accept=".drl,.txt,text/plain" style="display:none" />
           <div id="monaco-drl-new" class="monaco-wrap" role="region" aria-label="DRL editor"></div>
           <div class="row" style="margin-top:0.5rem">
             <button class="btn" type="button" id="btn-validate">Validate</button>
@@ -655,6 +751,28 @@ end</pre>
           <pre id="sim-out" class="panel mono"></pre>
         </div>
       </section>
+      <section id="view-benchmark" class="view hidden">
+        <div class="panel">
+          <h2>Batch cost heuristic</h2>
+          <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.75rem">Planning-only estimate from <span class="mono">GET /workbench/cost-estimate</span> (same model as <span class="mono">sparkrules-cli cost</span>). Not a billing quote.</p>
+          <div class="row">
+            <label class="mono" style="font-size:0.78rem;color:var(--muted)">Rows</label>
+            <input type="number" id="bench-rows" value="100000000" min="1" step="1000" style="max-width:140px" />
+            <label class="mono" style="font-size:0.78rem;color:var(--muted)">Rules</label>
+            <input type="number" id="bench-rules" value="50" min="1" style="max-width:72px" />
+            <label class="mono" style="font-size:0.78rem;color:var(--muted)">Cluster</label>
+            <select id="bench-cluster" style="max-width:160px">
+              <option value="databricks">databricks</option>
+              <option value="glue">glue</option>
+              <option value="dataproc">dataproc</option>
+              <option value="synapse">synapse</option>
+              <option value="local">local</option>
+            </select>
+            <button type="button" class="btn" id="btn-bench-run">Estimate</button>
+          </div>
+          <pre id="bench-out" class="mono panel" style="margin-top:0.75rem;min-height:4rem;font-size:0.82rem"></pre>
+        </div>
+      </section>
       <section id="view-advanced" class="view hidden">
         <details style="margin-bottom:0.75rem;font-size:0.82rem;color:var(--muted)">
           <summary style="cursor:pointer;font-weight:600;color:var(--text)">How to use Advanced tools</summary>
@@ -671,7 +789,11 @@ end</pre>
             <p style="margin:0"><strong>Lineage events:</strong> View the audit trail of all rule evaluations, captures, and governance actions.</p>
           </div>
         </details>
-        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Set <span class="mono">X-Roles</span> in the header when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled - graph response is JSON only.</p>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.5rem">Uses existing REST APIs. Open <strong>Security</strong> in the header to set <span class="mono">X-Roles</span> when required (e.g. <span class="mono">dq_steward</span> for DQ, <span class="mono">ai_reviewer</span> for AI, <span class="mono">platform_admin</span> for lineage). React Flow / full graph designer is not bundled - graph response is JSON only.</p>
+        <div class="panel" style="margin-bottom:0.75rem;padding:0.65rem 0.85rem">
+          <p style="margin:0;font-size:0.82rem;color:var(--muted)"><strong>Copy as curl</strong> for a simple simulation (add <span class="mono">-H &quot;X-API-Key: …&quot;</span> if your server requires it):</p>
+          <button type="button" class="btn btn-sm btn-ghost" id="btn-copy-curl-sim" style="margin-top:0.35rem">Copy curl: POST /simulations</button>
+        </div>
         <details class="adv-panel" open>
           <summary>AI rule suggestions (offline or OpenAI)</summary>
           <div class="adv-body">
@@ -939,6 +1061,20 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       </section>
     </main>
   </div>
+  <div id="modal-asset-test" class="wb-modal-backdrop" aria-hidden="true">
+    <div class="wb-modal" role="dialog" aria-labelledby="modal-test-title">
+      <h2 id="modal-test-title" style="margin:0 0 0.35rem;font-size:1rem">Test rule from catalog</h2>
+      <p id="modal-test-meta" class="mono" style="font-size:0.78rem;color:var(--muted);margin:0 0 0.5rem"></p>
+      <div id="monaco-drl-asset-test" class="monaco-wrap" style="min-height:200px;height:min(38vh,320px)"></div>
+      <p class="mono" style="margin:0.5rem 0 0.25rem;font-size:0.8rem">Fact JSON</p>
+      <textarea id="modal-test-fact" style="min-height:80px">{"t":{}}</textarea>
+      <div class="row" style="margin-top:0.65rem">
+        <button type="button" class="btn" id="btn-modal-test-run">Run simulation</button>
+        <button type="button" class="btn btn-ghost" id="btn-modal-test-close">Close</button>
+      </div>
+      <pre id="modal-test-out" class="mono" style="margin-top:0.5rem;max-height:180px;overflow:auto;font-size:0.78rem"></pre>
+    </div>
+  </div>
   <!-- Monaco + Chart load after DOM so the shell paints immediately (CDN blocked/slow no longer blanks the page). -->
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -946,6 +1082,8 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
     var assetsState = { all: [], page: 1, pageSize: 20 };
     var drlNewEditor = null;
     var drlSimEditor = null;
+    var drlAssetTestEditor = null;
+    var _modalTestCtx = { drl: "", handle: "", version: 0 };
     var fireSampleRows = [
       { rule: "r_low_value (amount <= 500)", fired: 3373, pct: 67.5 },
       { rule: "dq_date_in_range", fired: 2549, pct: 51.0 },
@@ -987,11 +1125,15 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       if (name === "assets" && typeof loadAssets === "function") {
         loadAssets().catch(function (e) { setMessage(e.message, "err"); });
       }
-      if ((name === "author" || name === "sim") && typeof window.layoutDrlMonaco === "function") {
+      if ((name === "author" || name === "sim" || name === "benchmark") && typeof window.layoutDrlMonaco === "function") {
         requestAnimationFrame(function () { window.layoutDrlMonaco(); });
       }
       if (name === "advanced" && typeof loadAdvAiTable === "function") {
         loadAdvAiTable().catch(function () {});
+      }
+      if (name === "benchmark") {
+        var bo = document.getElementById("bench-out");
+        if (bo && !bo.textContent.trim()) bo.textContent = "Set parameters and click Estimate.";
       }
     }
     (function initTheme() {
@@ -1032,14 +1174,42 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       if (!v) return {};
       return { "X-API-Key": v };
     }
+    function getTenantHeader() {
+      var sel = document.getElementById("hdr-tenant-select");
+      var cu = document.getElementById("hdr-tenant-custom");
+      if (sel && sel.value === "__custom__") {
+        return (cu && cu.value.trim()) ? cu.value.trim() : "default";
+      }
+      if (sel && sel.value) return sel.value;
+      return "default";
+    }
     function roleHeaders() {
       var o = {};
       var r = document.getElementById("hdr-roles");
       var rv = r && r.value.trim() ? r.value.trim() : "platform_admin";
       o["X-Roles"] = rv;
-      var t = document.getElementById("hdr-tenant");
-      o["X-Tenant-Id"] = t && t.value.trim() ? t.value.trim() : "default";
+      o["X-Tenant-Id"] = getTenantHeader();
       return o;
+    }
+    function wbToast(msg, kind) {
+      var c = document.getElementById("wb-toasts");
+      if (!c || !msg) return;
+      var el = document.createElement("div");
+      el.className = "wb-toast wb-toast-" + (kind || "err");
+      el.setAttribute("role", "alert");
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(function () { try { el.remove(); } catch (e) {} }, 9000);
+    }
+    function parseHttpErrorText(status, text) {
+      try {
+        var j = JSON.parse(text);
+        if (typeof j.detail === "string") return j.detail;
+        if (j.detail && typeof j.detail.message === "string") return j.detail.message;
+        if (j.detail && j.detail.code) return (j.detail.code + ": ") + (j.detail.message || JSON.stringify(j.detail));
+        if (j.detail && typeof j.detail === "object") return JSON.stringify(j.detail);
+      } catch (e) { /* ignore */ }
+      return (text && String(text).slice(0, 400)) || ("HTTP " + status);
     }
     /** Bound fetch so hung API/CDN tabs recover instead of waiting forever. */
     function fetchWithTimeout(url, options, timeoutMs) {
@@ -1062,7 +1232,12 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         opts.headers || {}
       );
       const r = await fetchWithTimeout(path, Object.assign({}, opts, { headers: h }), opts.timeoutMs || 30000);
-      if (!r.ok) throw new Error((await r.text()) || r.status);
+      if (!r.ok) {
+        const tx = await r.text();
+        const pe = parseHttpErrorText(r.status, tx);
+        wbToast(pe, r.status === 403 || r.status === 401 ? "warn" : "err");
+        throw new Error(pe);
+      }
       return r.json();
     }
     async function postJson(path, body) {
@@ -1076,7 +1251,11 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         body: JSON.stringify(body),
       }, 60000);
       const t = await r.text();
-      if (!r.ok) throw new Error(t || r.status);
+      if (!r.ok) {
+        const pe = parseHttpErrorText(r.status, t);
+        wbToast(pe, r.status === 403 || r.status === 401 ? "warn" : "err");
+        throw new Error(pe);
+      }
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
     }
     async function patchJson(path, body) {
@@ -1090,7 +1269,11 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         body: JSON.stringify(body),
       }, 60000);
       const t = await r.text();
-      if (!r.ok) throw new Error(t || r.status);
+      if (!r.ok) {
+        const pe = parseHttpErrorText(r.status, t);
+        wbToast(pe, r.status === 403 || r.status === 401 ? "warn" : "err");
+        throw new Error(pe);
+      }
       try { return JSON.parse(t); } catch (e) { return { raw: t }; }
     }
     function getAuthorDrl() {
@@ -1122,6 +1305,7 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
     function layoutDrlMonaco() {
       if (drlNewEditor) drlNewEditor.layout();
       if (drlSimEditor) drlSimEditor.layout();
+      if (drlAssetTestEditor) drlAssetTestEditor.layout();
     }
     window.layoutDrlMonaco = layoutDrlMonaco;
     function applyWorkbenchMonacoTheme() {
@@ -1161,6 +1345,7 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
               [/"(?:[^"\\]|\\.)*"/, "string"],
               [/'(?:[^'\\]|\\.)*'/, "string"],
               [/\/\/.*$/, "comment"],
+              [/#.*$/, "comment"],
               [/[a-zA-Z_$][\w$]*/, { cases: { "@keywords": "keyword", "@default": "identifier" } }],
               [/[0-9]+(?:\.[0-9]+)?/, "number"],
               [/==|!=|<=|>=|[=<>!]+/, "operator"],
@@ -1207,9 +1392,21 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           wordWrap: "on",
           scrollBeyondLastLine: false
         });
+        var elTest = document.getElementById("monaco-drl-asset-test");
+        if (elTest) {
+          drlAssetTestEditor = mon.editor.create(elTest, {
+            value: defSim,
+            language: "drl",
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 13,
+            wordWrap: "on",
+            scrollBeyondLastLine: false
+          });
+        }
         applyWorkbenchMonacoTheme();
         var h = document.getElementById("lsp-hint");
-        if (h) h.textContent = "Ctrl+Space: completions (LSP) &middot; Validate: parse + diagnostics.";
+        if (h) h.textContent = "Ctrl+Space: LSP completions · Ctrl+Enter: run simulation (open Simulate tab first).";
         window.addEventListener("resize", function () { layoutDrlMonaco(); });
       });
     })();
@@ -1248,6 +1445,45 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       };
       _chartInstances[canvasId] = new Chart(canvas, cfg);
     }
+    async function refreshNamespacePicker() {
+      var sel = document.getElementById("hdr-tenant-select");
+      if (!sel) return;
+      var prev = getTenantHeader();
+      var have = {};
+      var opts = [];
+      function addNs(x) {
+        if (!x || have[x]) return;
+        have[x] = true;
+        opts.push(x);
+      }
+      addNs("default");
+      try {
+        var ns1 = await getJson("/governance/namespaces");
+        if (Array.isArray(ns1)) ns1.forEach(addNs);
+      } catch (e) { /* ignore */ }
+      try {
+        var assets = await getJson("/rules/assets");
+        if (Array.isArray(assets)) assets.forEach(function (a) { addNs(a.namespace || "default"); });
+      } catch (e) { /* ignore */ }
+      opts.sort();
+      var h = "";
+      opts.forEach(function (x) {
+        h += "<option value=\"" + escapeHtml(x) + "\">" + escapeHtml(x) + "</option>";
+      });
+      h += "<option value=\"__custom__\">Other (type)…</option>";
+      sel.innerHTML = h;
+      var cu = document.getElementById("hdr-tenant-custom");
+      if (have[prev]) {
+        sel.value = prev;
+        if (cu) cu.style.display = "none";
+      } else if (prev && prev !== "default") {
+        sel.value = "__custom__";
+        if (cu) { cu.style.display = "inline-block"; cu.value = prev; }
+      } else {
+        sel.value = "default";
+        if (cu) cu.style.display = "none";
+      }
+    }
     var _chartColors = ["#3b82f6","#8b5cf6","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#a855f7"];
     async function loadDashboard() {
       try {
@@ -1257,6 +1493,15 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           return null;
         }),
       ]);
+      var rich = document.getElementById("overview-rich");
+      var onb = document.getElementById("overview-onboarding");
+      if (data.length === 0) {
+        if (rich) rich.classList.add("hidden");
+        if (onb) onb.classList.remove("hidden");
+      } else {
+        if (rich) rich.classList.remove("hidden");
+        if (onb) onb.classList.add("hidden");
+      }
       const handles = {};
       const byG = {};
       const byN = {};
@@ -1317,6 +1562,7 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       var sb = document.getElementById("spark-badge");
       if (sb) { sb.textContent = "Spark: not active (pure Python)"; sb.style.background = "rgba(148,163,184,0.35)"; }
       } catch (e) { setMessage("Dashboard error: " + e.message, "err"); console.error("loadDashboard:", e); }
+      finally { refreshNamespacePicker().catch(function () {}); }
     }
     function assetQuery() {
       const q = document.getElementById("filter-q");
@@ -1342,13 +1588,19 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       } catch (e) { /* ignore */ }
     }
     async function loadAssets() {
+      var mainEl = document.querySelector("main");
+      if (mainEl) mainEl.classList.add("wb-fetch-loading");
       setMessage("Loading…", "");
-      await loadGroupOptions();
-      const data = await getJson(assetQuery());
-      assetsState.all = data;
-      assetsState.page = 1;
-      renderAssetsTablePaged();
-      setMessage("Loaded " + data.length + " row(s).", "ok");
+      try {
+        await loadGroupOptions();
+        const data = await getJson(assetQuery());
+        assetsState.all = data;
+        assetsState.page = 1;
+        renderAssetsTablePaged();
+        setMessage("Loaded " + data.length + " row(s).", "ok");
+      } finally {
+        if (mainEl) mainEl.classList.remove("wb-fetch-loading");
+      }
     }
     function escapeHtml(s) {
       return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1468,11 +1720,16 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         return;
       }
       var rev = rows.slice().reverse();
-      var h = "<table><tr><th>Event</th><th>run_id</th><th>Time</th></tr>";
+      var h = "<table><tr><th>Time</th><th>Event</th><th>run_id</th><th>Principal</th><th>Resource / notes</th></tr>";
       rev.forEach(function (ev) {
         var rid = escapeHtml(String(ev.run_id || ""));
-        var ts = escapeHtml(String(ev.ts || "").slice(0, 28));
-        h += "<tr><td class='mono'>" + escapeHtml(String(ev.event_type || "")) + "</td><td class='mono' style='font-size:0.72rem'>" + rid + "</td><td class='mono' style='font-size:0.72rem'>" + ts + "</td></tr>";
+        var ts = escapeHtml(String(ev.ts || "").replace("T", " ").slice(0, 22));
+        var pl = ev.payload && typeof ev.payload === "object" ? ev.payload : {};
+        var pr = escapeHtml(String(pl.principal != null ? pl.principal : ""));
+        var res = pl.resource != null ? String(pl.resource) : (pl.action != null ? String(pl.action) : "");
+        if (typeof res === "object") res = JSON.stringify(res);
+        res = escapeHtml((res || "").slice(0, 120));
+        h += "<tr><td class='mono' style='font-size:0.72rem'>" + ts + "</td><td class='mono'>" + escapeHtml(String(ev.event_type || "")) + "</td><td class='mono' style='font-size:0.7rem'>" + rid + "</td><td class='mono' style='font-size:0.72rem'>" + pr + "</td><td class='mono' style='font-size:0.7rem'>" + res + "</td></tr>";
       });
       h += "</table>";
       host.innerHTML = h;
@@ -1551,6 +1808,10 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         sc.innerHTML = "<strong>Spark on the default path: no</strong><br/>SparkSession.getActiveSession() = None  -  no session created; engine runs pure-Python, single-process (e.g. one uvicorn worker), not Catalyst on executors. Throughput is limited by interpreted evaluation, not Spark SQL.";
       }
     }
+    function formatAssetTs(iso) {
+      if (!iso) return "—";
+      return String(iso).replace("T", " ").slice(0, 19);
+    }
     function renderAssetsTablePaged() {
       var host = document.getElementById("assets-table");
       if (!host) return;
@@ -1567,15 +1828,18 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
       if (assetsState.page < 1) assetsState.page = 1;
       var start = (assetsState.page - 1) * pageSize;
       var slice = all.slice(start, start + pageSize);
-      var h = "<table><tr><th>Handle</th><th>Version</th><th>Group</th><th>Namespace</th><th>Status</th><th>Actions</th><th>DRL (preview)</th></tr>";
-      slice.forEach(function (a) {
+      var h = "<table><tr><th>Handle</th><th>Ver</th><th>Group</th><th>NS</th><th>Author</th><th>Created (UTC)</th><th>Status</th><th>Actions</th><th>DRL (preview)</th></tr>";
+      slice.forEach(function (a, idx) {
         const prev = a.drl.length > 200 ? a.drl.slice(0, 200) + "…" : a.drl;
         const ns = a.namespace != null ? a.namespace : "default";
         const st = a.is_active ? "<span class='badge badge-on'>active</span>" : "<span class='badge badge-off'>inactive</span>";
         const next = a.is_active ? "false" : "true";
         const lab = a.is_active ? "Deactivate" : "Activate";
         const hEsc = JSON.stringify(a.rule_handle);
-        h += "<tr><td class='mono'>" + escapeHtml(a.rule_handle) + "</td><td>" + a.version + "</td><td>" + escapeHtml(a.rule_group) + "</td><td class='mono'>" + escapeHtml(ns) + "</td><td>" + st + "</td><td><button type='button' class='btn btn-sm js-toggle-active' data-next='" + next + "' data-handle=" + hEsc + " data-version='" + a.version + "'>" + lab + "</button></td><td class='mono'>" + escapeHtml(prev) + "</td></tr>";
+        const auth = escapeHtml(String(a.author != null ? a.author : "system"));
+        const cts = escapeHtml(formatAssetTs(a.created_at));
+        const rowIdx = start + idx;
+        h += "<tr><td class='mono'>" + escapeHtml(a.rule_handle) + "</td><td>" + a.version + "</td><td>" + escapeHtml(a.rule_group) + "</td><td class='mono'>" + escapeHtml(ns) + "</td><td class='mono' style='font-size:0.72rem'>" + auth + "</td><td class='mono' style='font-size:0.72rem'>" + cts + "</td><td>" + st + "</td><td style='white-space:nowrap'><button type='button' class='btn btn-sm js-toggle-active' data-next='" + next + "' data-handle=" + hEsc + " data-version='" + a.version + "'>" + lab + "</button> <button type='button' class='btn btn-sm btn-ghost js-asset-test' data-row-idx='" + rowIdx + "'>Test</button></td><td class='mono'>" + escapeHtml(prev) + "</td></tr>";
       });
       h += "</table>";
       host.innerHTML = h;
@@ -1595,7 +1859,12 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
           roleHeaders()
         );
         const r = await fetchWithTimeout("/rules/export", { method: "GET", headers: h }, 120000);
-        if (!r.ok) { throw new Error((await r.text()) || r.status); }
+        if (!r.ok) {
+          const tx = await r.text();
+          const pe = parseHttpErrorText(r.status, tx);
+          wbToast(pe, "err");
+          throw new Error(pe);
+        }
         const blob = await r.blob();
         const u = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1609,9 +1878,30 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         setMessage("Download started.", "ok");
       } catch (e) { setMessage(e.message, "err"); }
     }
+    function openAssetTestModal(rule_handle, version) {
+      var mh = document.getElementById("modal-asset-test");
+      var meta = document.getElementById("modal-test-meta");
+      var out = document.getElementById("modal-test-out");
+      if (out) out.textContent = "";
+      getJson("/rules/" + encodeURIComponent(rule_handle) + "/version/" + version).then(function (row) {
+        _modalTestCtx = { drl: row.drl || "", handle: row.rule_handle, version: row.version };
+        if (meta) meta.textContent = row.rule_handle + " v" + row.version + " · " + (row.namespace || "default");
+        if (drlAssetTestEditor) drlAssetTestEditor.setValue(row.drl || "");
+        if (mh) { mh.classList.add("open"); mh.setAttribute("aria-hidden", "false"); }
+        requestAnimationFrame(function () { layoutDrlMonaco(); });
+      }).catch(function (e) { wbToast(e.message, "err"); });
+    }
     document.getElementById("assets-table").addEventListener("click", function (ev) {
       var t = ev.target;
-      if (!t || !t.classList || !t.classList.contains("js-toggle-active")) return;
+      if (!t || !t.classList) return;
+      if (t.classList.contains("js-asset-test")) {
+        var ri = parseInt(t.getAttribute("data-row-idx"), 10);
+        var row = (assetsState.all || [])[ri];
+        if (!row) return;
+        openAssetTestModal(row.rule_handle, row.version);
+        return;
+      }
+      if (!t.classList.contains("js-toggle-active")) return;
       var h = t.getAttribute("data-handle");
       var v = parseInt(t.getAttribute("data-version"), 10);
       var want = t.getAttribute("data-next") === "true";
@@ -2070,6 +2360,103 @@ rule r2 when $t : T ( $t.x == 0 ) then result.b = true; end</textarea>
         document.getElementById("tpl-fields").innerHTML = h;
         setMessage("Template fields loaded.", "ok");
       }).catch(function (e) { setMessage(e.message, "err"); });
+    });
+    document.getElementById("hdr-tenant-select").addEventListener("change", function () {
+      var cu = document.getElementById("hdr-tenant-custom");
+      if (!cu) return;
+      cu.style.display = this.value === "__custom__" ? "inline-block" : "none";
+    });
+    document.getElementById("btn-seed-demo").addEventListener("click", function () {
+      var ns = getTenantHeader();
+      var dh = "demo_welcome_" + String(Date.now()).slice(-8);
+      var drl = "rule \"demo\" when $t : T ( true ) then result.seed = true; end";
+      postJson("/rules", { rule_handle: dh, group: "demo", namespace: ns, drl: drl }).then(function () {
+        wbToast("Demo rule " + dh + " created.", "ok");
+        loadDashboard().catch(function () {});
+        loadAssets().catch(function () {});
+      }).catch(function (e) { wbToast(e.message, "err"); });
+    });
+    function wireImportDrl(inpId, goAuthor) {
+      var inp = document.getElementById(inpId);
+      if (!inp) return;
+      inp.addEventListener("change", function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        var r = new FileReader();
+        r.onload = function () {
+          var txt = String(r.result || "");
+          if (goAuthor && drlNewEditor) drlNewEditor.setValue(txt);
+          if (goAuthor) showView("author");
+          wbToast("Loaded " + f.name + " (" + txt.length + " chars)", "ok");
+          inp.value = "";
+        };
+        r.readAsText(f);
+      });
+    }
+    wireImportDrl("inp-import-drl-overview", true);
+    wireImportDrl("inp-author-dnd", true);
+    document.getElementById("btn-import-drl-overview").addEventListener("click", function () {
+      document.getElementById("inp-import-drl-overview").click();
+    });
+    (function wireAuthorDnD() {
+      var z = document.getElementById("author-dnd-hint");
+      var fi = document.getElementById("inp-author-dnd");
+      if (!z || !fi) return;
+      z.addEventListener("click", function () { fi.click(); });
+      ["dragenter", "dragover"].forEach(function (ev) {
+        z.addEventListener(ev, function (e) { e.preventDefault(); z.classList.add("wb-drop-hover"); });
+      });
+      z.addEventListener("dragleave", function () { z.classList.remove("wb-drop-hover"); });
+      z.addEventListener("drop", function (e) {
+        e.preventDefault();
+        z.classList.remove("wb-drop-hover");
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        var r = new FileReader();
+        r.onload = function () {
+          if (drlNewEditor) drlNewEditor.setValue(String(r.result || ""));
+          wbToast("Dropped " + f.name, "ok");
+        };
+        r.readAsText(f);
+      });
+    })();
+    document.getElementById("btn-bench-run").addEventListener("click", function () {
+      var rows = Number(document.getElementById("bench-rows").value) || 1e8;
+      var rules = parseInt(document.getElementById("bench-rules").value, 10) || 50;
+      var cluster = (document.getElementById("bench-cluster").value || "databricks").trim();
+      var qs = new URLSearchParams({ rows: String(rows), rules: String(rules), cluster: cluster });
+      getJson("/workbench/cost-estimate?" + qs.toString()).then(function (j) {
+        document.getElementById("bench-out").textContent = JSON.stringify(j, null, 2);
+        setMessage("Cost heuristic updated.", "ok");
+      }).catch(function (e) { document.getElementById("bench-out").textContent = e.message; });
+    });
+    document.getElementById("btn-modal-test-close").addEventListener("click", function () {
+      var mh = document.getElementById("modal-asset-test");
+      if (mh) { mh.classList.remove("open"); mh.setAttribute("aria-hidden", "true"); }
+    });
+    document.getElementById("modal-asset-test").addEventListener("click", function (ev) {
+      if (ev.target.id === "modal-asset-test") document.getElementById("btn-modal-test-close").click();
+    });
+    document.getElementById("btn-modal-test-run").addEventListener("click", function () {
+      var drl = drlAssetTestEditor ? drlAssetTestEditor.getValue() : _modalTestCtx.drl;
+      var factRaw = (document.getElementById("modal-test-fact").value || "").trim();
+      var fact;
+      try { fact = JSON.parse(factRaw || "{}"); } catch (e1) { wbToast("Invalid fact JSON", "err"); return; }
+      postJson("/simulations", { drl: drl, fact: fact }).then(function (j) {
+        document.getElementById("modal-test-out").textContent = JSON.stringify(j, null, 2);
+        wbToast("Simulation finished. fired=" + j.fired, "ok");
+      }).catch(function (e2) { document.getElementById("modal-test-out").textContent = e2.message; });
+    });
+    document.getElementById("btn-copy-curl-sim").addEventListener("click", function () {
+      var origin = window.location.origin || "";
+      var body = { drl: "rule r when $t : T ( true ) then result.ok = true; end", fact: { t: {} } };
+      var j = JSON.stringify(body);
+      var curl = "curl -sS -X POST \"" + origin + "/simulations\" \\\n" +
+        "  -H \"Content-Type: application/json\" \\\n" +
+        "  -H \"X-Roles: platform_admin\" \\\n" +
+        "  -H \"X-Tenant-Id: " + getTenantHeader() + "\" \\\n" +
+        "  -d '" + j.replace(/'/g, "'\\''") + "'";
+      navigator.clipboard.writeText(curl).then(function () { wbToast("curl copied (bash-style)", "ok"); }).catch(function () { wbToast("Clipboard unavailable", "warn"); });
     });
     showView("overview");
   </script>

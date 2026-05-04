@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Workbench** (`index.html`): UX improvements; **`RuleAssetResponse`** now documents **`created_at`** and **`author`** on `/rules/assets` rows (`schemas.py`).
 - **`RulePack.serialize`** prefixes an explicit **`SRRP`** + major/minor version envelope before the pickle payload; **`deserialize`** accepts legacy raw pickles and current **1.0** payloads; optional **`SPARKRULES_MAX_RULEPACK_BYTES`** raises **`ValueError`**; emits **`logging`** warning when serialized size exceeds a soft guideline (Req **32**).
 - **`classify_rule_with_rationale()`** complements **`classify_rule()`** for diagnostics.
 - **Deterministic ordering:** rules sort by **`(-salience, name, source_order)`**; each **`ClassifiedRule`** carries **`source_order`** from DRL declaration order for stable merges.

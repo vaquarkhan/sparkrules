@@ -26,6 +26,8 @@ For the REST API and Workbench UI:
 pip install sparkrules[api]
 ```
 
+Then start the API and open **Workbench** in a browser (e.g. `http://127.0.0.1:8042/workbench/` if you bind uvicorn to that port). The UI is a static shell plus Monaco: use the in-app **Namespace** picker and **Get started** card when the store is empty so governance headers stay aligned. UX changes are summarized by impact in **[WORKBENCH_UX_IMPACT.md](WORKBENCH_UX_IMPACT.md)**.
+
 For the DuckDB and Postgres metadata stores:
 
 ```

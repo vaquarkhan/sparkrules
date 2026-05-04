@@ -38,6 +38,9 @@ end
     assert rows[0]["rule_handle"] == "h1"
     assert rows[0]["rule_group"] == "g1"
     assert "T ( true )" in rows[0]["drl"]
+    assert "created_at" in rows[0]
+    assert "author" in rows[0]
+    assert rows[0]["author"] == "system"
     r = c.patch(
         "/rules/h1/version/1",
         json={"is_active": False},
@@ -53,6 +56,18 @@ end
     assert gj["rule_handle"] == "h1"
     assert gj["version"] == 1
     assert "T ( true )" in gj["drl"]
+    assert "created_at" in gj
+    assert gj["author"] == "system"
+
+
+def test_workbench_cost_estimate() -> None:
+    app = create_app(AppDeps())
+    c = TestClient(app)
+    r = c.get("/workbench/cost-estimate", params={"rows": 1000, "rules": 5, "cluster": "glue"})
+    assert r.status_code == 200
+    j = r.json()
+    assert j["cluster"] == "glue"
+    assert "estimate_usd" in j
 
 
 def test_rules_validate_422() -> None:
