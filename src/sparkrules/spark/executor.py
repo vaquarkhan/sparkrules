@@ -208,15 +208,19 @@ class SparkRuleExecutor:
         # Req 17: Cross-strategy salience resolution
         result = self._merge_actions(result)
 
-        # fired_any column (Req 10)
+        # fired_any column (Req 10): Spark greatest() requires ≥2 expressions.
         rule_cols = [_safe_rule_col(r.name) for r in self.rulepack.rules]
-        if rule_cols:
+        present = [c for c in rule_cols if c in result.columns]
+        if len(present) <= 1:
+            if not present:
+                result = result.withColumn("fired_any", F.lit(False))
+            else:
+                result = result.withColumn("fired_any", F.col(present[0]))
+        else:
             result = result.withColumn(
                 "fired_any",
-                F.greatest(*[F.col(c) for c in rule_cols if c in result.columns]),
+                F.greatest(*[F.col(c) for c in present]),
             )
-        else:
-            result = result.withColumn("fired_any", F.lit(False))
 
         if output_format == "narrow":
             return self._to_narrow_output(result)

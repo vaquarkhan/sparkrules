@@ -162,21 +162,22 @@ def test_spark_rule_executor_apply_with_counts_single_agg() -> None:
 def test_spark_rule_executor_apply_fired_any_with_mocked_strategies() -> None:
     """Monkeypatch A/B/C/merge and stub ``F.greatest`` so ``apply`` completes without Spark SQL."""
 
-    drl = 'rule "ok" when $t : T ( true ) then end'
+    drl = 'rule "a" when $t : T ( true ) then end\nrule "b" when $t : T ( true ) then end'
     ex = SparkRuleExecutor.from_drl(drl)
     df = MagicMock()
     df.schema = StructType([StructField("id", StringType(), True)])
 
     merged = MagicMock()
-    merged.columns = ["id", "r_ok"]
+    merged.columns = ["id", "r_a", "r_b"]
     merged.schema = StructType(
         [
             StructField("id", StringType(), True),
-            StructField("r_ok", BooleanType(), True),
+            StructField("r_a", BooleanType(), True),
+            StructField("r_b", BooleanType(), True),
         ],
     )
     mfinal = MagicMock()
-    mfinal.columns = ["id", "r_ok", "fired_any"]
+    mfinal.columns = ["id", "r_a", "r_b", "fired_any"]
     merged.withColumn = MagicMock(return_value=mfinal)
 
     ex._apply_strategy_a = lambda d: merged  # type: ignore[method-assign]
@@ -193,15 +194,70 @@ def test_spark_rule_executor_apply_fired_any_with_mocked_strategies() -> None:
     merged.withColumn.assert_called_once()
 
 
-def test_spark_rule_executor_apply_narrow_delegates_to_to_narrow_output() -> None:
+def test_spark_rule_executor_apply_fired_any_single_rule_uses_col_only() -> None:
+    """Single-rule packs must not call ``greatest`` (Spark requires ≥2 args)."""
+
     drl = 'rule "ok" when $t : T ( true ) then end'
     ex = SparkRuleExecutor.from_drl(drl)
     df = MagicMock()
     df.schema = StructType([StructField("id", StringType(), True)])
+
     merged = MagicMock()
     merged.columns = ["id", "r_ok"]
     mfinal = MagicMock()
-    mfinal.columns = ["id", "r_ok", "fired_any"]
+    merged.withColumn = MagicMock(return_value=mfinal)
+
+    ex._apply_strategy_a = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_b = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_c = lambda d: merged  # type: ignore[method-assign]
+    ex._merge_actions = lambda d: merged  # type: ignore[method-assign]
+
+    mcol = MagicMock()
+    with patch("pyspark.sql.functions.greatest") as m_greatest:
+        with patch("pyspark.sql.functions.col", return_value=mcol):
+            with patch("pyspark.sql.functions.lit", return_value=MagicMock()):
+                out = ex.apply(df)
+    assert out is mfinal
+    m_greatest.assert_not_called()
+    merged.withColumn.assert_called_once_with("fired_any", mcol)
+
+
+def test_spark_rule_executor_apply_fired_any_false_when_no_rule_cols_on_df() -> None:
+    """If rule boolean columns were dropped upstream, ``fired_any`` must still be consistent."""
+
+    drl = 'rule "ok" when $t : T ( true ) then end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    df = MagicMock()
+    df.schema = StructType([StructField("id", StringType(), True)])
+
+    merged = MagicMock()
+    merged.columns = ["id"]
+    mfinal = MagicMock()
+    merged.withColumn = MagicMock(return_value=mfinal)
+
+    ex._apply_strategy_a = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_b = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_c = lambda d: merged  # type: ignore[method-assign]
+    ex._merge_actions = lambda d: merged  # type: ignore[method-assign]
+
+    lit_false = MagicMock()
+    with patch("pyspark.sql.functions.greatest") as m_greatest:
+        with patch("pyspark.sql.functions.lit", return_value=lit_false):
+            out = ex.apply(df)
+    assert out is mfinal
+    m_greatest.assert_not_called()
+    merged.withColumn.assert_called_once_with("fired_any", lit_false)
+
+
+def test_spark_rule_executor_apply_narrow_delegates_to_to_narrow_output() -> None:
+    drl = 'rule "a" when $t : T ( true ) then end\nrule "b" when $t : T ( true ) then end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    df = MagicMock()
+    df.schema = StructType([StructField("id", StringType(), True)])
+    merged = MagicMock()
+    merged.columns = ["id", "r_a", "r_b"]
+    mfinal = MagicMock()
+    mfinal.columns = ["id", "r_a", "r_b", "fired_any"]
     merged.withColumn = MagicMock(return_value=mfinal)
     ex._apply_strategy_a = lambda d: merged  # type: ignore[method-assign]
     ex._apply_strategy_b = lambda d: merged  # type: ignore[method-assign]
