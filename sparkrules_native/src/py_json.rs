@@ -74,7 +74,8 @@ pub fn json_value_to_py<'py>(
             let none: Option<()> = None;
             Ok(none.into_pyobject(py)?.into_any())
         }
-        JsonValue::Bool(b) => Ok(PyBool::new_bound(py, *b).into_any()),
+        // ``new_bound`` returns ``Borrowed`` (global ``True``/``False``); clone before ``into_any``.
+        JsonValue::Bool(b) => Ok(PyBool::new_bound(py, *b).clone().into_any()),
         JsonValue::Number(n) => number_to_py(py, n),
         JsonValue::String(s) => Ok(s.into_pyobject(py)?.into_any()),
         JsonValue::Array(items) => {
