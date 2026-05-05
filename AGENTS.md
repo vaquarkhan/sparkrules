@@ -149,7 +149,7 @@ executor.refresh_rules(new_drl)
 ### Native Rust accelerator (optional)
 
 ```python
-# NativeRuleExecutor — same JSON facts as LocalRuleExecutor; requires wheel or maturin build
+# NativeRuleExecutor — same fact dict shape as LocalRuleExecutor; FFI uses dict lists (no CPython json on score path); requires wheel or maturin build
 from sparkrules.native.executor import NativeRuleExecutor
 
 native = NativeRuleExecutor.from_drl(drl)
