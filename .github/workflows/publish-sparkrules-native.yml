@@ -14,13 +14,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
-        with:
-          command: publish
-          args: --non-interactive
-          manifest-path: sparkrules_native/Cargo.toml
-          rust-toolchain: stable
+        working-directory: sparkrules_native
         env:
-          # PyO3/maturin-action reads MATURIN_PYPI_TOKEN; some setups use PYPI_API_TOKEN — set one in repo secrets.
+          # maturin reads MATURIN_PYPI_TOKEN; some setups use PYPI_API_TOKEN — set one in repo secrets.
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m pip install -U pip maturin
+          maturin publish --non-interactive
