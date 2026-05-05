@@ -5,11 +5,13 @@ use std::hash::{Hash, Hasher};
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyList;
 
 mod actions;
 pub mod compiler;
 mod eval_columnar;
 mod eval_scalar;
+mod py_json;
 pub mod types;
 
 pub mod ast;
@@ -56,19 +58,32 @@ pub fn compile_rulepack(ast_json: String) -> PyResult<CompiledRulePackPy> {
     })
 }
 
+/// Score rows from Python fact dicts; returns ScoreResult-shaped dicts (no JSON on the FFI edge).
+///
+/// ``facts`` must be a ``list`` of mapping rows (typically ``dict``). Matches
+/// ``json.dumps(..., default=str)`` + ``serde_json`` decoding for parity with the previous string path.
 #[pyfunction]
+#[pyo3(signature = (compiled, facts))]
 pub fn score_rows(
+    py: Python<'_>,
     compiled: &Bound<'_, CompiledRulePackPy>,
-    facts: Vec<String>,
-) -> PyResult<Vec<String>> {
+    facts: Bound<'_, PyAny>,
+) -> PyResult<Vec<Py<PyAny>>> {
+    let list = facts
+        .downcast::<PyList>()
+        .map_err(|_| PyValueError::new_err("facts must be a list of fact dict rows"))?;
+
     let pack = compiled.borrow();
-    facts
-        .iter()
-        .map(|fj| {
-            eval_scalar::score_row_json(&pack.inner, fj)
-                .map_err(|e| PyValueError::new_err(format!("{e}",)))
-        })
-        .collect()
+    let inner = &pack.inner;
+
+    let mut outs = Vec::with_capacity(list.len());
+    for item in list.iter() {
+        let fact = py_json::py_to_json_value(py, &item)?;
+        let out_json = eval_scalar::score_row_value(inner, &fact);
+        let py_row = py_json::json_value_to_py(py, &out_json)?;
+        outs.push(py_row.into_any().unbind());
+    }
+    Ok(outs)
 }
 
 #[pymodule]

@@ -15,7 +15,7 @@ python -c "import sparkrules_native as m; print(m.native_version())"
 
 ## Parity
 
-All scores must match `LocalRuleExecutor.score()` for the same fact JSON. Run:
+All scores must match `LocalRuleExecutor.score()` for the same fact dict / JSON-able structure. Run:
 
 ```bash
 pytest tests/integration/test_native_parity.py -q

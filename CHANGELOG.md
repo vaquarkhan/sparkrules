@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Native FFI (`sparkrules_native` / `sparkrules.native.NativeRuleExecutor`):** `score_rows` now crosses the boundary as Python **`list[dict]` → `list[dict]`**, using Rust `py_to_json_value` / `json_value_to_py` instead of per-row **`json.dumps` / `json.loads`** on the CPython hot path (**`py_json`** module). **Breaking** for code that imported `sparkrules_native.score_rows` directly with **`list[str]`** JSON payloads (unsupported); use **`NativeRuleExecutor`** or pass dict rows as documented.
 - **Spark V2 `SparkRuleExecutor` — Strategy B (ALPHA_SHARED):** alpha, rule-boolean, and staging-action columns are built with a **fixed-depth** sequence of **`select`** projections plus alpha **`drop`**, instead of an O(rules × actions) chain of **`withColumn`** (parity with Strategy A’s plan-depth goal for large ALPHA_SHARED packs).
 - **Workbench** (`index.html`): UX improvements; **`RuleAssetResponse`** now documents **`created_at`** and **`author`** on `/rules/assets` rows (`schemas.py`).
 - **`RulePack.serialize`** prefixes an explicit **`SRRP`** + major/minor version envelope before the pickle payload; **`deserialize`** accepts legacy raw pickles and current **1.0** payloads; optional **`SPARKRULES_MAX_RULEPACK_BYTES`** raises **`ValueError`**; emits **`logging`** warning when serialized size exceeds a soft guideline (Req **32**).

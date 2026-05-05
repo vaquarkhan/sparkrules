@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping, Sequence
 
 from sparkrules.compiler.rulepack import RulePack
@@ -69,11 +68,10 @@ class NativeRuleExecutor:
         return NativeRuleExecutor(compiled, pack=pack, native=native)
 
     def score(self, fact: Mapping[str, Any]) -> ScoreResult:
-        payload = json.dumps(fact, separators=(",", ":"), default=str)
-        raw: str = self._native.score_rows(self._compiled, [payload])[0]
-        return score_result_from_native_dict(json.loads(raw))
+        """Score one fact via Rust (``PyDict`` / mapping in, ``dict`` out — no ``json`` on the hot path)."""
+        row = self._native.score_rows(self._compiled, [fact])[0]
+        return score_result_from_native_dict(row)
 
     def apply(self, facts: Sequence[Mapping[str, Any]]) -> list[ScoreResult]:
-        payloads = [json.dumps(f, separators=(",", ":"), default=str) for f in facts]
-        raws: list[str] = self._native.score_rows(self._compiled, payloads)
-        return [score_result_from_native_dict(json.loads(r)) for r in raws]
+        rows = self._native.score_rows(self._compiled, list(facts))
+        return [score_result_from_native_dict(r) for r in rows]

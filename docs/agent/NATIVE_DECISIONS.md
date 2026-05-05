@@ -10,7 +10,7 @@
 - Re-parse DRL in Rust (discard — parser stays Python-only).
 - Ship AST JSON from `RulePack` + interpret with Rust semantics cloned from `compiler.closure`.
 
-**Decision:** Stable JSON envelope (`native_schema`, `drl_hash`, ordered `rules[]`) serialized by Python; Rust interprets predicates with semantics aligned to `compile_predicate` + flattened AND (Alpha-style) firing. PyO3 returns **JSON strings** per row so Python constructs `ScoreResult` / `RuleFire` unchanged.
+**Decision:** Stable JSON envelope (`native_schema`, `drl_hash`, ordered `rules[]`) serialized by Python; Rust interprets predicates with semantics aligned to `compile_predicate` + flattened AND (Alpha-style) firing. At score time, **`score_rows`** accepts a Python **`list`** of fact **dicts** and returns **`list[dict]`** (`fires` / `fired_any` / `merged_actions`) via `py_json::{py_to_json_value, json_value_to_py}`— no CPython **`json.dumps` / `json.loads`** on the hot path (AST compile still uses JSON text once).
 
 **Consequences:** No change to Spark executors or `LocalRuleExecutor`. Separate PyPI **`sparkrules-native`** wheel. Parity verified via Hypothesis (`tests/integration/test_native_parity.py`).
 

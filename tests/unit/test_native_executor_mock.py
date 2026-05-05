@@ -12,6 +12,10 @@ from sparkrules.executor.local_executor import LocalRuleExecutor
 from sparkrules.native.executor import NativeRuleExecutor, score_result_from_native_dict
 
 
+def _native_row_dict_for_pack(pack: RulePack, fact: dict) -> dict:
+    return json.loads(_json_row_for_pack(pack, fact))
+
+
 def _json_row_for_pack(pack: RulePack, fact: dict) -> str:
     ref = LocalRuleExecutor.from_rulepack(pack).score(fact)
     return json.dumps(
@@ -39,8 +43,8 @@ def test_native_executor_score_with_mock() -> None:
     compiled = object()
     native_mod = MagicMock()
     native_mod.compile_rulepack.return_value = compiled
-    row_json = _json_row_for_pack(pack, {"t": {"x": 3}})
-    native_mod.score_rows.return_value = [row_json]
+    row_d = _native_row_dict_for_pack(pack, {"t": {"x": 3}})
+    native_mod.score_rows.return_value = [row_d]
 
     with patch.object(native_exec_mod, "load_native", return_value=native_mod):
         ex = NativeRuleExecutor.from_rulepack(pack)
@@ -48,10 +52,7 @@ def test_native_executor_score_with_mock() -> None:
 
     assert ex._compiled is compiled
     assert out.fired_any is True
-    native_mod.score_rows.assert_called_once_with(
-        compiled,
-        [json.dumps({"t": {"x": 3}}, separators=(",", ":"), default=str)],
-    )
+    native_mod.score_rows.assert_called_once_with(compiled, [{"t": {"x": 3}}])
 
 
 def test_native_executor_apply_many_mocked() -> None:
@@ -60,7 +61,7 @@ def test_native_executor_apply_many_mocked() -> None:
     native_mod = MagicMock()
     native_mod.compile_rulepack.return_value = "C"
     facts = [{"t": {"a": 1}}, {"t": {"a": 2}}]
-    native_mod.score_rows.return_value = [_json_row_for_pack(pack, z) for z in facts]
+    native_mod.score_rows.return_value = [_native_row_dict_for_pack(pack, z) for z in facts]
 
     with patch.object(native_exec_mod, "load_native", return_value=native_mod):
         exe = NativeRuleExecutor.from_rulepack(pack)
