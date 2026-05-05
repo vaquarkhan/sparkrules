@@ -8,7 +8,8 @@ repository = "https://github.com/vaquarkhan/sparkrules"
 
 [lib]
 name = "sparkrules_native"
-crate-type = ["cdylib"]
+# cdylib: PyO3 extension module; rlib: so ``cargo test`` and integration tests can link the crate.
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 pyo3 = { version = "0.23", features = ["extension-module", "abi3-py311"] }

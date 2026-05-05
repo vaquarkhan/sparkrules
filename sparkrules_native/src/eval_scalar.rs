@@ -138,7 +138,7 @@ pub fn contains_semantics(container: &JsonValue, needle: &JsonValue) -> bool {
     }
 }
 
-fn as_collection<'a>(v: &'a JsonValue) -> Vec<&'a JsonValue> {
+fn as_collection(v: &JsonValue) -> Vec<&JsonValue> {
     match v {
         JsonValue::Array(a) => a.iter().collect(),
         JsonValue::Null => vec![&JsonValue::Null],
@@ -148,7 +148,7 @@ fn as_collection<'a>(v: &'a JsonValue) -> Vec<&'a JsonValue> {
 
 fn in_membership(member: &JsonValue, hay: &JsonValue, negated: bool) -> bool {
     let coll = as_collection(hay);
-    let hit = coll.iter().any(|x| *x == member);
+    let hit = coll.contains(&member);
     if negated {
         !hit
     } else {
@@ -213,7 +213,7 @@ fn compare_values(left: &JsonValue, right: &JsonValue, op: BinaryOperator) -> bo
         BinaryOperator::Contains => contains_semantics(left, right),
         BinaryOperator::Matches => {
             let pat = stringify_for_matches(right);
-            Regex::new(&pat).ok().map_or(false, |re| {
+            Regex::new(&pat).ok().is_some_and(|re| {
                 let hay = stringify_for_matches(left);
                 re.find(&hay).is_some()
             })

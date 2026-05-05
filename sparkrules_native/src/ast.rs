@@ -156,8 +156,7 @@ mod serde_smoke {
                 }),
             ),
         ] {
-            let _: Expr = serde_json::from_value(tpl)
-                .unwrap_or_else(|e| panic!("parse {op}: {e}"));
+            let _: Expr = serde_json::from_value(tpl).unwrap_or_else(|e| panic!("parse {op}: {e}"));
         }
     }
 }

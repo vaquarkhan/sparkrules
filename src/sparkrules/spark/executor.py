@@ -365,11 +365,28 @@ class SparkRuleExecutor:
         if not rules:
             return df
 
+        # Build output schema first so partition rows match field count/order (PySpark is strict;
+        # Strategy C must emit every staging column even when a Python rule does not fire).
+        new_fields = list(df.schema.fields)
+        for rule in rules:
+            new_fields.append(StructField(_safe_rule_col(rule.name), BooleanType(), True))
+            for action_field in _action_fields_from_ast(rule):
+                new_fields.append(
+                    StructField(
+                        _staging_action_column(rule, action_field),
+                        StringType(),
+                        True,
+                    )
+                )
+        result_schema = StructType(new_fields)
+        ordered_names = tuple(f.name for f in result_schema.fields)
+
         # Broadcast RuleAst list + salience metadata (avoids re-parsing DRL on every partition).
         spark = df.sparkSession
         sc = spark.sparkContext
         bc_asts = sc.broadcast([r.ast for r in rules])
         meta_bc = sc.broadcast({r.name: (r.salience, r.source_order) for r in rules})
+        input_schema = df.schema
 
         def _eval_partition(partition: Any) -> Any:
             """Evaluate fallback rules per partition (Req 8, AC 2-3)."""
@@ -398,39 +415,28 @@ class SparkRuleExecutor:
                     fact = dict(row)
 
                 fired_map = net.evaluate(fact)
-                result_row = dict(fact)
+                result_row: dict[str, Any] = {f.name: None for f in input_schema.fields}
+                result_row.update(fact)
 
                 for rule in ast_list:
                     col = _safe_rule_col(rule.name)
                     fired = fired_map.get(rule.name, False)
                     result_row[col] = fired
                     salience, source_order = meta[rule.name]
-                    if fired:
-                        for fname, fn in action_fns.get(rule.name, []):
-                            acol = _staging_action_flat(salience, source_order, fname)
+                    for fname, fn in action_fns.get(rule.name, []):
+                        acol = _staging_action_flat(salience, source_order, fname)
+                        result_row[acol] = None
+                        if fired:
                             try:
                                 result_row[acol] = fn(fact)
                             except Exception:  # noqa: BLE001
                                 result_row[acol] = None
 
-                yield Row(**result_row)
+                for name in ordered_names:
+                    result_row.setdefault(name, None)
+                yield Row(*(result_row[name] for name in ordered_names))
 
         result_rdd = df.rdd.mapPartitions(_eval_partition)
-
-        # Build schema: original + rule columns + action columns
-        new_fields = list(df.schema.fields)
-        for rule in rules:
-            new_fields.append(StructField(_safe_rule_col(rule.name), BooleanType(), True))
-            for action_field in _action_fields_from_ast(rule):
-                new_fields.append(
-                    StructField(
-                        _staging_action_column(rule, action_field),
-                        StringType(),
-                        True,
-                    )
-                )
-
-        result_schema = StructType(new_fields)
         return spark.createDataFrame(result_rdd, result_schema)
 
     def _merge_actions(self, df: Any) -> Any:
