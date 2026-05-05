@@ -22,7 +22,7 @@ def test_spark_version_normalization() -> None:
 def test_runtime_conf_platform_switching() -> None:
     base = EngineConfig()
     c = runtime_conf(base)
-    assert c["spark.version.target"].startswith("3.")
+    assert c["spark.version.target"].startswith("4.")
     assert c["sparkrules.platform"] == "local"
     assert c["sparkrules.execution.stop_on_decline"] == "false"
 

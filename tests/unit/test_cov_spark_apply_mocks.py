@@ -24,7 +24,7 @@ def test_apply_drl_v2_delegates_to_spark_rule_executor() -> None:
         res = apply_drl(df, drl, use_v2=True)
     assert res is out_df
     M.from_drl.assert_called_once_with(drl)
-    inst.apply.assert_called_once_with(df)
+    inst.apply.assert_called_once_with(df, output_format="wide")
 
 
 def test_apply_drl_with_mock_spark() -> None:

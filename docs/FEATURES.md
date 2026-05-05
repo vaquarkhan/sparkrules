@@ -53,7 +53,7 @@ For production scope, unsupported DRL/Spark edges, and execution caveats, see **
 - Single-fact and batch-style execution paths
 - Spark dataframe helper paths for partition processing - **optional**; default API path is pure Python ([SPARK_INTEGRATION.md](SPARK_INTEGRATION.md))
 - Replay metadata model for deterministic re-runs
-- Spark version targeting for Spark 3.x runtimes with normalization (`3`, `3.5`, `3.5.1`)
+- Spark version targeting for Spark 3.x / 4.x runtimes with normalization (`3`, `3.5`, `4`, `4.2`, …); **default target `4.0`** in `EngineConfig`
 - Config-only platform switching across Glue/Databricks/GCP Dataproc/Azure Synapse/local
 - Configurable executor resources (cores, workers, memory, Glue DPU)
 - Streaming rule refresh orchestration for micro-batch pipelines

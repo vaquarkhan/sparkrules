@@ -10,7 +10,7 @@ class EngineConfig:
     input_source: str = "iceberg"
     runtime_profile: str = "local"
     ai_provider: str | None = None
-    spark_version: str = "3.5"
+    spark_version: str = "4.0"
     platform: str = "local"
     output_source: str = "iceberg"
     executor_cores: int = 4

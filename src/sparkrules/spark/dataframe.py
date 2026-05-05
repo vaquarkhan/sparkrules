@@ -152,6 +152,7 @@ def apply_drl(
     *,
     fact_id_field: str = "id",
     use_v2: bool = True,
+    output_format: str = "wide",
 ) -> Any:
     """Apply DRL rules to a Spark DataFrame.
 
@@ -162,6 +163,8 @@ def apply_drl(
         use_v2: If True (default), use the optimized V2 executor with
                 Strategy A/B/C dispatch. If False, use the original
                 mapPartitions path.
+        output_format: For V2, ``"wide"`` (default) or ``"narrow"`` (see
+            :class:`sparkrules.spark.executor.SparkRuleExecutor`).
 
     Returns:
         DataFrame with rule results. V2 path returns typed columns;
@@ -171,7 +174,7 @@ def apply_drl(
         from sparkrules.spark.executor import SparkRuleExecutor
 
         executor = SparkRuleExecutor.from_drl(drl)
-        return executor.apply(df)
+        return executor.apply(df, output_format=output_format)
 
     # V1 legacy path
     return _apply_drl_v1(df, drl, fact_id_field=fact_id_field)

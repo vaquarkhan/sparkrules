@@ -11,7 +11,7 @@ Cross-path equivalence with LocalRuleExecutor is a hard requirement.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from sparkrules.compiler.alpha_network import AlphaNetwork
@@ -162,20 +162,26 @@ class SparkRuleExecutor:
 
     rulepack: RulePack
     _drl: str = ""
+    # Reused across apply() calls; cleared in refresh_rules (Strategy B planning).
+    _alpha_net_plan: AlphaNetwork | None = field(default=None, init=False, repr=False)
 
     @staticmethod
     def from_drl(drl: str) -> SparkRuleExecutor:
         pack = RulePack.from_drl(drl)
         return SparkRuleExecutor(rulepack=pack, _drl=drl)
 
-    def apply(self, df: Any) -> Any:
+    def apply(self, df: Any, *, output_format: str = "wide") -> Any:
         """Execute all rules against a Spark DataFrame.
 
         Returns DataFrame with: original columns + r_<rule> booleans +
-        action_<field> typed columns + fired_any boolean.
+        action_<field> typed columns + fired_any boolean (``wide``), or a **narrow** projection
+        with ``fired_rules``, ``actions`` (struct), and ``fired_any`` when ``output_format="narrow"``.
         """
         from pyspark.sql import functions as F
         from pyspark.sql.types import MapType
+
+        if output_format not in ("wide", "narrow"):
+            raise ValueError("output_format must be 'wide' or 'narrow'")
 
         # Req 15: Schema validation
         for col_field in df.schema:
@@ -212,36 +218,61 @@ class SparkRuleExecutor:
         else:
             result = result.withColumn("fired_any", F.lit(False))
 
+        if output_format == "narrow":
+            return self._to_narrow_output(result)
         return result
 
+    def apply_with_counts(
+        self, df: Any, *, output_format: str = "wide"
+    ) -> tuple[Any, dict[str, int]]:
+        """Run :meth:`apply` and return one aggregate row of per-rule fire counts (avoids N scans)."""
+        from pyspark.sql import functions as F
+
+        result = self.apply(df, output_format=output_format)
+        rule_cols = [_safe_rule_col(r.name) for r in self.rulepack.rules]
+        present = [c for c in rule_cols if c in result.columns]
+        agg_exprs: list[Any] = [F.sum(F.when(F.col(c), 1).otherwise(0)).alias(c) for c in present]
+        agg_exprs.append(F.count(F.lit(1)).alias("_total_rows"))
+        row = result.agg(*agg_exprs).collect()[0]
+        counts: dict[str, int] = {c: int(row[c]) for c in present}
+        counts["_total_rows"] = int(row["_total_rows"])
+        return result, counts
+
     def _apply_strategy_a(self, df: Any) -> Any:
-        """Strategy A: SQL_PUSHDOWN - Catalyst-native execution (Req 6)."""
+        """Strategy A: SQL_PUSHDOWN - Catalyst-native execution (Req 6).
+
+        Batched into one or two ``select`` calls to avoid O(rules) ``withColumn`` plan growth.
+        """
         from pyspark.sql import functions as F
 
         rules = self.rulepack.sql_pushdown
         if not rules:
             return df
 
-        result = df
+        # Phase 1: original columns + all rule boolean columns (single Project).
+        cols_r = [F.col(c) for c in df.columns]
         for rule in rules:
             col_name = _safe_rule_col(rule.name)
             if rule.predicate_sql:
-                result = result.withColumn(
-                    col_name,
-                    F.when(F.expr(rule.predicate_sql), F.lit(True)).otherwise(F.lit(False)),
+                cols_r.append(
+                    F.when(F.expr(rule.predicate_sql), F.lit(True))
+                    .otherwise(F.lit(False))
+                    .alias(col_name),
                 )
             else:
-                result = result.withColumn(col_name, F.lit(True))
+                cols_r.append(F.lit(True).alias(col_name))
+        df_rules = df.select(*cols_r)
 
-            # Typed action columns (Req 10)
+        # Phase 2: add staging action columns (reference r_* from phase 1).
+        cols_a = [F.col(c) for c in df_rules.columns]
+        for rule in rules:
+            col_name = _safe_rule_col(rule.name)
             for action_field, action_sql in rule.action_sql.items():
                 action_col = _staging_action_column(rule, action_field)
-                result = result.withColumn(
-                    action_col,
-                    F.when(F.col(col_name), F.expr(action_sql)),
+                cols_a.append(
+                    F.when(F.col(col_name), F.expr(action_sql)).alias(action_col),
                 )
-
-        return result
+        return df_rules.select(*cols_a)
 
     def _apply_strategy_b(self, df: Any) -> Any:
         """Strategy B: ALPHA_SHARED - shared alpha boolean columns (Req 7)."""
@@ -253,7 +284,9 @@ class SparkRuleExecutor:
 
         # Build alpha nodes with SQL translations (single AlphaNetwork planning pass).
         asts = [r.ast for r in self.rulepack.rules]
-        net_plan = AlphaNetwork.from_rules(asts)
+        if self._alpha_net_plan is None:
+            self._alpha_net_plan = AlphaNetwork.from_rules(asts)
+        net_plan = self._alpha_net_plan
         alpha_sql: dict[str, str] = {}
         rule_alpha_map: dict[str, list[str]] = {}
 
@@ -321,31 +354,23 @@ class SparkRuleExecutor:
         if not rules:
             return df
 
-        # Req 20: Broadcast DRL string (pickle-safe), not closures
+        # Broadcast RuleAst list + salience metadata (avoids re-parsing DRL on every partition).
         spark = df.sparkSession
         sc = spark.sparkContext
-        drl_broadcast = sc.broadcast(self._drl)
-        rule_names = [r.name for r in rules]
-        rule_names_broadcast = sc.broadcast(rule_names)
-        source_order_broadcast = sc.broadcast({r.name: r.source_order for r in rules})
+        bc_asts = sc.broadcast([r.ast for r in rules])
+        meta_bc = sc.broadcast({r.name: (r.salience, r.source_order) for r in rules})
 
         def _eval_partition(partition: Any) -> Any:
             """Evaluate fallback rules per partition (Req 8, AC 2-3)."""
-            # Reconstruct once per partition, not per row (Req 20, AC 3)
             from sparkrules.compiler.alpha_network import AlphaNetwork as AN
             from sparkrules.compiler.closure import compile_action as ca
-            from sparkrules.parser import parse_rules as pr
 
-            drl_val = drl_broadcast.value
-            target_names = set(rule_names_broadcast.value)
-            source_orders = source_order_broadcast.value
-            all_rules = pr(drl_val)
-            target_rules = [r for r in all_rules if r.name in target_names]
-            net = AN.from_rules(target_rules)
+            ast_list = bc_asts.value
+            meta = meta_bc.value
+            net = AN.from_rules(ast_list)
 
-            # Pre-compile actions
             action_fns: dict[str, list[tuple[str, Any]]] = {}
-            for rule in target_rules:
+            for rule in ast_list:
                 fns = []
                 for action in rule.then:
                     fname, fn = ca(action)
@@ -364,14 +389,14 @@ class SparkRuleExecutor:
                 fired_map = net.evaluate(fact)
                 result_row = dict(fact)
 
-                for rule in target_rules:
+                for rule in ast_list:
                     col = _safe_rule_col(rule.name)
                     fired = fired_map.get(rule.name, False)
                     result_row[col] = fired
+                    salience, source_order = meta[rule.name]
                     if fired:
                         for fname, fn in action_fns.get(rule.name, []):
-                            so = source_orders.get(rule.name, 0)
-                            acol = _staging_action_flat(rule.salience, so, fname)
+                            acol = _staging_action_flat(salience, source_order, fname)
                             try:
                                 result_row[acol] = fn(fact)
                             except Exception:  # noqa: BLE001
@@ -409,15 +434,62 @@ class SparkRuleExecutor:
 
             dtypes = _staging_dtypes_for_merge(result, salience_cols)
             sql_type = _common_coalesce_sql_type(dtypes)
-            col_refs = [F.col(t[-1]).cast(sql_type) for t in salience_cols]
-            result = result.withColumn(merged_col, F.coalesce(*col_refs))
+            if len(salience_cols) == 1:
+                merged_expr = F.col(salience_cols[0][-1]).cast(sql_type)
+            else:
+                col_refs = [F.col(t[-1]).cast(sql_type) for t in salience_cols]
+                merged_expr = F.coalesce(*col_refs)
+            result = result.withColumn(merged_col, merged_expr)
 
             for t in salience_cols:
                 result = result.drop(t[-1])
 
         return result
 
+    def _to_narrow_output(self, result: Any) -> Any:
+        """Collapse wide rule/action columns into ``fired_rules`` + ``actions`` struct."""
+        from pyspark.sql import functions as F
+
+        plan = action_staging_merge_plan(self.rulepack, df_columns=frozenset(result.columns))
+        rule_cols = [_safe_rule_col(r.name) for r in self.rulepack.rules]
+        present_rules = [c for c in rule_cols if c in result.columns]
+        fired_parts: list[Any] = []
+        for r in self.rulepack.rules:
+            c = _safe_rule_col(r.name)
+            if c in result.columns:
+                fired_parts.append(F.when(F.col(c), F.lit(r.name)).otherwise(F.lit(None)))
+        if fired_parts:
+            fired_expr = F.array_compact(F.array(*fired_parts))
+        else:
+            fired_expr = F.array().cast("array<string>")
+
+        struct_parts: list[Any] = []
+        for field_name in plan:
+            mc = _safe_action_col(field_name)
+            if mc in result.columns:
+                struct_parts.append(F.col(mc).alias(field_name))
+        actions_expr = F.struct(*struct_parts) if struct_parts else F.struct()
+
+        drop_names = set(present_rules)
+        drop_names.update(
+            _safe_action_col(fn) for fn in plan if _safe_action_col(fn) in result.columns
+        )
+        drop_names.add("fired_any")
+        keep = [c for c in result.columns if c not in drop_names]
+        select_exprs = [F.col(c) for c in keep]
+        select_exprs.extend(
+            [
+                fired_expr.alias("fired_rules"),
+                actions_expr.alias("actions"),
+                F.col("fired_any")
+                if "fired_any" in result.columns
+                else F.lit(False).alias("fired_any"),
+            ],
+        )
+        return result.select(*select_exprs)
+
     def refresh_rules(self, drl: str) -> None:
         """Hot-swap rules without restarting SparkSession (Req 23)."""
         self.rulepack = RulePack.from_drl(drl)
         self._drl = drl
+        self._alpha_net_plan = None

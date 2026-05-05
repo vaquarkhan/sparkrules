@@ -30,6 +30,135 @@ def test_spark_rule_executor_apply_rejects_maptype_facts_column() -> None:
         ex.apply(df)
 
 
+def test_spark_rule_executor_apply_rejects_invalid_output_format() -> None:
+    drl = 'rule "ok" when $t : T ( true ) then end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    df = MagicMock()
+    df.schema = StructType([StructField("id", StringType(), True)])
+    with pytest.raises(ValueError, match="output_format"):
+        ex.apply(df, output_format="json")
+
+
+def test_spark_rule_executor_merge_actions_single_staging_no_coalesce() -> None:
+    """Single contributing rule uses cast-only merge path (no ``coalesce``)."""
+
+    drl = 'rule "only" when $t : T ( true ) then result.score = 1; end'
+    ex = SparkRuleExecutor.from_drl(drl)
+
+    f_id = MagicMock()
+    f_id.name = "id"
+    f_id.dataType = StringType()
+    f_st = MagicMock()
+    f_st.name = "action_score__s0_o0"
+    f_st.dataType = StringType()
+
+    class _Chain:
+        def __init__(self) -> None:
+            self._cols = ["id", "action_score__s0_o0"]
+            self.schema = MagicMock()
+            self.schema.fields = [f_id, f_st]
+
+        @property
+        def columns(self) -> list[str]:
+            return self._cols
+
+        def withColumn(self, _name: str, _expr: object) -> _Chain:
+            self._cols = self._cols + [_name]
+            return self
+
+        def drop(self, *names: str) -> _Chain:
+            for n in names:
+                if n in self._cols:
+                    self._cols.remove(n)
+            return self
+
+    chain = _Chain()
+    mexpr = MagicMock()
+    with patch("pyspark.sql.functions.col", return_value=mexpr):
+        out = ex._merge_actions(chain)
+    assert "action_score" in out.columns
+    assert "action_score__s0_o0" not in out.columns
+
+
+def test_spark_rule_executor_to_narrow_output_select() -> None:
+    """Cover narrow projection: ``fired_rules``, ``actions``, ``fired_any``."""
+
+    drl = 'rule "ok" when $t : T ( true ) then result.flag = true; end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    result = MagicMock()
+    result.columns = ["id", "r_ok", "action_flag", "fired_any"]
+    narrow_out = MagicMock()
+    result.select = MagicMock(return_value=narrow_out)
+
+    wm = MagicMock()
+    wm.otherwise.return_value = MagicMock()
+
+    def _when(*_a: object, **_k: object) -> MagicMock:
+        return wm
+
+    with patch("pyspark.sql.functions.when", side_effect=_when):
+        with patch("pyspark.sql.functions.array_compact", return_value=MagicMock()):
+            with patch("pyspark.sql.functions.array", return_value=MagicMock()):
+                with patch("pyspark.sql.functions.struct", return_value=MagicMock()):
+                    with patch("pyspark.sql.functions.col", return_value=MagicMock()):
+                        with patch("pyspark.sql.functions.lit", return_value=MagicMock()):
+                            out = ex._to_narrow_output(result)
+    assert out is narrow_out
+    result.select.assert_called_once()
+
+
+def test_spark_rule_executor_to_narrow_empty_fired_and_struct_from_merge_plan() -> None:
+    """No ``r_*`` columns -> empty ``fired_rules`` array; plan + merged action -> ``actions`` struct."""
+
+    drl = 'rule "x" when $t : T ( true ) then result.score = 1; end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    result = MagicMock()
+    result.columns = ["id", "action_score__s0_o0", "action_score", "fired_any"]
+    narrow_out = MagicMock()
+    result.select = MagicMock(return_value=narrow_out)
+    arr_root = MagicMock()
+    arr_root.cast = MagicMock(return_value=MagicMock())
+
+    with patch("pyspark.sql.functions.array", return_value=arr_root):
+        with patch("pyspark.sql.functions.struct", return_value=MagicMock()):
+            with patch("pyspark.sql.functions.col", return_value=MagicMock()):
+                with patch("pyspark.sql.functions.lit", return_value=MagicMock()):
+                    out = ex._to_narrow_output(result)
+    assert out is narrow_out
+    arr_root.cast.assert_called_once_with("array<string>")
+
+
+def test_spark_rule_executor_apply_with_counts_single_agg() -> None:
+    drl = 'rule "ok" when $t : T ( true ) then end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    df = MagicMock()
+    df.schema = StructType([StructField("id", StringType(), True)])
+
+    class _Row:
+        def __getitem__(self, key: str) -> int:
+            return {"r_ok": 11, "_total_rows": 500}[key]
+
+    agg_df = MagicMock()
+    agg_df.collect.return_value = [_Row()]
+    wide = MagicMock()
+    wide.columns = ["id", "r_ok", "fired_any"]
+    wide.agg = MagicMock(return_value=agg_df)
+
+    sum_mock = MagicMock()
+    count_col = MagicMock()
+    count_col.alias = MagicMock(return_value=MagicMock())
+    with patch.object(ex, "apply", return_value=wide):
+        with patch("pyspark.sql.functions.sum", return_value=sum_mock):
+            with patch("pyspark.sql.functions.count", return_value=count_col):
+                with patch("pyspark.sql.functions.when", return_value=MagicMock()):
+                    with patch("pyspark.sql.functions.col", return_value=MagicMock()):
+                        with patch("pyspark.sql.functions.lit", return_value=MagicMock()):
+                            out_df, counts = ex.apply_with_counts(df)
+    assert out_df is wide
+    assert counts == {"r_ok": 11, "_total_rows": 500}
+    wide.agg.assert_called_once()
+
+
 def test_spark_rule_executor_apply_fired_any_with_mocked_strategies() -> None:
     """Monkeypatch A/B/C/merge and stub ``F.greatest`` so ``apply`` completes without Spark SQL."""
 
@@ -62,6 +191,31 @@ def test_spark_rule_executor_apply_fired_any_with_mocked_strategies() -> None:
                 out = ex.apply(df)
     assert out is mfinal
     merged.withColumn.assert_called_once()
+
+
+def test_spark_rule_executor_apply_narrow_delegates_to_to_narrow_output() -> None:
+    drl = 'rule "ok" when $t : T ( true ) then end'
+    ex = SparkRuleExecutor.from_drl(drl)
+    df = MagicMock()
+    df.schema = StructType([StructField("id", StringType(), True)])
+    merged = MagicMock()
+    merged.columns = ["id", "r_ok"]
+    mfinal = MagicMock()
+    mfinal.columns = ["id", "r_ok", "fired_any"]
+    merged.withColumn = MagicMock(return_value=mfinal)
+    ex._apply_strategy_a = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_b = lambda d: merged  # type: ignore[method-assign]
+    ex._apply_strategy_c = lambda d: merged  # type: ignore[method-assign]
+    ex._merge_actions = lambda d: merged  # type: ignore[method-assign]
+    narrow_df = MagicMock()
+    mcol = MagicMock()
+    with patch("pyspark.sql.functions.greatest", return_value=mcol):
+        with patch("pyspark.sql.functions.col", return_value=mcol):
+            with patch("pyspark.sql.functions.lit", return_value=MagicMock()):
+                with patch.object(ex, "_to_narrow_output", return_value=narrow_df) as m_narrow:
+                    out = ex.apply(df, output_format="narrow")
+    assert out is narrow_df
+    m_narrow.assert_called_once_with(mfinal)
 
 
 def test_spark_rule_executor_merge_actions_coalesce_and_drop() -> None:
@@ -124,7 +278,9 @@ def test_spark_rule_executor_apply_strategy_a_no_predicate_sql_uses_lit_true() -
     ex.rulepack.sql_pushdown[0] = dataclasses.replace(cr0, predicate_sql=None)
 
     class _Chain:
-        def withColumn(self, *_a: object, **_k: object) -> _Chain:
+        columns = ["t"]
+
+        def select(self, *_a: object, **_k: object) -> _Chain:
             return self
 
     df = _Chain()
@@ -152,7 +308,9 @@ def test_spark_rule_executor_apply_strategy_a_sql_pushdown_with_column() -> None
     assert ex.rulepack.sql_pushdown, "expected SQL_PUSHDOWN classification"
 
     class _Chain:
-        def withColumn(self, *_a: object, **_k: object) -> _Chain:
+        columns = ["t"]
+
+        def select(self, *_a: object, **_k: object) -> _Chain:
             return self
 
     df = _Chain()
