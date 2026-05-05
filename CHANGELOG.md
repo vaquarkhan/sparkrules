@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs (native / PyPI):** [NATIVE_TIER1.md](docs/NATIVE_TIER1.md), [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md), [examples/native/README.md](examples/native/README.md), [deploy/aws-glue/README.md](deploy/aws-glue/README.md), [sparkrules_native/README.md](sparkrules_native/README.md) — copy-paste PyPI checks (JSON 404, clean-venv `pip`), CI artifact names, Glue **`--extra-py-files`** vs PyPI-only **`--additional-python-modules`**, and **`publish-sparkrules-native.yml`** prerequisites; [README.md](README.md) install comment aligned.
+
 ### Added
 
 - **`sparkrules_native/`** — optional **Tier-1** Rust scorer (PyO3 / maturin) with JSON fact I/O parity vs `LocalRuleExecutor`; **`sparkrules.native`** bridge + **`NativeRuleExecutor`**; **`RulePack.to_native_json()`**; benchmark **`benchmarks/bench_native_vs_local.py`** + CI workflow **`.github/workflows/native-wheels.yml`**; **`docs/CHOOSING_A_BACKEND.md`**; synthetic **`deploy/aws-glue/glue_job/taxi_rules_30.drl`** benchmark pack (wheel **publish TBD**; **`[native]`** extra empty until PyPI).

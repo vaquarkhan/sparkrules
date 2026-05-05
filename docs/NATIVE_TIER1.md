@@ -6,11 +6,32 @@ See also: [CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md), [agent/NATIVE_DECISION
 
 ### PyPI status (**`sparkrules-native`**)
 
-**There is no `sparkrules-native` package on PyPI yet.** `pip install sparkrules-native` fails until maintainers publish wheels.
+**There is no `sparkrules-native` package on PyPI yet.** Anything that resolves wheels only from PyPI (plain `pip install`, Glue **`--additional-python-modules`**, etc.) **will fail** until a maintainer publishes the project successfully.
 
-- **Today:** build from **`sparkrules_native/`** (`maturin develop --release` / `maturin build`), or download **wheel artifacts** produced by **[`.github/workflows/native-wheels.yml`](../.github/workflows/native-wheels.yml)** (workflow runs on PR/push touching the crate).
-- **Maintainers:** use **[`.github/workflows/publish-sparkrules-native.yml`](../.github/workflows/publish-sparkrules-native.yml)** (`workflow_dispatch` + **`PYPI_API_TOKEN`** secret), or locally `maturin publish --manifest-path sparkrules_native/Cargo.toml`.
-- **`sparkrules[native]` extra:** in **`pyproject.toml`** the **`native`** optional-deps list is **empty** until the wheel exists on PyPI (`pip install sparkrules[native]` installs no failing dependency).
+#### Authoritative checks (expect failure until publish)
+
+```bash
+# PyPI registry JSON — 404 until the project exists
+curl -sSf "https://pypi.org/pypi/sparkrules-native/json" >/dev/null && echo OK || echo "MISSING_ON_PYPI (expected today)"
+
+# Clean venv — "No matching distribution found" until wheels are on PyPI
+python -m venv .tmp-pypi-check && .tmp-pypi-check/bin/pip install -U pip >/dev/null \
+  && (.tmp-pypi-check/bin/pip install 'sparkrules-native==0.1.0' 2>&1 | tail -3) ; rm -rf .tmp-pypi-check
+```
+
+- **Today:** build from **`sparkrules_native/`** (`maturin develop --release` / `maturin build`), or download **wheel artifacts** from **`Actions → native`**, workflow **[`.github/workflows/native-wheels.yml`](../.github/workflows/native-wheels.yml)** (runs on `workflow_dispatch`, and on PR/push that touch **`sparkrules_native/**`**).
+- **`sparkrules[native]` extra:** root **`pyproject.toml`** keeps **`native`** **empty** so `pip install sparkrules[native]` does **not** fail on a missing PyPI wheel.
+- **Maintainers:** after **`PYPI_API_TOKEN`** secret is configured, run **[`publish-sparkrules-native.yml`](../.github/workflows/publish-sparkrules-native.yml)** via **Actions → workflow_dispatch**. The job invokes **`maturin publish`** from **`sparkrules_native/`**; **`publish-sparkrules-native`** has never completed successfully until one of those runs turns green **and** the package appears on PyPI under **`sparkrules-native`**.
+
+#### GitHub Actions wheel artifacts (no PyPI — e.g. AWS Glue **`--extra-py-files`**)
+
+Artifacts are uploaded per OS/Python matrix cell, named like:
+
+**`sparkrules-native-ubuntu-22.04-py3.11`**, **`…-py3.12`**, and Windows/macOS variants.
+
+Glue is **Linux x86_64**: download an **ubuntu-22.04** wheel (`*.whl`), upload it to **S3**, pass it as **`--extra-py-files`** (or an equivalent `--additional-python-modules` **S3/HTTPS URI** supported by your platform). Do **not** rely on **`pip install sparkrules-native`** inside jobs until PyPI publishes succeed.
+
+Runs list: **`https://github.com/vaquarkhan/sparkrules/actions/workflows/native-wheels.yml`**
 
 ### Performance expectations (measured vs aspirational)
 
@@ -39,10 +60,10 @@ maturin develop --release   # editable install → import sparkrules_native
 python -c "import sparkrules_native as m; print(m.native_version(), m.rulepack_hash('{\"drl_hash\":\"x\",\"native_schema\":\"1\",\"rules\":[]}'))"
 ```
 
-Dry-run wheel:
+Dry-run wheel (from repo root):
 
 ```bash
-maturin build --release --manifest-path sparkrules_native/Cargo.toml
+cd sparkrules_native && maturin build --release
 ```
 
 ## Verification matrix (maintainers)
@@ -72,7 +93,7 @@ Scripts **no-op** gracefully when `cargo` is missing only if they check first; o
 ## Troubleshooting installs
 
 - **`No module named sparkrules.native`:** upgrade **`sparkrules`** to a build that packages the full `sparkrules.*` tree (setuptools `include = ["sparkrules*"]`). Reinstall: `pip install -U "sparkrules[native]"`.
-- **`ImportError` for `sparkrules_native` after upgrading `sparkrules`:** the core distribution does not ship a Python stub for `sparkrules_native`; install or rebuild the Rust wheel (`pip install -U sparkrules-native` or `maturin develop --release` under **`sparkrules_native/`**).
+- **`ImportError` for `sparkrules_native` after upgrading `sparkrules`:** the core distribution does not ship a compiled extension; **`pip install sparkrules-native` only works after PyPI publishes**. Until then: **`maturin develop --release`** under **`sparkrules_native/`**, **`pip install /path/to/sparkrules_native-*.whl`**, or a CI-built wheel artifact.
 - **Windows / maturin:** pass an **absolute** interpreter path if `--interpreter` fails version detection (PowerShell: `(Resolve-Path .venv\Scripts\python.exe).Path`).
 
 ## Contract

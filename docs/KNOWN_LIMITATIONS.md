@@ -58,7 +58,7 @@ For high-volume batch processing, `apply_drl()` distributes rule evaluation acro
 
 **`sparkrules-native` / `sparkrules.native.NativeRuleExecutor`** — optional PyO3 extension for **single-process** scoring (`NativeRuleExecutor`). Rules are still parsed in Python; the extension consumes `RulePack.to_native_json()`.
 
-- **PyPI:** the **`sparkrules-native`** wheel is **not published on PyPI yet**, so **`pip install sparkrules-native`** and **`pip install sparkrules[native]`** (reserved extra; currently installs no pinned wheel) do not pull a binary — see [NATIVE_TIER1.md](NATIVE_TIER1.md) (build locally, CI artifacts, or publish flow). Glue/Linux users need a wheel URL or an internal index until publish.
+- **PyPI:** the **`sparkrules-native`** project **does not exist on the public index** (PyPI JSON and `pip install` both fail until publish). **`pip install sparkrules[native]`** intentionally installs no wheel. See [NATIVE_TIER1.md](NATIVE_TIER1.md) for verification commands, **`native-wheels.yml`** artifacts, **`--extra-py-files`**, and **`publish-sparkrules-native.yml`**.
 - **Throughput:** Tier-1 with the current JSON FFI + **`serde_json::Value`** interpreter has measured roughly **~1.1–1.3×** vs **`LocalRuleExecutor`** on scalar row loops—not large multipliers; see [NATIVE_TIER1.md](NATIVE_TIER1.md#performance-expectations-measured-vs-aspirational).
 - **Not wired to Spark executors** — cluster rule evaluation remains `SparkRuleExecutor` / Catalyst; see [CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md) and [NATIVE_TIER1.md](NATIVE_TIER1.md).
 - **Build:** requires a working Rust **linker** (MSVC Build Tools on Windows, or GNU/LLVM per [NATIVE_TIER1.md](NATIVE_TIER1.md)); CI runs `cargo fmt`, `clippy`, `test`, and **maturin** in `native-wheels.yml`.

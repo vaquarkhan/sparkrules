@@ -35,7 +35,7 @@ print(result.action_output)  # {'risk': 'high'}
 pip install sparkrules          # core engine only
 pip install sparkrules[api]     # + FastAPI server and Workbench UI
 pip install sparkrules[spark]   # + PySpark cluster integration
-# Optional Rust Tier-1 (sparkrules-native): not on PyPI yet — build in sparkrules_native/ or use CI wheel artifacts; see docs/NATIVE_TIER1.md
+# Optional Rust Tier-1 (sparkrules-native): not on PyPI — build locally, install a CI .whl, or for Glue upload the Linux wheel to S3 and use --extra-py-files (see docs/NATIVE_TIER1.md / deploy/aws-glue/README.md)
 pip install sparkrules[all]     # everything
 ```
 
