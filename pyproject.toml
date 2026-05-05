@@ -64,9 +64,11 @@ spark = [
 tecton = [
   "tecton-client>=0.4",
 ]
-native = [
-  "sparkrules-native>=0.1.0,<1.0",
-]
+# sparkrules-native wheels are not published to PyPI yet (see docs/NATIVE_TIER1.md).
+# pip install sparkrules[native] currently installs no extra deps; build from sparkrules_native/
+# or use CI wheel artifacts. After PyPI publish, restore:
+# native = ["sparkrules-native>=0.1.0,<1.0"]
+native = []
 all = [
   "sparkrules[api,spark,store]",
 ]

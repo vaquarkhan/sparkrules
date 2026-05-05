@@ -1,8 +1,24 @@
 # Native Tier-1 (Rust) — end-to-end guide
 
-Optional **`sparkrules-native`** wheel accelerates **local/driver** scoring. The DRL lexer/parser stays in Python; rules cross the FFI boundary as **`RulePack.to_native_json()`** JSON.
+Optional **`sparkrules-native`** wheel accelerates **local/driver** scoring. The DRL lexer/parser stays in Python; rules cross the FFI boundary as **`RulePack.to_native_json()`** JSON once at compile time, then **JSON strings per row** for facts/results on the Tier-1 hot path.
 
 See also: [CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md), [agent/NATIVE_DECISIONS.md](agent/NATIVE_DECISIONS.md), [examples/native/README.md](../examples/native/README.md).
+
+### PyPI status (**`sparkrules-native`**)
+
+**There is no `sparkrules-native` package on PyPI yet.** `pip install sparkrules-native` fails until maintainers publish wheels.
+
+- **Today:** build from **`sparkrules_native/`** (`maturin develop --release` / `maturin build`), or download **wheel artifacts** produced by **[`.github/workflows/native-wheels.yml`](../.github/workflows/native-wheels.yml)** (workflow runs on PR/push touching the crate).
+- **Maintainers:** use **[`.github/workflows/publish-sparkrules-native.yml`](../.github/workflows/publish-sparkrules-native.yml)** (`workflow_dispatch` + **`PYPI_API_TOKEN`** secret), or locally `maturin publish --manifest-path sparkrules_native/Cargo.toml`.
+- **`sparkrules[native]` extra:** in **`pyproject.toml`** the **`native`** optional-deps list is **empty** until the wheel exists on PyPI (`pip install sparkrules[native]` installs no failing dependency).
+
+### Performance expectations (measured vs aspirational)
+
+With the **shipped Tier-1 design** (JSON FFI + Rust interpreter over **`serde_json::Value`**), benchmarks have reported roughly **~1.1×–1.3×** throughput vs **`LocalRuleExecutor`** on scalar row workloads — useful, not order-of-magnitude.
+
+**Much larger speedups** (often quoted as roadmap targets) require **architecture work**: avoid materializing a full **`serde_json::Value`** tree per row (e.g. compiled field indices, direct **`PyDict`** extracts, or Arrow/columnar paths). Those are **not** what the current wheel implements.
+
+Treat **40×–100×** figures as **non-goals for the present Tier-1 scalar path**, not documented guarantees.
 
 ## Prerequisites
 

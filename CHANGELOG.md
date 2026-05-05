@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`sparkrules_native/`** — optional **Tier-1** Rust scorer (PyO3 / maturin) with JSON fact I/O parity vs `LocalRuleExecutor`; **`sparkrules.native`** bridge + **`NativeRuleExecutor`**; **`RulePack.to_native_json()`**; benchmark **`benchmarks/bench_native_vs_local.py`** + CI workflow **`.github/workflows/native-wheels.yml`**; **`docs/CHOOSING_A_BACKEND.md`**; synthetic **`deploy/aws-glue/glue_job/taxi_rules_30.drl`** benchmark pack; **`[native]` optional extra → `sparkrules-native`** PyPI artifact (wheel built from this workspace).
+- **`sparkrules_native/`** — optional **Tier-1** Rust scorer (PyO3 / maturin) with JSON fact I/O parity vs `LocalRuleExecutor`; **`sparkrules.native`** bridge + **`NativeRuleExecutor`**; **`RulePack.to_native_json()`**; benchmark **`benchmarks/bench_native_vs_local.py`** + CI workflow **`.github/workflows/native-wheels.yml`**; **`docs/CHOOSING_A_BACKEND.md`**; synthetic **`deploy/aws-glue/glue_job/taxi_rules_30.drl`** benchmark pack (wheel **publish TBD**; **`[native]`** extra empty until PyPI).
 - **`tests/unit/test_packaging_discovery.py`** — regression for setuptools **`sparkrules*`** subtree discovery ( **`sparkrules.native`** must ship).
 - **`benchmarks/bench_native_vs_local.py`** now writes repo-relative **`workload`** paths and **`bench_rows_requested`**; **`benchmarks/native_tier1_results.json`** checked in as a sample (regenerate locally or with **`SPARKRULES_NATIVE_BENCH_ROWS`**).
 
 ### Fixed
 
+- **Install UX:** **`[project.optional-dependencies] native`** is **empty** until **`sparkrules-native`** exists on PyPI (prevents **`pip install sparkrules[native]`** from failing on a missing distribution). Build from **`sparkrules_native/`** or use CI wheel artifacts; see **`docs/NATIVE_TIER1.md`**.
+- **Docs / benchmarks:** honest Tier-1 throughput (**~1.1×–1.3×** vs **`LocalRuleExecutor`** for the current design); removed misleading **≥40×** wording; **`KNOWN_LIMITATIONS`**, **`FEATURES`**, **`AGENTS`**, **`README`** updated.
+- **CI:** **`native-wheels.yml`** uploads per-matrix **`*.whl`** artifacts and supports **`workflow_dispatch`**; added **`publish-sparkrules-native.yml`** for manual PyPI publish (`MATURIN_PYPI_TOKEN` via **`PYPI_API_TOKEN`** secret).
 - **Packaging:** setuptools discovery now uses **`include = ["sparkrules*"]`** so every **`sparkrules.*`** subpackage (including **`sparkrules.native`**) is included in wheel/sdist. A bare **`include = ["sparkrules"]`** matched only the root package name, which could omit the Python bridge while users still installed **`sparkrules-native`**, leading to **`No module named sparkrules.native`**.
 - **sparkrules_native:** `eval_value` match is exhaustive for `Expr`; removed the unreachable wildcard arm (Rust warning).
 - **API:** `POST /governance/sync-dev` no longer returns 400 for **`platform_admin`** when the request body **`namespace`** does not match the active rule’s namespace; pins and audit use the resolved rule namespace (**G-39 / BUG-39**).

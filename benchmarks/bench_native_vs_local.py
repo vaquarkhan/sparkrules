@@ -106,7 +106,8 @@ def main() -> None:
         "native": tier1_native if tier1_native else None,
         "note": (
             "Native row null when sparkrules_native is not installed. "
-            "Target: ≥40x vs LocalTier-1 for this benchmark on a warmed release build."
+            "Measured Tier-1 (JSON FFI, current interpreter): typically ~1.1–1.3× vs LocalRuleExecutor on row loops; "
+            "large multipliers need a redesigned scorer (no per-row serde_json::Value tree)."
         ),
     }
 

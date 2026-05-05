@@ -157,7 +157,7 @@ result = native.score({"t": {"amount": 1500}})
 # Parity target: same fires / merged_actions as LocalRuleExecutor.score()
 ```
 
-Install: `pip install sparkrules[native]` (PyPI: `sparkrules-native`) or `maturin develop --release` under `sparkrules_native/`. Maintainer checks: `scripts/verify_native.sh` / `verify_native.ps1`. See [docs/NATIVE_TIER1.md](docs/NATIVE_TIER1.md).
+Install: **`sparkrules-native` is not on PyPI yet** — `maturin develop --release` under `sparkrules_native/`, CI wheel artifacts, or `publish-sparkrules-native.yml` after secrets. The **`[native]`** extra is intentionally empty until publish. Maintainer checks: `scripts/verify_native.sh` / `verify_native.ps1`. See [docs/NATIVE_TIER1.md](docs/NATIVE_TIER1.md).
 
 ### RulePack classification
 
@@ -271,6 +271,7 @@ Operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `in`, `not in`, `contains`, `matche
 pip install sparkrules          # core engine
 pip install sparkrules[api]     # + FastAPI server and Workbench
 pip install sparkrules[spark]   # + PySpark
+# sparkrules-native: not on PyPI — `[native]` extra is empty until publish; see docs/NATIVE_TIER1.md
 pip install sparkrules[all]     # everything
 pip install sparkrules[test]    # dev/test dependencies
 ```
@@ -278,6 +279,7 @@ pip install sparkrules[test]    # dev/test dependencies
 ## PR conventions
 
 - **Every PR must pass:** `ruff check`, `ruff format --check`, `pytest tests/unit/`, 100% coverage
+- PRs touching **`sparkrules_native/**`** must show a green **`native`** workflow run (`cargo fmt`, `clippy`, `test`, maturin build); repo settings should treat it as **required** where possible — never merge Rust changes that skip compile
 - Keep changes focused; pair behavior changes with tests
 - Update docs in `docs/` when behavior or API changes
 - Update `CHANGELOG.md` for user-facing changes

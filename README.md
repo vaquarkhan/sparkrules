@@ -35,7 +35,7 @@ print(result.action_output)  # {'risk': 'high'}
 pip install sparkrules          # core engine only
 pip install sparkrules[api]     # + FastAPI server and Workbench UI
 pip install sparkrules[spark]   # + PySpark cluster integration
-pip install sparkrules[native]  # optional Rust Tier-1 scorer (PyPI: sparkrules-native; or build from sparkrules_native/)
+# Optional Rust Tier-1 (sparkrules-native): not on PyPI yet — build in sparkrules_native/ or use CI wheel artifacts; see docs/NATIVE_TIER1.md
 pip install sparkrules[all]     # everything
 ```
 
