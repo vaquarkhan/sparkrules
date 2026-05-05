@@ -61,7 +61,7 @@ Scripts **no-op** gracefully when `cargo` is missing only if they check first; o
 
 ## Contract
 
-- **FFI:** `sparkrules_native.score_rows(compiled, list[fact_dict])` returns `list[dict]` rows (no per-row `json.dumps` / `json.loads`); rule **compile** still takes AST JSON once from `RulePack.to_native_json()`.
+- **FFI:** `sparkrules_native.score_rows(compiled, list[str])` — one JSON fact string per row in, one JSON **ScoreResult** string out (CPython `json` ↔ Rust `serde_json`). Rule **compile** still takes AST JSON once from `RulePack.to_native_json()`. A pure **PyDict** wire format is not faster until the Rust scorer avoids building **`serde_json::Value`** per row.
 - **Parity:** `NativeRuleExecutor.from_drl(drl).score(fact)` must match `LocalRuleExecutor.from_drl(drl).score(fact)` (`fires`, `fired_any`, `merged_actions`).
 - **`SPARKRULES_NATIVE_DISABLE=1`:** bridge returns `None` (no Rust load).
 - **Spark:** do not route **`SparkRuleExecutor`** through Rust; Catalyst codegen remains the cluster path ([CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md)).

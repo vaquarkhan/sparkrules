@@ -10,7 +10,7 @@
 - Re-parse DRL in Rust (discard — parser stays Python-only).
 - Ship AST JSON from `RulePack` + interpret with Rust semantics cloned from `compiler.closure`.
 
-**Decision:** Stable JSON envelope (`native_schema`, `drl_hash`, ordered `rules[]`) serialized by Python; Rust interprets predicates with semantics aligned to `compile_predicate` + flattened AND (Alpha-style) firing. At score time, **`score_rows`** accepts a Python **`list`** of fact **dicts** and returns **`list[dict]`** (`fires` / `fired_any` / `merged_actions`) via `py_json::{py_to_json_value, json_value_to_py}`— no CPython **`json.dumps` / `json.loads`** on the hot path (AST compile still uses JSON text once).
+**Decision:** Stable JSON envelope (`native_schema`, `drl_hash`, ordered `rules[]`) serialized by Python; Rust interprets predicates as **`serde_json::Value`** cloned from **`compiler.closure`** semantics. **Shipped hot path:** **`score_rows(compiled, Vec<String>)`** — one compact JSON string per fact row in, one JSON string per **`ScoreResult`** out (CPython **`json.dumps`/`loads`**, Rust **`serde_json`**). A naive **PyDict ↔ Value** bridge per row was attempted and **benchmarked slower** than this string path; Tier-1 speedups that matter require **not** materializing a **`Value`** tree per row (future: direct **`PyDict`** field access with compile-time binding indices, or a packed fact struct).
 
 **Consequences:** No change to Spark executors or `LocalRuleExecutor`. Separate PyPI **`sparkrules-native`** wheel. Parity verified via Hypothesis (`tests/integration/test_native_parity.py`).
 

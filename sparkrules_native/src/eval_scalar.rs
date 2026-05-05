@@ -401,7 +401,7 @@ fn merge_actions_skeleton() -> BTreeMap<String, JsonValue> {
     BTreeMap::new()
 }
 
-pub(crate) fn score_row_value(pack: &NativePack, fact: &JsonValue) -> JsonValue {
+fn score_row_value(pack: &NativePack, fact: &JsonValue) -> JsonValue {
     let mut merged = merge_actions_skeleton();
     let mut any_fired = false;
     let mut fires_arr = Vec::new();

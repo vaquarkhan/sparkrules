@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **sparkrules_native:** `PyBool::new_bound(...).to_owned().into_any()` in **`py_json`** (PyO3 0.23: **`Borrowed::clone`** is not an owning **`Bound`**; **`to_owned`** fixes **E0507**).
 - **Packaging:** setuptools discovery now uses **`include = ["sparkrules*"]`** so every **`sparkrules.*`** subpackage (including **`sparkrules.native`**) is included in wheel/sdist. A bare **`include = ["sparkrules"]`** matched only the root package name, which could omit the Python bridge while users still installed **`sparkrules-native`**, leading to **`No module named sparkrules.native`**.
 - **sparkrules_native:** `eval_value` match is exhaustive for `Expr`; removed the unreachable wildcard arm (Rust warning).
 - **API:** `POST /governance/sync-dev` no longer returns 400 for **`platform_admin`** when the request body **`namespace`** does not match the active rule’s namespace; pins and audit use the resolved rule namespace (**G-39 / BUG-39**).
@@ -34,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Native FFI (`sparkrules_native` / `sparkrules.native.NativeRuleExecutor`):** `score_rows` is **`list[dict]` → `list[dict]`** via **`py_json`** (no CPython **`json`** on the score path). **PyO3 `0.22` → `0.23`** so conversions use supported APIs (`IntoPyObject`, `Bound::into_any`); **`eval_scalar::score_row_value`** is **`pub(crate)`** for `lib.rs`. **Breaking** for direct **`score_rows(..., list[str])`** callers; rebuild native wheels. Use **`NativeRuleExecutor`** or pass dict rows.
+- **Native Tier-1 FFI (performance):** reverted **`score_rows`** to **`Vec<String>` JSON in/out** on the hot path. Walking **`PyDict`** into **`serde_json::Value`** and back per row was **slower** than CPython’s **`json`** + **`serde_json::parse`** at the same **`Value`**-based interpreter; the real win needs scoring without per-row tree materialization (**compiled field indices** or **`PyDict`** “get by key” without **`serde_json`**). **PyO3 0.23** pin kept; removed unused **`py_json`** module.
 - **Spark V2 `SparkRuleExecutor` — Strategy B (ALPHA_SHARED):** alpha, rule-boolean, and staging-action columns are built with a **fixed-depth** sequence of **`select`** projections plus alpha **`drop`**, instead of an O(rules × actions) chain of **`withColumn`** (parity with Strategy A’s plan-depth goal for large ALPHA_SHARED packs).
 - **Workbench** (`index.html`): UX improvements; **`RuleAssetResponse`** now documents **`created_at`** and **`author`** on `/rules/assets` rows (`schemas.py`).
 - **`RulePack.serialize`** prefixes an explicit **`SRRP`** + major/minor version envelope before the pickle payload; **`deserialize`** accepts legacy raw pickles and current **1.0** payloads; optional **`SPARKRULES_MAX_RULEPACK_BYTES`** raises **`ValueError`**; emits **`logging`** warning when serialized size exceeds a soft guideline (Req **32**).

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Mapping, Sequence
 
 from sparkrules.compiler.rulepack import RulePack
@@ -35,6 +36,10 @@ class NativeRuleExecutor:
     """Rust Tier-1 scalar interpreter (parity contract: ``LocalRuleExecutor.score``).
 
     Raises :class:`NativeUnavailableError` if ``sparkrules-native`` / ``sparkrules_native`` is absent.
+
+    FFI uses compact **JSON strings** per row (`json.dumps` / `json.loads` on Python, ``serde_json`` in Rust).
+    That path currently **outperforms** a naive ``PyDict``→``serde_json::Value``→``PyDict`` translation on each row;
+    a future Tier-1 redesign should evaluate rules against Python objects or a compiled field index map without tree materialization per row — see docs.
     """
 
     def __init__(self, compiled: Any, *, pack: RulePack, native: Any) -> None:
@@ -68,10 +73,11 @@ class NativeRuleExecutor:
         return NativeRuleExecutor(compiled, pack=pack, native=native)
 
     def score(self, fact: Mapping[str, Any]) -> ScoreResult:
-        """Score one fact via Rust (``PyDict`` / mapping in, ``dict`` out — no ``json`` on the hot path)."""
-        row = self._native.score_rows(self._compiled, [fact])[0]
-        return score_result_from_native_dict(row)
+        payload = json.dumps(fact, separators=(",", ":"), default=str)
+        raw: str = self._native.score_rows(self._compiled, [payload])[0]
+        return score_result_from_native_dict(json.loads(raw))
 
     def apply(self, facts: Sequence[Mapping[str, Any]]) -> list[ScoreResult]:
-        rows = self._native.score_rows(self._compiled, list(facts))
-        return [score_result_from_native_dict(r) for r in rows]
+        payloads = [json.dumps(f, separators=(",", ":"), default=str) for f in facts]
+        raws: list[str] = self._native.score_rows(self._compiled, payloads)
+        return [score_result_from_native_dict(json.loads(r)) for r in raws]
