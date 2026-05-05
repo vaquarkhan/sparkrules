@@ -18,6 +18,7 @@ For production scope, unsupported DRL/Spark edges, and execution caveats, see **
 - **RulePack** - structured, salience-ordered, classified rule collection
 - **Three execution strategies**: SQL_PUSHDOWN, ALPHA_SHARED, PYTHON_FALLBACK
 - **LocalRuleExecutor** - Python-native scoring with compiled closures + alpha network
+- **NativeRuleExecutor** (optional `sparkrules-native` / `sparkrules[native]`) - Rust Tier-1 scalar scorer, JSON fact I/O, parity with `LocalRuleExecutor.score()`; see [NATIVE_TIER1.md](NATIVE_TIER1.md) and [CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md)
 - **SparkRuleExecutor** - three-strategy Spark dispatch with typed output columns (Spark ``RLIKE`` vs Python ``re``: see [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md))
 - **ReteNetwork** - FactView with `__slots__`, range-merged alpha nodes, frozenset membership
 - **Pandas batch evaluation** - `apply_pandas()` for vectorized evaluation without Spark

@@ -206,7 +206,9 @@ class _SqlRuleMetadataStore:
                 continue
             if f and f.at_time is not None:
                 at = f.at_time
-                if not (r.effective_from <= at and (r.effective_to is None or at <= r.effective_to)):
+                if not (
+                    r.effective_from <= at and (r.effective_to is None or at <= r.effective_to)
+                ):
                     continue
             out.append(r)
         return out

@@ -1,4 +1,4 @@
-﻿# sparkrules
+# sparkrules
 
 **The business rule engine that Python was missing.** Drools-style DRL syntax, explainable decisions, regulatory-grade audit trails  -  from laptop to lakehouse, no JVM required.
 
@@ -35,6 +35,7 @@ print(result.action_output)  # {'risk': 'high'}
 pip install sparkrules          # core engine only
 pip install sparkrules[api]     # + FastAPI server and Workbench UI
 pip install sparkrules[spark]   # + PySpark cluster integration
+pip install sparkrules[native]  # optional Rust Tier-1 scorer (PyPI: sparkrules-native; or build from sparkrules_native/)
 pip install sparkrules[all]     # everything
 ```
 

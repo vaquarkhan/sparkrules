@@ -98,9 +98,7 @@ def test_alpha_and_chain_partial_match() -> None:
 
 def test_alpha_sharing_ratio() -> None:
     """Req 3, AC 5: sharing ratio >= 2.0 for overlapping packs."""
-    drl = "\n".join(
-        f'rule "r{i}" when $t : T ( $t.score > 600 ) then end' for i in range(10)
-    )
+    drl = "\n".join(f'rule "r{i}" when $t : T ( $t.score > 600 ) then end' for i in range(10))
     rules = parse_rules(drl)
     net = AlphaNetwork.from_rules(rules)
     assert net.sharing_ratio >= 2.0  # 10 predicates / 1 unique = 10.0
@@ -114,7 +112,9 @@ def test_alpha_empty_network() -> None:
 
 
 def test_flatten_and() -> None:
-    expr = BinaryOp(BinaryOperator.AND, Literal(1), BinaryOp(BinaryOperator.AND, Literal(2), Literal(3)))
+    expr = BinaryOp(
+        BinaryOperator.AND, Literal(1), BinaryOp(BinaryOperator.AND, Literal(2), Literal(3))
+    )
     flat = _flatten_and(expr)
     assert len(flat) == 3
 

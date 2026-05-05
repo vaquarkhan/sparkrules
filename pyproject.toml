@@ -64,6 +64,9 @@ spark = [
 tecton = [
   "tecton-client>=0.4",
 ]
+native = [
+  "sparkrules-native>=0.1.0,<1.0",
+]
 all = [
   "sparkrules[api,spark,store]",
 ]
@@ -91,6 +94,7 @@ sparkrules-cli = "sparkrules.tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["sparkrules"]
 
 [tool.setuptools.package-data]
 sparkrules = [

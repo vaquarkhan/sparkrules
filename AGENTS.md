@@ -118,6 +118,7 @@ src/sparkrules/
   transport/              # broadcaster
   connect/                # server
   ai/                     # service, openai_provider
+  native/                 # optional Rust bridge (sparkrules_native PyO3)
 tests/
   unit/                   # ~700 unit tests
   property/               # Hypothesis property-based tests (P01-P38, P61)
@@ -144,6 +145,19 @@ results = executor.apply([fact1, fact2, fact3])
 # Hot-swap rules without restart
 executor.refresh_rules(new_drl)
 ```
+
+### Native Rust accelerator (optional)
+
+```python
+# NativeRuleExecutor — same JSON facts as LocalRuleExecutor; requires wheel or maturin build
+from sparkrules.native.executor import NativeRuleExecutor
+
+native = NativeRuleExecutor.from_drl(drl)
+result = native.score({"t": {"amount": 1500}})
+# Parity target: same fires / merged_actions as LocalRuleExecutor.score()
+```
+
+Install: `pip install sparkrules[native]` (PyPI: `sparkrules-native`) or `maturin develop --release` under `sparkrules_native/`. Maintainer checks: `scripts/verify_native.sh` / `verify_native.ps1`. See [docs/NATIVE_TIER1.md](docs/NATIVE_TIER1.md).
 
 ### RulePack classification
 

@@ -54,6 +54,14 @@ For high-volume batch processing, `apply_drl()` distributes rule evaluation acro
 
 **Extension point:** The `CompiledRulePackage` can be serialized and broadcast to workers. For maximum throughput, broadcast the compiled package instead of raw DRL text. See `sparkrules/transport/broadcaster.py`.
 
+### Native Rust accelerator (optional, local only)
+
+**`sparkrules[native]` / `sparkrules-native`** — optional PyO3 extension for faster **single-process** scoring (`sparkrules.native.NativeRuleExecutor`). Rules are still parsed in Python; the extension consumes `RulePack.to_native_json()`.
+
+- **Not wired to Spark executors** — cluster rule evaluation remains `SparkRuleExecutor` / Catalyst; see [CHOOSING_A_BACKEND.md](CHOOSING_A_BACKEND.md) and [NATIVE_TIER1.md](NATIVE_TIER1.md).
+- **Build:** requires a working Rust **linker** (MSVC Build Tools on Windows, or GNU/LLVM per [NATIVE_TIER1.md](NATIVE_TIER1.md)); CI runs `cargo fmt`, `clippy`, `test`, and **maturin** in `native-wheels.yml`.
+- **`SPARKRULES_NATIVE_DISABLE=1`** — skip loading native even if the wheel is installed.
+
 ---
 
 ## Storage and data integration

@@ -63,7 +63,7 @@ def _expr_to_rego(expr: Expr, binding: str = "input") -> str:
         if expr.op == BinaryOperator.CONTAINS:
             return f"{right} == {left}[_]"
         if expr.op == BinaryOperator.MATCHES:
-            return f'regex.match({right}, {left})'
+            return f"regex.match({right}, {left})"
         return f"{left} {op} {right}"
 
     if isinstance(expr, Not):

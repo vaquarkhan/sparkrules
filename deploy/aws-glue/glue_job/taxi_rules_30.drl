@@ -1,0 +1,31 @@
+// Synthetic 30-rule taxi-style pack for native Tier-1 benchmarks (not production policy).
+rule "t0" when $t : Trip ( $t.fare > 0 ) then result.flag = true; end
+rule "t1" when $t : Trip ( $t.fare >= 10 ) then result.tier = 1; end
+rule "t2" when $t : Trip ( $t.fare >= 20 ) then result.tier = 2; end
+rule "t3" when $t : Trip ( $t.fare >= 30 ) then result.tier = 3; end
+rule "t4" when $t : Trip ( $t.distance < 1 ) then result.short = true; end
+rule "t5" when $t : Trip ( $t.distance >= 5 ) then result.long = true; end
+rule "t6" when $t : Trip ( $t.pax == 1 ) then result.pool = false; end
+rule "t7" when $t : Trip ( $t.pax > 3 ) then result.pool = true; end
+rule "t8" when $t : Trip ( $t.tip_pct <= 10 ) then result.low_tip = true; end
+rule "t9" when $t : Trip ( $t.tip_pct >= 25 ) then result.high_tip = true; end
+rule "t10" when $t : Trip ( $t.city contains "NY" ) then result.nyc = true; end
+rule "t11" when $t : Trip ( $t.city contains "LA" ) then result.la = true; end
+rule "t12" when $t : Trip ( $t.code in ["L1","L2","L3"] ) then result.zoned = true; end
+rule "t13" when $t : Trip ( not ($t.bad_driver == true)) then result.clean = true; end
+rule "t14" when $t : Trip ( $t.fare > 50 and $t.distance < 2 ) then result.anomaly = true; end
+rule "t15" when $t : Trip ( $t.fare <= 50 or $t.surged == false ) then result.ok_pricing = true; end
+rule "t16" when $t : Trip ( abs($t.delta) <= 5 ) then result.delta_ok = true; end
+rule "t17" when $t : Trip ( len($t.notes) > 3 ) then result.notes_heavy = true; end
+rule "t18" when $t : Trip ( str($t.fare_int) matches "[0-9]+" ) then result.fare_digit = true; end
+rule "t19" when $t : Trip ( $t.fare_int != null ) then result.has_int_fare = true; end
+rule "t20" salience 2 when $t : Trip ( $t.vip == true ) then result.vip = true; end
+rule "t21" salience 3 when $t : Trip ( $t.vip == true and $t.fare >= 80 ) then result.vip_large = true; end
+rule "t22" when $t : Trip ( true ) then result.always_marker = true; end
+rule "t23" when $t : Trip ( false ) then result.never_marker = false; end
+rule "t24" when $t : Trip ( $t.pickup_hour in [22,23,0,1,2]) then result.graveyard = true; end
+rule "t25" when $t : Trip ( $t.dropoff_hour not in [] ) then result.has_drop = true; end
+rule "t26" when $t : Trip ( $t.fare != $t.echo_fare ) then result.echo_mismatch = true; end
+rule "t27" when $t : Trip ( false ) then result.impossible_match = false; end
+rule "t28" when $t : Trip ( $t.rating >= 4.5 ) then result.good_rating = true; end
+rule "t29" when $t : Trip ( $t.rating <= 3.5 ) then result.bad_rating = true; end

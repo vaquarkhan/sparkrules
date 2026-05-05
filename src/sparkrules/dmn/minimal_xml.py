@@ -224,4 +224,3 @@ def counterfactual_dmn_decision_table_xml(
         "patch": dict(env_patch),
         "outputs_differ": base_out != cf_out,
     }
-

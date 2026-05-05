@@ -134,8 +134,15 @@ def test_sre_client_simulate_chain_shadow_coverage() -> None:
     m.__enter__ = MagicMock(return_value=inner)
     m.__exit__ = MagicMock(return_value=False)
     with patch("sparkrules.client.sdk.httpx.Client", return_value=m):
-        ch = c.simulate_chain("rule a when $t : T ( true ) then end", {"t": {}}, stop_on_decline=True)
-        sh = c.simulate_shadow("rule a when $t : T ( true ) then end", "rule b when $t : T ( true ) then end", {"t": {}}, run_id="r1")
+        ch = c.simulate_chain(
+            "rule a when $t : T ( true ) then end", {"t": {}}, stop_on_decline=True
+        )
+        sh = c.simulate_shadow(
+            "rule a when $t : T ( true ) then end",
+            "rule b when $t : T ( true ) then end",
+            {"t": {}},
+            run_id="r1",
+        )
         cov = c.simulate_coverage("rule a when $t : T ( true ) then end", [{"t": {}}])
     assert ch["any_fired"] is True
     assert sh["drifted"] is False

@@ -1,31 +1,20 @@
-# Native engine acceleration (reference)
+# Native engine acceleration
 
-**Status:** This is **not** a finished, supported accelerator shipped with the main `sparkrules` wheel. It is a **contract + bridge template + PyO3 starter** for a **separate** Cython/Rust implementation (see [PENDING_NON_BLOCKING.md](../../docs/PENDING_NON_BLOCKING.md)).
+**Tier-1 (shipped path):** the maturin crate lives at **`../../sparkrules_native/`** (`sparkrules-native` on PyPI). Python API: **`sparkrules.native.NativeRuleExecutor`**, **`RulePack.to_native_json()`**.
 
-The PyPI namespace **`sparkrules_native`** is reserved (`src/sparkrules_native/` in this repo). A future release *may* ship a **Rust / Cython** hot loop for Drools-class per-row latency; until then, production use relies on the **pure Python V2** executor (`LocalRuleExecutor` / Spark).
-
-This folder documents the **ABI contract** and ships:
+This folder retains:
 
 | Path | Purpose |
 |------|---------|
-| [bridge.py](bridge.py) | Python facade: try native `score_rows`, else **V2** `LocalRuleExecutor` |
-| [pyo3_template/](pyo3_template/) | Minimal **PyO3** crate you can rename and publish as your accelerator wheel |
+| [bridge.py](bridge.py) | Early template: native vs `LocalRuleExecutor` fallback by env flag |
+| [pyo3_template/](pyo3_template/) | Legacy minimal PyO3 example (superseded by `sparkrules_native/`) |
 
-## Design goals
+**Do not attach native code to Spark’s per-row JNI path for production** — use SparkWholeStageCodegen or keep native for **driver / local batch** workloads. See **`docs/CHOOSING_A_BACKEND.md`**.
 
-1. **Identical semantics** to `LocalRuleExecutor.score` for a pinned `RulePack` / DRL hash.
-2. **Zero-copy** or **columnar** hand-off where possible (Arrow record batch).
-3. **Safe fallback**: import failure or version skew → Python path (already in `bridge.py`).
-
-## Build (PyO3)
+**Build:**
 
 ```bash
-cd examples/native/pyo3_template
-maturin develop --release   # or cargo build --release per maturin docs
+cd sparkrules_native
+pip install maturin
+maturin develop --release
 ```
-
-Python import name is configured in `Cargo.toml` (`[lib]` name). Rename to avoid clashing with the in-repo stub package before publishing.
-
-## Cluster note
-
-Native acceleration targets **single-node** or **driver-side** hot paths first. Spark executors still use the JVM/Python stack unless you embed the native library in a **pandas UDF** or **Arrow-optimized** path (advanced; coordinate with your platform team).

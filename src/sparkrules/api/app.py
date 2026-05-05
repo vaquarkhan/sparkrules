@@ -1962,7 +1962,9 @@ def create_app(deps: AppDeps | None = None) -> Any:
 
         u, _ = workbench_expected_credentials()
         pwd_set = bool((os.environ.get("SPARKRULES_WORKBENCH_PASSWORD", "") or "").strip())
-        deny_def = (os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or "").strip().lower() in (
+        deny_def = (
+            os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or ""
+        ).strip().lower() in (
             "0",
             "false",
             "no",
@@ -1999,7 +2001,9 @@ def create_app(deps: AppDeps | None = None) -> Any:
         if not verify_credentials(u, p):
             eu, _ep = workbench_expected_credentials()
             pwd_set = bool((os.environ.get("SPARKRULES_WORKBENCH_PASSWORD", "") or "").strip())
-            deny_def = (os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or "").strip().lower() in (
+            deny_def = (
+                os.environ.get("SPARKRULES_WORKBENCH_DEFAULT_CREDENTIALS", "") or ""
+            ).strip().lower() in (
                 "0",
                 "false",
                 "no",

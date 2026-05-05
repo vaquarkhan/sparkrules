@@ -1,0 +1,11 @@
+{
+  "tier": 1,
+  "workload": "deploy/aws-glue/glue_job/taxi_rules_30.drl",
+  "local": {
+    "rows": null,
+    "seconds": null,
+    "rows_per_sec": null
+  },
+  "native": null,
+  "note": "Populate by running python benchmarks/bench_native_vs_local.py after maturin develop --release."
+}

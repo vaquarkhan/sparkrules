@@ -55,35 +55,47 @@ def test_query_ranger_http_errors() -> None:
     bad = MagicMock(status_code=403, text="no")
     with patch.object(httpx, "post", return_value=bad):
         with pytest.raises(RangerPolicyError, match="403"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
     bad_json = MagicMock(status_code=200, text="[")
     bad_json.json.side_effect = json.JSONDecodeError("x", "[", 0)
     with patch.object(httpx, "post", return_value=bad_json):
         with pytest.raises(RangerPolicyError, match="not JSON"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
     not_obj = MagicMock(status_code=200, text="[]")
     not_obj.json.return_value = []
     with patch.object(httpx, "post", return_value=not_obj):
         with pytest.raises(RangerPolicyError, match="JSON object"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
     missing = MagicMock(status_code=200, text="{}")
     missing.json.return_value = {"other": True}
     with patch.object(httpx, "post", return_value=missing):
         with pytest.raises(RangerPolicyError, match="isAllowed"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
     wrong_type = MagicMock(status_code=200, text="{}")
     wrong_type.json.return_value = {"isAllowed": "yes"}
     with patch.object(httpx, "post", return_value=wrong_type):
         with pytest.raises(RangerPolicyError, match="boolean"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
     with patch.object(httpx, "post", side_effect=OSError("down")):
         with pytest.raises(RangerPolicyError, match="down"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )
 
 
 def test_query_ranger_requires_httpx() -> None:
@@ -96,4 +108,6 @@ def test_query_ranger_requires_httpx() -> None:
 
     with patch.object(builtins, "__import__", _block):
         with pytest.raises(RuntimeError, match="httpx"):
-            query_ranger_allowed("http://r/", user="u", resource_type="t", resource_name="n", action="a")
+            query_ranger_allowed(
+                "http://r/", user="u", resource_type="t", resource_name="n", action="a"
+            )

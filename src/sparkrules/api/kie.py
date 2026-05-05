@@ -51,7 +51,9 @@ def _object_map_to_fact_fragment(obj: Any) -> dict[str, Any]:
     return {bind: fields if isinstance(fields, dict) else {}}
 
 
-def _apply_batch_commands(container_id: str, commands: list[Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _apply_batch_commands(
+    container_id: str, commands: list[Any]
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     fact: dict[str, Any] = {}
     globals_mut = _kie_globals[container_id]
     side_notes: list[dict[str, Any]] = []
@@ -220,7 +222,11 @@ def kie_list_containers() -> dict[str, Any]:
             "containers": [
                 {
                     "container-id": cid,
-                    "release-id": {"version": "1.0", "group-id": "sparkrules", "artifact-id": "rules"},
+                    "release-id": {
+                        "version": "1.0",
+                        "group-id": "sparkrules",
+                        "artifact-id": "rules",
+                    },
                     "status": "STARTED",
                 }
                 for cid in sorted(_kie_containers)
@@ -237,7 +243,11 @@ def kie_describe_container(container_id: str) -> JSONResponse | dict[str, Any]:
             status_code=404,
             content=_service_failure(f"Could not find container {container_id!r}."),
         )
-    payload = {"container-id": container_id, "drl-char-length": len(body), "status": {"value": "STARTED"}}
+    payload = {
+        "container-id": container_id,
+        "drl-char-length": len(body),
+        "status": {"value": "STARTED"},
+    }
     return _service_ok(payload)
 
 
@@ -251,7 +261,9 @@ def kie_delete_container(container_id: str) -> dict[str, Any]:
 
 
 @router.put("/server/containers/{container_id}", response_model=None)
-async def kie_deploy_container(container_id: str, request: Request) -> JSONResponse | dict[str, Any]:
+async def kie_deploy_container(
+    container_id: str, request: Request
+) -> JSONResponse | dict[str, Any]:
     try:
         body_raw = await request.json()
     except Exception as err:  # noqa: BLE001
@@ -292,7 +304,9 @@ async def kie_deploy_container(container_id: str, request: Request) -> JSONRespo
 
 
 @router.post("/server/containers/instances/{container_id}", response_model=None)
-async def kie_execute_stateless(container_id: str, request: Request) -> JSONResponse | dict[str, Any]:
+async def kie_execute_stateless(
+    container_id: str, request: Request
+) -> JSONResponse | dict[str, Any]:
     drl = _kie_containers.get(container_id)
     if drl is None:
         return JSONResponse(
@@ -333,7 +347,9 @@ async def kie_execute_stateless(container_id: str, request: Request) -> JSONResp
         dn = DiscriminationNetwork.from_asts(rules) if len(rules) > 1 else None
         pol = ChainExecutionPolicy(
             stop_on_decline=False,
-            max_fires=max_iterations if isinstance(max_iterations, int) and max_iterations > 0 else None,
+            max_fires=max_iterations
+            if isinstance(max_iterations, int) and max_iterations > 0
+            else None,
         )
         cr = run_rule_chain(rules, work, pol, discrimination=dn)
         inner["results"] = [

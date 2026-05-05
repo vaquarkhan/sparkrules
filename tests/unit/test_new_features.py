@@ -12,14 +12,14 @@ from sparkrules.parser import parse, parse_rules
 
 
 def test_parse_returns_cached_object() -> None:
-    drl = 'rule cached when $t : T ( true ) then end'
+    drl = "rule cached when $t : T ( true ) then end"
     r1 = parse(drl)
     r2 = parse(drl)
     assert r1 is r2
 
 
 def test_parse_rules_returns_cached_content() -> None:
-    drl = 'rule a when $t : T ( true ) then end\nrule b when $t : T ( true ) then end'
+    drl = "rule a when $t : T ( true ) then end\nrule b when $t : T ( true ) then end"
     r1 = parse_rules(drl)
     r2 = parse_rules(drl)
     assert len(r1) == 2
@@ -29,8 +29,8 @@ def test_parse_rules_returns_cached_content() -> None:
 
 
 def test_parse_different_drl_not_cached() -> None:
-    r1 = parse('rule x when $t : T ( true ) then end')
-    r2 = parse('rule y when $t : T ( true ) then end')
+    r1 = parse("rule x when $t : T ( true ) then end")
+    r2 = parse("rule y when $t : T ( true ) then end")
     assert r1 is not r2
     assert r1.name == "x"
     assert r2.name == "y"
@@ -41,11 +41,11 @@ def test_parse_different_drl_not_cached() -> None:
 
 DRL_DECLINE_SCORE = (
     'rule r1 reason_codes ["CR001", "CR002"] '
-    "when $t : T ( $t.score < 600 ) then result.d = \"decline\"; end"
+    'when $t : T ( $t.score < 600 ) then result.d = "decline"; end'
 )
 DRL_DECLINE_INCOME = (
     'rule r2 reason_codes ["IN001"] '
-    "when $t : T ( $t.income < 30000 ) then result.d = \"decline\"; end"
+    'when $t : T ( $t.income < 30000 ) then result.d = "decline"; end'
 )
 DRL_NO_FIRE = 'rule r3 reason_codes ["NF001"] when $t : T ( $t.x > 9999 ) then end'
 

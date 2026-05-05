@@ -9,10 +9,7 @@ from sparkrules.runtime.rule_chain import ChainExecutionPolicy, run_rule_chain
 
 
 def test_dual_pattern_names_and_join_eligibility() -> None:
-    drl = (
-        "rule j when $x : X ( true ) and $y : Y ( $y.score > 5 ) "
-        "then result.ok = true; end"
-    )
+    drl = "rule j when $x : X ( true ) and $y : Y ( $y.score > 5 ) then result.ok = true; end"
     rules = parse_rules(drl)
     assert "j" in dual_pattern_rule_names(rules)
 

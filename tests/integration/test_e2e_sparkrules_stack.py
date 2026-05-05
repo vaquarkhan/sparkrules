@@ -23,7 +23,11 @@ from sparkrules.compliance import (
     build_adverse_action_notice,
 )
 from sparkrules.dmn import counterfactual_dmn_decision_table_xml, parse_dmn_decision_table_xml
-from sparkrules.integrations.feast_client import FeastFeatureClient, feast_fetch_row, merge_features_into_fact
+from sparkrules.integrations.feast_client import (
+    FeastFeatureClient,
+    feast_fetch_row,
+    merge_features_into_fact,
+)
 from sparkrules.model.rule import Rule, RuleDefinition, RuleFormat, new_rule_id
 from sparkrules.policy.ranger_client import query_ranger_allowed
 from sparkrules.policy.ranger_compat import ranger_allow_stub
@@ -70,10 +74,13 @@ def test_e2e_health_and_rule_publish() -> None:
 def test_e2e_kie_deploy_execute_delete() -> None:
     reset_kie_containers_for_tests()
     c = TestClient(create_app(AppDeps()))
-    assert c.put(
-        "/kie-server/services/rest/server/containers/e2e-stack",
-        json={"drl": _DRL},
-    ).status_code == 200
+    assert (
+        c.put(
+            "/kie-server/services/rest/server/containers/e2e-stack",
+            json={"drl": _DRL},
+        ).status_code
+        == 200
+    )
 
     exe = c.post(
         "/kie-server/services/rest/server/containers/instances/e2e-stack",
@@ -109,14 +116,21 @@ def test_e2e_supporting_domain_modules() -> None:
     cf = counterfactual_dmn_decision_table_xml(_MINI_DMN, {"k": "x"}, {"k": "y"})
     assert cf["outputs_differ"] is False and cf["base"] == cf["counterfactual"] == {"out": "ok"}
 
-    base_aa = AdverseActionContext("acct-e2e", "2026-05-01", ("R1",), creditor_or_controller_name="Bank")
+    base_aa = AdverseActionContext(
+        "acct-e2e", "2026-05-01", ("R1",), creditor_or_controller_name="Bank"
+    )
     txt = build_adverse_action_notice(base_aa, Jurisdiction.US_ECOA_FCRA)
     assert "ECOA" in txt
-    alt_aa = AdverseActionContext("acct-e2e", "2026-05-01", ("R1", "R2"), creditor_or_controller_name="Bank")
+    alt_aa = AdverseActionContext(
+        "acct-e2e", "2026-05-01", ("R1", "R2"), creditor_or_controller_name="Bank"
+    )
     csum = adverse_action_counterfactual_summary(base_aa, alt_aa, Jurisdiction.US_ECOA_FCRA)
     assert csum["reason_codes_added"] == ["R2"] and csum["notices_differ"] is True
 
-    assert ranger_allow_stub(user="alice", resource_type="tbl", resource_name="t", action="select") is True
+    assert (
+        ranger_allow_stub(user="alice", resource_type="tbl", resource_name="t", action="select")
+        is True
+    )
 
     sink_calls: list[tuple[str, int]] = []
 

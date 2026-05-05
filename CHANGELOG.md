@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`sparkrules_native/`** — optional **Tier-1** Rust scorer (PyO3 / maturin) with JSON fact I/O parity vs `LocalRuleExecutor`; **`sparkrules.native`** bridge + **`NativeRuleExecutor`**; **`RulePack.to_native_json()`**; benchmark **`benchmarks/bench_native_vs_local.py`** + CI workflow **`.github/workflows/native-wheels.yml`**; **`docs/CHOOSING_A_BACKEND.md`**; synthetic **`deploy/aws-glue/glue_job/taxi_rules_30.drl`** benchmark pack; **`[native]` optional extra → `sparkrules-native`** PyPI artifact (wheel built from this workspace).
+
 ### Fixed
 
 - **API:** `POST /governance/sync-dev` no longer returns 400 for **`platform_admin`** when the request body **`namespace`** does not match the active rule’s namespace; pins and audit use the resolved rule namespace (**G-39 / BUG-39**).
