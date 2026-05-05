@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 
-
 @dataclass
 class TectonFeatureClient:
     """Thin wrapper so SparkRules can call Tecton without a hard dependency at import time.
@@ -94,5 +93,3 @@ def tecton_fetch_row(
         join_key_map={join_key_field: join_value},
         request_context_map=request_context_map,
     )
-
-

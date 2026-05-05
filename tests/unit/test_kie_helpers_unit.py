@@ -44,7 +44,9 @@ def test_apply_batch_globals_get_set_agenda_notes() -> None:
     work, trace = _apply_batch_commands("__tmp__", cmds)
     assert work["kie_global.G1"] == {"k": 1}
     assert work["kie_global.fromStringAlias"] is None
-    kinds = [(t["kind"], t["name"]) for t in trace if t["kind"].startswith(("get-global", "agenda"))]
+    kinds = [
+        (t["kind"], t["name"]) for t in trace if t["kind"].startswith(("get-global", "agenda"))
+    ]
     assert kinds[0][0] == "get-global" and kinds[0][1] == "G1"
     agenda = [x for x in trace if x["kind"].startswith("agenda")]
     assert agenda[0]["name"] == "risk"

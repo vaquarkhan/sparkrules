@@ -1,0 +1,25 @@
+# Manual PyPI publish for sparkrules-native (after MATURIN_PYPI_TOKEN / PYPI_TOKEN is configured).
+name: publish-sparkrules-native
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish to PyPI
+        working-directory: sparkrules_native
+        env:
+          # maturin reads MATURIN_PYPI_TOKEN; some setups use PYPI_API_TOKEN — set one in repo secrets.
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m pip install -U pip maturin
+          maturin publish --non-interactive

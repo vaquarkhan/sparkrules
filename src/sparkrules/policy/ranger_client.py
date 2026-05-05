@@ -74,5 +74,7 @@ def query_ranger_allowed(
         raise RangerPolicyError(f"Ranger response missing field {result_field!r}")
     val = body[result_field]
     if not isinstance(val, bool):
-        raise RangerPolicyError(f"Ranger field {result_field!r} must be boolean, got {type(val).__name__}")
+        raise RangerPolicyError(
+            f"Ranger field {result_field!r} must be boolean, got {type(val).__name__}"
+        )
     return val

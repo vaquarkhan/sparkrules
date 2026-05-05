@@ -293,6 +293,12 @@ class RulePack:
             "serialization_minor": RULEPACK_SER_MINOR_VERSION,
         }
 
+    def to_native_json(self) -> str:
+        """Stable JSON for the optional Rust Tier-1 kernel (``sparkrules_native``)."""
+        from sparkrules.native.ast_json import rulepack_to_native_json
+
+        return rulepack_to_native_json(self)
+
     def debug_classification(self) -> list[dict[str, Any]]:
         """Machine-readable classifier breakdown (Req 31)."""
         return [

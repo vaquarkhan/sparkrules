@@ -59,7 +59,7 @@ def test_kie_deploy_via_config_items() -> None:
                 "config-items": [
                     {
                         "name": "drl",
-                        "value": 'rule rz when $person : Person ( true ) then result.x=1; end',
+                        "value": "rule rz when $person : Person ( true ) then result.x=1; end",
                     }
                 ]
             }
@@ -172,8 +172,8 @@ def test_kie_server_state_describe_miss_delete_globals_and_dual_rules() -> None:
     c.put(
         "/kie-server/services/rest/server/containers/lc",
         json={
-            "drl": '''rule hi when $t : T ( true ) then result.x="h"; end
-rule lo when $a : A ( true ) then result.y="l"; end'''
+            "drl": """rule hi when $t : T ( true ) then result.x="h"; end
+rule lo when $a : A ( true ) then result.y="l"; end"""
         },
     )
     exe = c.post(

@@ -86,9 +86,7 @@ class AlphaNetwork:
                 hashes.append(h)
                 if h not in net.nodes:
                     closure = compile_predicate(atomic)
-                    net.nodes[h] = AlphaNodeV2(
-                        hash_key=h, expr=atomic, closure=closure
-                    )
+                    net.nodes[h] = AlphaNodeV2(hash_key=h, expr=atomic, closure=closure)
                 net.nodes[h].rule_names.add(rule.name)
 
             net.rule_mappings.append(

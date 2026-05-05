@@ -152,7 +152,11 @@ def _normalize_dq_items(obj: Any) -> list[dict[str, Any]]:
         return []
     out: list[dict[str, Any]] = []
     for row in items:
-        if isinstance(row, dict) and isinstance(row.get("kind"), str) and isinstance(row.get("field"), str):
+        if (
+            isinstance(row, dict)
+            and isinstance(row.get("kind"), str)
+            and isinstance(row.get("field"), str)
+        ):
             out.append(dict(row))
     return out
 
@@ -169,7 +173,7 @@ class OpenAiHttpAiProvider:
     def suggest_rules(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         system = (
             "You are a senior rules author for SparkRules (Drools-style DRL). "
-            "Return JSON only with shape {\"rules\":[{\"rule_handle\":\"snake_case_id\",\"drl\":\"full single rule ... end\"}]} "
+            'Return JSON only with shape {"rules":[{"rule_handle":"snake_case_id","drl":"full single rule ... end"}]} '
             "Each drl must be one complete rule block suitable for SparkRules."
         )
         user = json.dumps(payload, sort_keys=True, default=str)
@@ -184,13 +188,15 @@ class OpenAiHttpAiProvider:
         )
         rows = _normalize_rule_rows(data)
         if not rows:
-            raise RuntimeError("OpenAI returned no usable rule suggestions (expected rules[].rule_handle + drl)")
+            raise RuntimeError(
+                "OpenAI returned no usable rule suggestions (expected rules[].rule_handle + drl)"
+            )
         return rows
 
     def mine_dq_rules(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         system = (
-            "You propose data-quality checks as JSON only: {\"items\":[{\"kind\":\"not_null|range|...\","
-            "\"field\":\"name\", \"severity\":\"WARN|ERROR\", ...}]}. "
+            'You propose data-quality checks as JSON only: {"items":[{"kind":"not_null|range|...",'
+            '"field":"name", "severity":"WARN|ERROR", ...}]}. '
             "Use kinds compatible with SparkRules DQ checks."
         )
         user = json.dumps(payload, sort_keys=True, default=str)
@@ -211,7 +217,7 @@ class OpenAiHttpAiProvider:
     def analyze_drift(self, payload: dict[str, Any]) -> dict[str, Any]:
         system = (
             "Return JSON only describing drift between rule versions or datasets: "
-            "{\"status\":\"ok|warn\",\"drift_score\":0.0-1.0,\"note\":\"short summary\"}."
+            '{"status":"ok|warn","drift_score":0.0-1.0,"note":"short summary"}.'
         )
         user = json.dumps(payload, sort_keys=True, default=str)
         return _chat_completion_json(

@@ -225,8 +225,12 @@ def test_collect_sum_min_max_count_single_output() -> None:
 
 
 def test_collect_sum_single_match_no_rows_and_zero() -> None:
-    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 7), 0),)), {"f": 1}) == {"o": 7}
-    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 0), 0),)), {"f": 1}) == {"o": 0}
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 7), 0),)), {"f": 1}) == {
+        "o": 7
+    }
+    assert evaluate_decision_table(_dt_agg(HitPolicy.COLLECT_SUM, (Row((1, 0), 0),)), {"f": 1}) == {
+        "o": 0
+    }
     t0 = DecisionTable(
         "z",
         HitPolicy.COLLECT_SUM,

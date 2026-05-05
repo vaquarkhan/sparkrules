@@ -1,0 +1,58 @@
+# Tier-1 Rust extension: fmt, clippy, tests + maturin wheel build (manual publish).
+name: native
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "sparkrules_native/**"
+      - ".github/workflows/native-wheels.yml"
+  pull_request:
+    paths:
+      - "sparkrules_native/**"
+
+jobs:
+  rust-checks:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: sparkrules_native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Cargo fmt
+        run: cargo fmt --check
+      - name: Cargo clippy
+        run: cargo clippy -- -D warnings
+      - name: Cargo test
+        run: cargo test
+
+  wheels:
+    needs: rust-checks
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-14]
+        python-version: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # Host-side build in the crate directory. PyO3/maturin-action defaults to manylinux Docker
+      # for Linux, which often breaks monorepo layouts (manifest-path under a subdir).
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build wheel
+        working-directory: sparkrules_native
+        run: |
+          python -m pip install -U pip maturin
+          maturin build --release
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkrules-native-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: sparkrules_native/target/wheels/*.whl
+          if-no-files-found: error

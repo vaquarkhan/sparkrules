@@ -1,0 +1,12 @@
+{
+  "tier": 1,
+  "workload": "deploy/aws-glue/glue_job/taxi_rules_30.drl",
+  "bench_rows_requested": 100000,
+  "local": {
+    "rows": 100000,
+    "seconds": 89.653521,
+    "rows_per_sec": 1115
+  },
+  "native": null,
+  "note": "Native row null when sparkrules_native is not installed. sparkrules-native is not on PyPI yet — build from repo or use CI artifacts. Typical native speedup with current JSON+serde_json Tier-1: ~1.1–1.3× vs LocalRuleExecutor."
+}

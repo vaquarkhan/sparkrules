@@ -16,15 +16,18 @@ from sparkrules.parser.ast import Literal, Not, InExpr, ListExpr, CallExpr
 def test_batch_simulation_multiple_facts() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
-    drl = 'rule r when $t : T ( $t.x > 5 ) then result.v = 1; end'
-    r = c.post("/simulations/batch", json={
-        "drl": drl,
-        "facts": [
-            {"t": {"x": 10}},
-            {"t": {"x": 3}},
-            {"t": {"x": 8}},
-        ],
-    })
+    drl = "rule r when $t : T ( $t.x > 5 ) then result.v = 1; end"
+    r = c.post(
+        "/simulations/batch",
+        json={
+            "drl": drl,
+            "facts": [
+                {"t": {"x": 10}},
+                {"t": {"x": 3}},
+                {"t": {"x": 8}},
+            ],
+        },
+    )
     assert r.status_code == 200
     j = r.json()
     assert j["total"] == 3
@@ -38,10 +41,13 @@ def test_batch_simulation_multiple_facts() -> None:
 def test_batch_simulation_empty_facts() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
-    r = c.post("/simulations/batch", json={
-        "drl": 'rule r when $t : T ( true ) then end',
-        "facts": [],
-    })
+    r = c.post(
+        "/simulations/batch",
+        json={
+            "drl": "rule r when $t : T ( true ) then end",
+            "facts": [],
+        },
+    )
     assert r.status_code == 200
     assert r.json()["total"] == 0
 
@@ -49,10 +55,13 @@ def test_batch_simulation_empty_facts() -> None:
 def test_batch_simulation_bad_drl() -> None:
     app = create_app(AppDeps())
     c = TestClient(app)
-    r = c.post("/simulations/batch", json={
-        "drl": "not valid drl {{",
-        "facts": [{"t": {}}],
-    })
+    r = c.post(
+        "/simulations/batch",
+        json={
+            "drl": "not valid drl {{",
+            "facts": [{"t": {}}],
+        },
+    )
     assert r.status_code == 200
     assert r.json()["results"][0]["error"] is not None
 
@@ -70,7 +79,7 @@ def test_opa_export_basic() -> None:
 
 
 def test_opa_export_custom_package() -> None:
-    drl = 'rule r when $f : Fact( true ) then result.v = 1; end'
+    drl = "rule r when $f : Fact( true ) then result.v = 1; end"
     rego = export_to_rego(drl, package_name="myorg.rules")
     assert "package myorg.rules" in rego
 
@@ -124,7 +133,7 @@ def test_opa_expr_coverage() -> None:
 
 
 def test_opa_rule_no_actions() -> None:
-    drl = 'rule r when $f : Fact( true ) then end'
+    drl = "rule r when $f : Fact( true ) then end"
     ast = parse(drl)
     rego = _rule_to_rego(ast)
     assert '"fired": true' in rego
@@ -187,5 +196,6 @@ def test_opa_unsupported_expr_type() -> None:
     # A type that _expr_to_rego doesn't handle
     class FakeExpr:
         pass
+
     result = _expr_to_rego(FakeExpr())  # type: ignore[arg-type]
     assert "unsupported" in result

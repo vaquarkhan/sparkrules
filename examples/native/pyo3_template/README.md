@@ -9,4 +9,4 @@ maturin develop --release
 python -c "import sparkrules_native_template as m; print(m.native_build_id())"
 ```
 
-Rename the crate, module, and wheel **before** publishing to avoid colliding with the in-repo `sparkrules_native` stub package.
+Rename the crate, module, and wheel **before** publishing to avoid colliding with the production **`sparkrules_native`** import name shipped by **`sparkrules-native`**.

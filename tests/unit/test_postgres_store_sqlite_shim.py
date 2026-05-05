@@ -82,7 +82,9 @@ def test_postgres_roundtrip_via_sqlite_shim(patched_pg_sqlite) -> None:
     assert s.resolve("h", tref) is not None
     assert s.resolve("h", datetime(1900, 1, 1, tzinfo=UTC)) is None
     assert s.list(
-        RuleFilter(rule_handle="h", rule_group="g", namespace="default", is_active=True, at_time=tref)
+        RuleFilter(
+            rule_handle="h", rule_group="g", namespace="default", is_active=True, at_time=tref
+        )
     )
     assert len(s.list_versions("h")) == 1
     assert s.active_set_version(datetime(2020, 6, 1, tzinfo=UTC))

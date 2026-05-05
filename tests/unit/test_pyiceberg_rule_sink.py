@@ -37,7 +37,9 @@ def test_iceberg_append_sink_custom_field_aliases() -> None:
             pa.field("ver", pa.int32()),
         ],
     )
-    sink = iceberg_append_sink_from_table(tbl, blob_field="payload", handle_field="h", version_field="ver")
+    sink = iceberg_append_sink_from_table(
+        tbl, blob_field="payload", handle_field="h", version_field="ver"
+    )
     sink("{}", "rh", 1)
     tbl.append.assert_called_once()
     row = tbl.append.call_args.args[0].to_pydict()

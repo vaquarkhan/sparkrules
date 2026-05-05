@@ -174,7 +174,9 @@ def test_resolve_builds_http_client_with_workspace() -> None:
             api_key="sekret",
             default_workspace_name="prod",
         )
-        out = cli.get_inference_features(feature_service_name="fraud_svc:v3", join_key_map={"u": "1"})
+        out = cli.get_inference_features(
+            feature_service_name="fraud_svc:v3", join_key_map={"u": "1"}
+        )
         assert out == {"ok": 1}
         assert captured["url"] == "https://demo.tecton.ai/"
         assert captured["api_key"] == "sekret"

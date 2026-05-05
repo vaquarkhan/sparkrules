@@ -38,7 +38,9 @@ def test_coverage_analyzer_empty_facts() -> None:
     assert out.items[0].fire_rate == 0.0
 
 
-def test_analyze_coverage_skips_dn_ineligible_first_pattern(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_analyze_coverage_skips_dn_ineligible_first_pattern(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls = 0
 
     def counting_eval(rule: object, fact: object):

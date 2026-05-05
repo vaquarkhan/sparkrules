@@ -55,9 +55,7 @@ def _rule_from_plain(d: dict[str, Any]) -> Rule:
         rule_group=d["rule_group"],
         salience=int(d["salience"]),
         effective_from=datetime.fromisoformat(d["effective_from"]),
-        effective_to=(
-            datetime.fromisoformat(d["effective_to"]) if d.get("effective_to") else None
-        ),
+        effective_to=(datetime.fromisoformat(d["effective_to"]) if d.get("effective_to") else None),
         is_active=bool(d["is_active"]),
         rule_definition=RuleDefinition(
             source=rdef["source"],

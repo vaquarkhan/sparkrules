@@ -24,7 +24,9 @@ def test_ranger_allow_stub_delegates_when_base_url_set() -> None:
             "sparkrules.policy.ranger_compat.query_ranger_allowed",
             return_value=True,
         ) as m:
-            ok = ranger_allow_stub(user="alice", resource_type="tbl", resource_name="t", action="read")
+            ok = ranger_allow_stub(
+                user="alice", resource_type="tbl", resource_name="t", action="read"
+            )
     assert ok is True
     m.assert_called_once()
     call_kw = m.call_args.kwargs
@@ -41,7 +43,10 @@ def test_ranger_allow_stub_fail_closed_on_policy_error() -> None:
             "sparkrules.policy.ranger_compat.query_ranger_allowed",
             side_effect=RangerPolicyError("down"),
         ):
-            assert ranger_allow_stub(user="u", resource_type="t", resource_name="n", action="a") is False
+            assert (
+                ranger_allow_stub(user="u", resource_type="t", resource_name="n", action="a")
+                is False
+            )
 
 
 def test_ranger_eval_path_normalized() -> None:

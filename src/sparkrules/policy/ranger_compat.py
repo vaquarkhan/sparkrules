@@ -25,10 +25,14 @@ def ranger_allow_stub(
         return False
     base = (os.environ.get("SPARKRULES_RANGER_BASE_URL", "") or "").strip()
     if base:
-        path = (os.environ.get("SPARKRULES_RANGER_EVAL_PATH", "") or "/ranger-compat/access-eval").strip()
+        path = (
+            os.environ.get("SPARKRULES_RANGER_EVAL_PATH", "") or "/ranger-compat/access-eval"
+        ).strip()
         if not path.startswith("/"):
             path = "/" + path
-        field = (os.environ.get("SPARKRULES_RANGER_RESULT_FIELD", "") or "isAllowed").strip() or "isAllowed"
+        field = (
+            os.environ.get("SPARKRULES_RANGER_RESULT_FIELD", "") or "isAllowed"
+        ).strip() or "isAllowed"
         try:
             return query_ranger_allowed(
                 base,

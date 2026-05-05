@@ -321,4 +321,6 @@ def test_explain_rule_openai_text() -> None:
     cm.__exit__.return_value = False
     p = OpenAiHttpAiProvider(api_key="k")
     with patch("sparkrules.ai.openai_provider.urllib.request.urlopen", return_value=cm):
-        assert p.explain_rule({"drl": "rule r when $t : T ( true ) then end"}) == "Short explanation."
+        assert (
+            p.explain_rule({"drl": "rule r when $t : T ( true ) then end"}) == "Short explanation."
+        )

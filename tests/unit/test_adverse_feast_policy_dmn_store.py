@@ -418,7 +418,9 @@ def test_feast_helpers_and_online_feature_branches() -> None:
 
 def test_ranger_stub() -> None:
     assert ranger_allow_stub(user=" ", resource_type="t", resource_name="r", action="read") is False
-    assert ranger_allow_stub(user="alice", resource_type="*", resource_name="x", action="rw") is True
+    assert (
+        ranger_allow_stub(user="alice", resource_type="*", resource_name="x", action="rw") is True
+    )
 
 
 def test_query_opa_via_httpx_mocks() -> None:
@@ -500,7 +502,9 @@ def test_feast_resolve_loads_stub_feature_store_module() -> None:
         out = cli.get_online_features(features=["f"], entity_rows=[{"id": "1"}])
         assert out["col_empty"] == []
         feast_mod.FeatureStore.assert_called_once_with(repo_path="/feast/repo")
-    row = feast_fetch_row(cli, features=["col_empty", "col_one"], entity_id_field="e", entity_id="x")
+    row = feast_fetch_row(
+        cli, features=["col_empty", "col_one"], entity_id_field="e", entity_id="x"
+    )
     assert row["col_empty"] == [] and row["col_one"] == "v"
 
 
