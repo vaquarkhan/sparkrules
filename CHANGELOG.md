@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **sparkrules_native:** `PyBool::new_bound(...).clone().into_any()` in **`py_json`** (PyO3 0.23 returns **`Borrowed`** for bool singletons; fixes **E0507** compile failure).
+- **sparkrules_native:** `PyBool::new_bound(...).to_owned().into_any()` in **`py_json`** (PyO3 0.23: **`Borrowed::clone`** is not an owning **`Bound`**; **`to_owned`** fixes **E0507**).
 - **Packaging:** setuptools discovery now uses **`include = ["sparkrules*"]`** so every **`sparkrules.*`** subpackage (including **`sparkrules.native`**) is included in wheel/sdist. A bare **`include = ["sparkrules"]`** matched only the root package name, which could omit the Python bridge while users still installed **`sparkrules-native`**, leading to **`No module named sparkrules.native`**.
 - **sparkrules_native:** `eval_value` match is exhaustive for `Expr`; removed the unreachable wildcard arm (Rust warning).
 - **API:** `POST /governance/sync-dev` no longer returns 400 for **`platform_admin`** when the request body **`namespace`** does not match the active rule’s namespace; pins and audit use the resolved rule namespace (**G-39 / BUG-39**).
