@@ -1,9 +1,12 @@
 //! Python ``dict`` / list / scalars ↔ ``serde_json::Value`` for Tier‑1 FFI
 //! (avoids ``json.dumps`` / ``json.loads`` across the PyO3 boundary).
+//!
+//! Conversions mirror ``json.dumps(..., default=str)`` semantics for unknown Python types.
+//! Requires **PyO3 ≥ 0.23** (`IntoPyObject`, ``Bound::into_any``).
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyDict, PyFloat, PyList, PyNone, PyString, PyTuple};
+use pyo3::types::{PyBool, PyDict, PyFloat, PyList, PyTuple};
 use pyo3::IntoPyObject;
 
 use serde_json::{Number, Value as JsonValue};
@@ -67,10 +70,13 @@ pub fn json_value_to_py<'py>(
     v: &JsonValue,
 ) -> PyResult<Bound<'py, PyAny>> {
     match v {
-        JsonValue::Null => Ok(PyNone::get_bound(py).into_any()),
+        JsonValue::Null => {
+            let none: Option<()> = None;
+            Ok(none.into_pyobject(py)?.into_any())
+        }
         JsonValue::Bool(b) => Ok(PyBool::new_bound(py, *b).into_any()),
         JsonValue::Number(n) => number_to_py(py, n),
-        JsonValue::String(s) => Ok(PyString::new_bound(py, s.as_str()).into_any()),
+        JsonValue::String(s) => Ok(s.into_pyobject(py)?.into_any()),
         JsonValue::Array(items) => {
             let list = PyList::empty_bound(py);
             for it in items {
