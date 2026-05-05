@@ -53,6 +53,12 @@ python benchmarks/bench_native_vs_local.py
 
 Scripts **no-op** gracefully when `cargo` is missing only if they check first; otherwise fail fast.
 
+## Troubleshooting installs
+
+- **`No module named sparkrules.native`:** upgrade **`sparkrules`** to a build that packages the full `sparkrules.*` tree (setuptools `include = ["sparkrules*"]`). Reinstall: `pip install -U "sparkrules[native]"`.
+- **`ImportError` for `sparkrules_native` after upgrading `sparkrules`:** the core distribution does not ship a Python stub for `sparkrules_native`; install or rebuild the Rust wheel (`pip install -U sparkrules-native` or `maturin develop --release` under **`sparkrules_native/`**).
+- **Windows / maturin:** pass an **absolute** interpreter path if `--interpreter` fails version detection (PowerShell: `(Resolve-Path .venv\Scripts\python.exe).Path`).
+
 ## Contract
 
 - **Parity:** `NativeRuleExecutor.from_drl(drl).score(fact)` must match `LocalRuleExecutor.from_drl(drl).score(fact)` (`fires`, `fired_any`, `merged_actions`).

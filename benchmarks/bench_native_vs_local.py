@@ -75,7 +75,8 @@ def bench_native(rows: list[dict], drl: str) -> tuple[float, int | None]:
 
 
 def main() -> None:
-    taxi = (_REPO / "deploy/aws-glue/glue_job/taxi_rules_30.drl").read_text(encoding="utf-8")
+    workload_rel = "deploy/aws-glue/glue_job/taxi_rules_30.drl"
+    taxi = (_REPO / workload_rel).read_text(encoding="utf-8")
     count = min(
         100_000, int(__import__("os").environ.get("SPARKRULES_NATIVE_BENCH_ROWS", "100000"))
     )
@@ -99,7 +100,8 @@ def main() -> None:
 
     blob = {
         "tier": 1,
-        "workload": str(_REPO / "deploy/aws-glue/glue_job/taxi_rules_30.drl"),
+        "workload": workload_rel.replace("\\", "/"),
+        "bench_rows_requested": count,
         "local": {"rows": n, "seconds": round(secs_l, 6), "rows_per_sec": rows_per_sec_local},
         "native": tier1_native if tier1_native else None,
         "note": (

@@ -275,7 +275,11 @@ class SparkRuleExecutor:
         return df_rules.select(*cols_a)
 
     def _apply_strategy_b(self, df: Any) -> Any:
-        """Strategy B: ALPHA_SHARED - shared alpha boolean columns (Req 7)."""
+        """Strategy B: ALPHA_SHARED - shared alpha boolean columns (Req 7).
+
+        Batched into three ``select`` projections plus a ``drop`` (constant depth),
+        matching Strategy A's goal of avoiding O(rules × actions) ``withColumn`` chains.
+        """
         from pyspark.sql import functions as F
 
         rules = self.rulepack.alpha_shared
@@ -307,14 +311,15 @@ class SparkRuleExecutor:
                             record_translation_failure()
                             alpha_sql[h] = "true"
 
-        result = df
-
-        # Add alpha boolean columns (Req 7, AC 1)
+        # Phase 1: original columns + all alpha booleans (single Project).
+        cols_alpha = [F.col(c) for c in df.columns]
         for h, sql in alpha_sql.items():
             alpha_col = f"_a_{h}"
-            result = result.withColumn(alpha_col, F.expr(sql).cast("boolean"))
+            cols_alpha.append(F.expr(sql).cast("boolean").alias(alpha_col))
+        df_alpha = df.select(*cols_alpha)
 
-        # AND-reduce per rule (Req 7, AC 2)
+        # Phase 2: AND-reduce per rule into r_* (single Project).
+        cols_rules = [F.col(c) for c in df_alpha.columns]
         for rule in rules:
             col_name = _safe_rule_col(rule.name)
             alpha_cols = [f"_a_{h}" for h in rule_alpha_map.get(rule.name, [])]
@@ -322,23 +327,25 @@ class SparkRuleExecutor:
                 expr = F.col(alpha_cols[0])
                 for ac in alpha_cols[1:]:
                     expr = expr & F.col(ac)
-                result = result.withColumn(col_name, expr)
+                cols_rules.append(expr.alias(col_name))
             else:
-                result = result.withColumn(col_name, F.lit(True))
+                cols_rules.append(F.lit(True).alias(col_name))
+        df_rules = df_alpha.select(*cols_rules)
 
-            # Action columns
+        # Phase 3: staging action columns (single Project).
+        cols_actions = [F.col(c) for c in df_rules.columns]
+        for rule in rules:
+            col_name = _safe_rule_col(rule.name)
             for action_field, action_sql in rule.action_sql.items():
                 action_col = _staging_action_column(rule, action_field)
-                result = result.withColumn(
-                    action_col,
-                    F.when(F.col(col_name), F.expr(action_sql)),
+                cols_actions.append(
+                    F.when(F.col(col_name), F.expr(action_sql)).alias(action_col),
                 )
+        result = df_rules.select(*cols_actions)
 
         # Req 16: Drop temporary alpha columns
         alpha_cols_to_drop = [f"_a_{h}" for h in alpha_sql]
-        result = result.drop(*alpha_cols_to_drop)
-
-        return result
+        return result.drop(*alpha_cols_to_drop)
 
     def _apply_strategy_c(self, df: Any) -> Any:
         """Strategy C: PYTHON_FALLBACK - mapPartitions with broadcast (Req 8, 20)."""

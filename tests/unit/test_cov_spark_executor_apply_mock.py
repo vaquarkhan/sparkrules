@@ -437,7 +437,9 @@ def test_spark_rule_executor_apply_strategy_b_with_patched_alpha_network(
     ex = SparkRuleExecutor(rulepack=pack, _drl="")
 
     class _Chain:
-        def withColumn(self, *_a: object, **_k: object) -> _Chain:
+        columns: list[str] = []
+
+        def select(self, *_a: object, **_k: object) -> _Chain:
             return self
 
         def drop(self, *_a: object, **_k: object) -> _Chain:
@@ -456,6 +458,7 @@ def test_spark_rule_executor_apply_strategy_b_with_patched_alpha_network(
     expr_m.cast.return_value = MagicMock()
     col_m = MagicMock()
     col_m.__and__ = MagicMock(return_value=col_m)
+    col_m.alias = MagicMock(return_value=col_m)
 
     tp_calls = {"n": 0}
 
@@ -513,7 +516,9 @@ def test_spark_rule_executor_apply_strategy_b_no_alpha_nodes_uses_lit_true(
     ex = SparkRuleExecutor(rulepack=pack, _drl="")
 
     class _Chain:
-        def withColumn(self, *_a: object, **_k: object) -> _Chain:
+        columns: list[str] = []
+
+        def select(self, *_a: object, **_k: object) -> _Chain:
             return self
 
         def drop(self, *_a: object, **_k: object) -> _Chain:

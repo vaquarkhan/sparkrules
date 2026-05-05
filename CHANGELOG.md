@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`sparkrules_native/`** — optional **Tier-1** Rust scorer (PyO3 / maturin) with JSON fact I/O parity vs `LocalRuleExecutor`; **`sparkrules.native`** bridge + **`NativeRuleExecutor`**; **`RulePack.to_native_json()`**; benchmark **`benchmarks/bench_native_vs_local.py`** + CI workflow **`.github/workflows/native-wheels.yml`**; **`docs/CHOOSING_A_BACKEND.md`**; synthetic **`deploy/aws-glue/glue_job/taxi_rules_30.drl`** benchmark pack; **`[native]` optional extra → `sparkrules-native`** PyPI artifact (wheel built from this workspace).
+- **`tests/unit/test_packaging_discovery.py`** — regression for setuptools **`sparkrules*`** subtree discovery ( **`sparkrules.native`** must ship).
+- **`benchmarks/bench_native_vs_local.py`** now writes repo-relative **`workload`** paths and **`bench_rows_requested`**; **`benchmarks/native_tier1_results.json`** checked in as a sample (regenerate locally or with **`SPARKRULES_NATIVE_BENCH_ROWS`**).
 
 ### Fixed
 
+- **Packaging:** setuptools discovery now uses **`include = ["sparkrules*"]`** so every **`sparkrules.*`** subpackage (including **`sparkrules.native`**) is included in wheel/sdist. A bare **`include = ["sparkrules"]`** matched only the root package name, which could omit the Python bridge while users still installed **`sparkrules-native`**, leading to **`No module named sparkrules.native`**.
+- **sparkrules_native:** `eval_value` match is exhaustive for `Expr`; removed the unreachable wildcard arm (Rust warning).
 - **API:** `POST /governance/sync-dev` no longer returns 400 for **`platform_admin`** when the request body **`namespace`** does not match the active rule’s namespace; pins and audit use the resolved rule namespace (**G-39 / BUG-39**).
 
 ### Added
@@ -29,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Spark V2 `SparkRuleExecutor` — Strategy B (ALPHA_SHARED):** alpha, rule-boolean, and staging-action columns are built with a **fixed-depth** sequence of **`select`** projections plus alpha **`drop`**, instead of an O(rules × actions) chain of **`withColumn`** (parity with Strategy A’s plan-depth goal for large ALPHA_SHARED packs).
 - **Workbench** (`index.html`): UX improvements; **`RuleAssetResponse`** now documents **`created_at`** and **`author`** on `/rules/assets` rows (`schemas.py`).
 - **`RulePack.serialize`** prefixes an explicit **`SRRP`** + major/minor version envelope before the pickle payload; **`deserialize`** accepts legacy raw pickles and current **1.0** payloads; optional **`SPARKRULES_MAX_RULEPACK_BYTES`** raises **`ValueError`**; emits **`logging`** warning when serialized size exceeds a soft guideline (Req **32**).
 - **`classify_rule_with_rationale()`** complements **`classify_rule()`** for diagnostics.

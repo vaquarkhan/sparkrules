@@ -94,7 +94,9 @@ sparkrules-cli = "sparkrules.tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["sparkrules"]
+# Prefix "sparkrules" alone only lists the root package — subpackages (e.g. sparkrules.native)
+# are omitted from sdist/wheel. "sparkrules*" matches the full tree under src/sparkrules/.
+include = ["sparkrules*"]
 
 [tool.setuptools.package-data]
 sparkrules = [

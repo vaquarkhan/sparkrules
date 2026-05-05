@@ -325,7 +325,6 @@ pub fn eval_value(expr: &Expr, fact: &JsonValue) -> Result<JsonValue, ()> {
             }
             eval_builtin_call(name, &arg_vals)
         }
-        _ => Err(()),
     }
 }
 

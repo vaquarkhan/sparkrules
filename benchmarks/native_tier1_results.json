@@ -1,11 +1,11 @@
 {
   "tier": 1,
-  "workload": "deploy/aws-glue/glue_job/taxi_rules_30.drl",
+  "workload": "C:\\Users\\Administrator\\Downloads\\sparkrules\\deploy\\aws-glue\\glue_job\\taxi_rules_30.drl",
   "local": {
-    "rows": null,
-    "seconds": null,
-    "rows_per_sec": null
+    "rows": 100000,
+    "seconds": 89.653521,
+    "rows_per_sec": 1115
   },
   "native": null,
-  "note": "Populate by running python benchmarks/bench_native_vs_local.py after maturin develop --release."
+  "note": "Native row null when sparkrules_native is not installed. Target: \u226540x vs LocalTier-1 for this benchmark on a warmed release build."
 }

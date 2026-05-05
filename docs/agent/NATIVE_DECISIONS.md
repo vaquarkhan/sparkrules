@@ -24,8 +24,8 @@
 
 ## 2026-05-05 — Python namespace vs extension module name
 
-**Context:** setuptools previously shipped `src/sparkrules_native/` stub.
+**Context:** setuptools previously shipped `src/sparkrules_native/` stub; `include = ["sparkrules"]` only discovered the root package, so **`sparkrules.native`** was missing from sdists while setuptools still auto-found other subpackages inconsistently.
 
-**Decision:** setuptools `include = ["sparkrules"]` only; optional extension remains top-level **`sparkrules_native`** (import name). Supported API lives under **`sparkrules.native`** (bridge + executor).
+**Decision:** setuptools `include = ["sparkrules*"]` so every subpackage under `src/sparkrules/` (including **`sparkrules.native`**) ships in wheel/sdist. The stub tree was removed from the core distribution; optional extension remains top-level **`sparkrules_native`** (import name) via the **`sparkrules-native`** wheel only.
 
-**Consequences:** `import sparkrules_native` works only after `maturin` / pip install of the Rust wheel.
+**Consequences:** `import sparkrules_native` works only after `maturin` / pip install of the Rust wheel. Reinstall **`sparkrules`** alone no longer overwrites an extension stub with the same import name.
