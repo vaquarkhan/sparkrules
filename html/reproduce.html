@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reproduction Guide - sparkrules</title>
+<meta name="description" content="Step-by-step guide to reproduce the sparkrules Glue benchmark. 25 minutes, ~$0.45 AWS cost, all artifacts included.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="sparkrules">
+<meta property="og:title" content="Reproduce the sparkrules benchmark · 25 min, $0.45">
+<meta property="og:description" content="Every Terraform file, Glue script, DRL rule pack. Copy-paste friendly. Verified on AWS account 079714354417.">
+<meta property="og:url" content="https://vaquarkhan.github.io/sparkrules/reproduce.html">
+<meta property="og:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Reproduce the sparkrules benchmark in 25 minutes">
+<meta name="twitter:description" content="Full Terraform + Glue scripts inline. ~$0.45 of AWS spend verifies the 3.28M rps claim.">
+<meta name="twitter:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+  .step-nav {
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+  .step-nav a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+  }
+  .step-nav a:hover { background: #f1f5f9; color: #0f172a; }
+  .step-nav a.active {
+    background: linear-gradient(90deg, rgba(99,102,241,0.08), transparent);
+    border-left-color: #6366f1;
+    color: #6366f1;
+    font-weight: 600;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-weight: 700;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  }
+  .timeline-dot {
+    position: relative;
+  }
+  .timeline-dot::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 48px;
+    bottom: -40px;
+    width: 2px;
+    background: linear-gradient(180deg, #6366f1, #e2e8f0);
+  }
+  .timeline-dot:last-child::before { display: none; }
+  pre[class*="language-"] {
+    margin: 0;
+    border-radius: 12px;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    padding: 20px 24px;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.1);
+    color: #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .copy-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+  }
+  .code-wrapper { position: relative; }
+  .file-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.8;
+    color: #334155;
+  }
+  .file-tree .dir { color: #6366f1; font-weight: 600; }
+  .file-tree .file { color: #334155; }
+  .file-tree .comment { color: #94a3b8; font-style: italic; }
+  .prereq-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    background: white;
+    transition: all 0.15s ease;
+  }
+  .prereq-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 8px 24px rgba(99,102,241,0.08);
+  }
+  .alert {
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 24px 0;
+  }
+  .alert-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e3a8a;
+  }
+  .alert-warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+  .alert-success {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+      <span class="font-bold text-lg">sparkrules</span>
+      <span class="badge badge-primary text-xs">v1.2.0</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="benchmark.html" class="nav-link">Benchmark</a>
+      <a href="reproduce.html" class="nav-link active">Reproduce</a>
+      <a href="compare.html" class="nav-link">Compare</a>
+      <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="nav-link">Rust Guide</a>
+      <a href="https://github.com/vaquarkhan/sparkrules" class="nav-link">GitHub</a>
+      <a href="https://pypi.org/project/sparkrules/" class="btn-outline text-sm py-2 px-4">pip install</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<section class="hero-gradient pt-32 pb-20 text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <span class="badge badge-live mb-4">FULL SOURCE INCLUDED</span>
+    <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-4">Reproduction Guide</h1>
+    <p class="text-xl text-slate-300 max-w-3xl mb-8">
+      Run the exact benchmark yourself on your own AWS account. Every script, every rule, every Terraform resource documented and copy-pasteable.
+    </p>
+    <div class="grid md:grid-cols-4 gap-4">
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-2xl font-bold">25 min</div>
+        <div class="text-sm text-slate-400">Hands-on time</div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-2xl font-bold">$0.45</div>
+        <div class="text-sm text-slate-400">Total AWS cost</div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-2xl font-bold">79.5M</div>
+        <div class="text-sm text-slate-400">Rows scored</div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div class="text-2xl font-bold">7</div>
+        <div class="text-sm text-slate-400">Files to copy</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<section class="py-16">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid lg:grid-cols-[240px_1fr] gap-12">
+
+      <!-- TOC -->
+      <aside class="hidden lg:block">
+        <nav class="step-nav">
+          <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3 px-3">Guide sections</div>
+          <a href="#prereqs">Prerequisites</a>
+          <a href="#dataset">Dataset</a>
+          <a href="#file-layout">File layout</a>
+          <a href="#step-1">1 · Stage dataset</a>
+          <a href="#step-2">2 · Terraform</a>
+          <a href="#step-3">3 · Glue scripts</a>
+          <a href="#step-4">4 · The 30 rules</a>
+          <a href="#step-5">5 · Run sequence</a>
+          <a href="#expected">Expected output</a>
+          <a href="#cost-breakdown">Cost breakdown</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+          <a href="#checklist">Files checklist</a>
+          <a href="#license">Licensing</a>
+        </nav>
+      </aside>
+
+      <!-- CONTENT -->
+      <div class="space-y-16 min-w-0">
+
+        <!-- PREREQS -->
+        <div id="prereqs">
+          <span class="section-kicker">Before you start</span>
+          <h2 class="text-3xl font-bold mb-6">Prerequisites</h2>
+
+          <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div class="prereq-card">
+              <div class="font-bold mb-1">AWS CLI v2</div>
+              <div class="text-sm text-slate-600 mb-3">Authenticated with Glue + S3 + IAM permissions</div>
+              <code class="text-xs">aws configure</code>
+            </div>
+            <div class="prereq-card">
+              <div class="font-bold mb-1">Terraform ≥ 1.6</div>
+              <div class="text-sm text-slate-600 mb-3">Provisions all 15 AWS resources</div>
+              <a href="https://developer.hashicorp.com/terraform/downloads" class="text-indigo-600 text-xs font-semibold">Download →</a>
+            </div>
+            <div class="prereq-card">
+              <div class="font-bold mb-1">Python 3.11+</div>
+              <div class="text-sm text-slate-600 mb-3">Only for local dataset staging</div>
+              <code class="text-xs">python --version</code>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-6">
+            <h3 class="font-bold mb-3">Minimum IAM permissions</h3>
+            <ul class="space-y-2 text-sm text-slate-700">
+              <li class="flex items-start gap-2"><span class="text-emerald-600 font-bold">✓</span> <code>glue:*</code> on jobs named <code>sparkrules-bench-*</code></li>
+              <li class="flex items-start gap-2"><span class="text-emerald-600 font-bold">✓</span> <code>s3:*</code> on buckets named <code>sparkrules-bench-*</code></li>
+              <li class="flex items-start gap-2"><span class="text-emerald-600 font-bold">✓</span> <code>iam:CreateRole</code>, <code>iam:AttachRolePolicy</code>, <code>iam:PutRolePolicy</code>, <code>iam:PassRole</code></li>
+              <li class="flex items-start gap-2"><span class="text-emerald-600 font-bold">✓</span> <code>logs:CreateLogGroup</code>, <code>logs:PutLogEvents</code></li>
+              <li class="flex items-start gap-2"><span class="text-slate-400 font-bold">·</span> ~2 GB local disk for taxi parquet cache</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- DATASET -->
+        <div id="dataset">
+          <span class="section-kicker">What you'll score</span>
+          <h2 class="text-3xl font-bold mb-6">Dataset: NYC TLC Yellow Taxi</h2>
+          <p class="text-lg text-slate-600 mb-6">
+            Real production-grade open data used by AWS, Google Cloud, Databricks, and academic benchmarks.
+          </p>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+            <table class="w-full text-sm">
+              <tbody class="divide-y divide-slate-100">
+                <tr><td class="py-2 font-semibold w-1/3">Source</td><td class="py-2">NYC Taxi & Limousine Commission</td></tr>
+                <tr><td class="py-2 font-semibold">Download URL</td><td class="py-2"><a href="https://d37ci6vzurychx.cloudfront.net/trip-data/" class="text-indigo-600 hover:underline">d37ci6vzurychx.cloudfront.net/trip-data/</a></td></tr>
+                <tr><td class="py-2 font-semibold">Data page</td><td class="py-2"><a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page" class="text-indigo-600 hover:underline">nyc.gov/site/tlc/about/tlc-trip-record-data.page</a></td></tr>
+                <tr><td class="py-2 font-semibold">Format</td><td class="py-2">Apache Parquet (Snappy compressed)</td></tr>
+                <tr><td class="py-2 font-semibold">Rows used</td><td class="py-2"><strong>79,479,946</strong> (24 months: Jan 2023 - Dec 2024)</td></tr>
+                <tr><td class="py-2 font-semibold">Size on disk</td><td class="py-2">~1.33 GB (compressed parquet)</td></tr>
+                <tr><td class="py-2 font-semibold">License</td><td class="py-2">NYC Open Data, public domain</td></tr>
+                <tr><td class="py-2 font-semibold">Schema</td><td class="py-2 text-xs">11 columns: VendorID, tpep_pickup_datetime, passenger_count, trip_distance, fare_amount, tip_amount, total_amount, payment_type, PULocationID, DOLocationID, store_and_fwd_flag</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="alert alert-info">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <strong class="block mb-1">Why not <code>s3://nyc-tlc/</code>?</strong>
+              The legacy bucket is locked down, returns AccessDenied even with <code>--request-payer requester</code>. CloudFront is the new canonical source. Our staging script uses it and re-stages to your own S3 bucket for Glue.
+            </div>
+          </div>
+        </div>
+
+        <!-- FILE LAYOUT -->
+        <div id="file-layout">
+          <span class="section-kicker">Structure</span>
+          <h2 class="text-3xl font-bold mb-6">File layout</h2>
+          <p class="text-lg text-slate-600 mb-6">7 files total. All copy-pasteable from this guide.</p>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-6">
+<pre class="file-tree"><span class="dir">deploy/</span>
+└── <span class="dir">aws-glue/</span>
+    ├── <span class="dir">terraform/</span>
+    │   ├── <span class="file">main.tf</span>              <span class="comment"># 15 AWS resources</span>
+    │   ├── <span class="file">variables.tf</span>         <span class="comment"># 9 variables</span>
+    │   ├── <span class="file">outputs.tf</span>           <span class="comment"># 7 outputs</span>
+    │   └── <span class="file">terraform.tfvars</span>     <span class="comment"># your config</span>
+    └── <span class="dir">glue_job/</span>
+        ├── <span class="file">benchmark_taxi_rules.py</span>     <span class="comment"># main scoring script</span>
+        ├── <span class="file">consolidate_taxi_input.py</span>   <span class="comment"># one-time schema prep</span>
+        └── <span class="file">taxi_rules_30.drl</span>           <span class="comment"># 30-rule DRL pack</span>
+<span class="file">stage_taxi_to_s3.py</span>                        <span class="comment"># local dataset staging</span></pre>
+          </div>
+        </div>
+
+        <!-- STEP 1 -->
+        <div id="step-1" class="timeline-dot">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div>
+              <span class="section-kicker">Step one</span>
+              <h2 class="text-3xl font-bold">Stage the dataset to S3</h2>
+            </div>
+          </div>
+          <p class="text-lg text-slate-600 mb-4">Save as <code>stage_taxi_to_s3.py</code>. Run after Step 2 provisions the bucket.</p>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="step1">Copy</button>
+            <pre class="language-python"><code id="step1">"""Download 24 months of NYC TLC yellow taxi parquet from CloudFront and stage to S3."""
+from __future__ import annotations
+import concurrent.futures as cf
+import subprocess
+import sys
+import time
+from pathlib import Path
+from urllib.request import urlretrieve
+
+# EDIT THESE TWO LINES FOR YOUR ACCOUNT:
+BUCKET = "sparkrules-bench-dev-artifacts-YOURACCOUNTID"
+REGION = "us-east-1"
+
+S3_PREFIX = "input/yellow/"
+CLOUDFRONT = "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+LOCAL_DIR = Path("./yellow_cache")
+LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+
+MONTHS = [f"{y}-{m:02d}" for y in (2023, 2024) for m in range(1, 13)]
+
+def fetch_and_stage(month):
+    fname = f"yellow_tripdata_{month}.parquet"
+    local = LOCAL_DIR / fname
+    if not local.exists():
+        urlretrieve(f"{CLOUDFRONT}{fname}", local)
+    size = local.stat().st_size
+    subprocess.run(
+        ["aws", "s3", "cp", str(local), f"s3://{BUCKET}/{S3_PREFIX}{fname}",
+         "--region", REGION, "--only-show-errors"],
+        check=True,
+    )
+    return (month, size)
+
+print(f"staging {len(MONTHS)} months to s3://{BUCKET}/{S3_PREFIX}")
+with cf.ThreadPoolExecutor(max_workers=6) as ex:
+    for month, size in ex.map(fetch_and_stage, MONTHS):
+        print(f"  [{month}] {size/1_000_000:.1f} MB")
+print("done")</code></pre>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step-2" class="timeline-dot">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div>
+              <span class="section-kicker">Step two</span>
+              <h2 class="text-3xl font-bold">Terraform infrastructure</h2>
+            </div>
+          </div>
+          <p class="text-lg text-slate-600 mb-6">All 15 AWS resources in one module. Four files.</p>
+
+          <h3 class="font-bold text-lg mb-3 mt-8"><code>deploy/aws-glue/terraform/main.tf</code></h3>
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="tf-main">Copy</button>
+            <pre class="language-hcl"><code id="tf-main">terraform {
+  required_version = ">= 1.6.0"
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+locals {
+  name_prefix = "${var.project}-${var.environment}"
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}
+
+# --- S3 buckets ---
+
+resource "aws_s3_bucket" "artifacts" {
+  bucket        = "${local.name_prefix}-artifacts-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+  tags          = local.tags
+}
+
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+  versioning_configuration { status = "Enabled" }
+}
+
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket                  = aws_s3_bucket.artifacts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+  rule { apply_server_side_encryption_by_default { sse_algorithm = "AES256" } }
+}
+
+resource "aws_s3_bucket" "results" {
+  bucket        = "${local.name_prefix}-results-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+  tags          = local.tags
+}
+
+resource "aws_s3_bucket_public_access_block" "results" {
+  bucket                  = aws_s3_bucket.results.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "results" {
+  bucket = aws_s3_bucket.results.id
+  rule { apply_server_side_encryption_by_default { sse_algorithm = "AES256" } }
+}
+
+# --- Upload the Glue scripts + DRL pack ---
+
+resource "aws_s3_object" "glue_job_script" {
+  bucket = aws_s3_bucket.artifacts.id
+  key    = "scripts/benchmark_taxi_rules.py"
+  source = "${path.module}/../glue_job/benchmark_taxi_rules.py"
+  etag   = filemd5("${path.module}/../glue_job/benchmark_taxi_rules.py")
+}
+
+resource "aws_s3_object" "drl_pack" {
+  bucket = aws_s3_bucket.artifacts.id
+  key    = "drl/taxi_rules_30.drl"
+  source = "${path.module}/../glue_job/taxi_rules_30.drl"
+  etag   = filemd5("${path.module}/../glue_job/taxi_rules_30.drl")
+}
+
+resource "aws_s3_object" "consolidate_job_script" {
+  bucket = aws_s3_bucket.artifacts.id
+  key    = "scripts/consolidate_taxi_input.py"
+  source = "${path.module}/../glue_job/consolidate_taxi_input.py"
+  etag   = filemd5("${path.module}/../glue_job/consolidate_taxi_input.py")
+}
+
+# --- IAM role for Glue ---
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "glue_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["glue.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "glue_job" {
+  name               = "${local.name_prefix}-glue-job-role"
+  assume_role_policy = data.aws_iam_policy_document.glue_assume.json
+  tags               = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "glue_service" {
+  role       = aws_iam_role.glue_job.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+data "aws_iam_policy_document" "glue_s3" {
+  statement {
+    sid     = "WriteResults"
+    actions = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
+    resources = [
+      aws_s3_bucket.results.arn,
+      "${aws_s3_bucket.results.arn}/*",
+      aws_s3_bucket.artifacts.arn,
+      "${aws_s3_bucket.artifacts.arn}/*",
+    ]
+  }
+  statement {
+    sid = "Logs"
+    actions = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "glue_s3" {
+  name   = "${local.name_prefix}-glue-s3"
+  role   = aws_iam_role.glue_job.id
+  policy = data.aws_iam_policy_document.glue_s3.json
+}
+
+# --- Benchmark Glue job ---
+
+resource "aws_glue_job" "benchmark" {
+  name              = "${local.name_prefix}-benchmark"
+  role_arn          = aws_iam_role.glue_job.arn
+  glue_version      = "5.0"
+  worker_type       = var.worker_type
+  number_of_workers = var.number_of_workers
+  timeout           = 30
+  max_retries       = 0
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${aws_s3_bucket.artifacts.id}/${aws_s3_object.glue_job_script.key}"
+    python_version  = "3"
+  }
+
+  default_arguments = {
+    "--job-language"                     = "python"
+    "--enable-metrics"                   = "true"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-glue-datacatalog"          = "true"
+    "--enable-spark-ui"                  = "true"
+    "--spark-event-logs-path"            = "s3://${aws_s3_bucket.artifacts.id}/spark-logs/"
+    "--drl_s3_path"                      = "s3://${aws_s3_bucket.artifacts.id}/${aws_s3_object.drl_pack.key}"
+    "--input_s3_path"                    = var.input_s3_path
+    "--output_s3_path"                   = "s3://${aws_s3_bucket.results.id}/taxi-bench/"
+    "--rows_limit"                       = tostring(var.rows_limit)
+    "--num_partitions"                   = tostring(var.num_partitions)
+    "--TempDir"                          = "s3://${aws_s3_bucket.artifacts.id}/tmp/"
+    "--additional-python-modules"        = "sparkrules==${var.sparkrules_version}"
+  }
+
+  tags = local.tags
+}
+
+# --- Consolidate (one-time schema normalization) Glue job ---
+
+resource "aws_glue_job" "consolidate" {
+  name              = "${local.name_prefix}-consolidate"
+  role_arn          = aws_iam_role.glue_job.arn
+  glue_version      = "5.0"
+  worker_type       = var.worker_type
+  number_of_workers = var.number_of_workers
+  timeout           = 30
+  max_retries       = 0
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${aws_s3_bucket.artifacts.id}/${aws_s3_object.consolidate_job_script.key}"
+    python_version  = "3"
+  }
+
+  default_arguments = {
+    "--job-language"                     = "python"
+    "--enable-metrics"                   = "true"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-glue-datacatalog"          = "true"
+    "--input_s3_path"                    = "s3://${aws_s3_bucket.artifacts.id}/input/yellow/"
+    "--output_s3_path"                   = "s3://${aws_s3_bucket.artifacts.id}/input/yellow_consolidated/"
+    "--TempDir"                          = "s3://${aws_s3_bucket.artifacts.id}/tmp/"
+  }
+
+  tags = local.tags
+}</code></pre>
+          </div>
+
+          <h3 class="font-bold text-lg mb-3 mt-8"><code>deploy/aws-glue/terraform/variables.tf</code></h3>
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="tf-vars">Copy</button>
+            <pre class="language-hcl"><code id="tf-vars">variable "region"             { type = string  default = "us-east-1" }
+variable "project"            { type = string  default = "sparkrules-bench" }
+variable "environment"        { type = string  default = "dev" }
+variable "worker_type" {
+  type = string
+  default = "G.1X"
+  validation {
+    condition     = contains(["G.1X", "G.2X", "G.4X", "G.8X"], var.worker_type)
+    error_message = "worker_type must be G.1X, G.2X, G.4X, or G.8X."
+  }
+}
+variable "number_of_workers" {
+  type = number
+  default = 10
+  validation {
+    condition     = var.number_of_workers >= 2 && var.number_of_workers <= 200
+    error_message = "number_of_workers must be between 2 and 200."
+  }
+}
+variable "input_s3_path"      { type = string  default = "" }
+variable "rows_limit"         { type = number  default = 0 }
+variable "sparkrules_version" { type = string  default = "1.2.0" }
+variable "num_partitions"     { type = number  default = 80 }</code></pre>
+          </div>
+
+          <h3 class="font-bold text-lg mb-3 mt-8"><code>deploy/aws-glue/terraform/outputs.tf</code></h3>
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="tf-outputs">Copy</button>
+            <pre class="language-hcl"><code id="tf-outputs">output "glue_job_name"        { value = aws_glue_job.benchmark.name }
+output "consolidate_job_name" { value = aws_glue_job.consolidate.name }
+output "artifacts_bucket"     { value = aws_s3_bucket.artifacts.id }
+output "results_bucket"       { value = aws_s3_bucket.results.id }
+output "results_path"         { value = "s3://${aws_s3_bucket.results.id}/taxi-bench/" }
+output "spark_logs_path"      { value = "s3://${aws_s3_bucket.artifacts.id}/spark-logs/" }
+output "start_command" {
+  value = "aws glue start-job-run --job-name ${aws_glue_job.benchmark.name} --region ${var.region}"
+}</code></pre>
+          </div>
+
+          <h3 class="font-bold text-lg mb-3 mt-8"><code>deploy/aws-glue/terraform/terraform.tfvars</code></h3>
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="tf-tfvars">Copy</button>
+            <pre class="language-hcl"><code id="tf-tfvars">region             = "us-east-1"
+project            = "sparkrules-bench"
+environment        = "dev"
+worker_type        = "G.1X"
+number_of_workers  = 10
+num_partitions     = 80
+sparkrules_version = "1.2.0"
+rows_limit         = 0
+
+# Update after first `terraform apply` - replace YOURACCOUNTID with your AWS account id
+input_s3_path = "s3://sparkrules-bench-dev-artifacts-YOURACCOUNTID/input/yellow_consolidated/"</code></pre>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div id="step-3" class="timeline-dot">
+          <div class="step-header">
+            <div class="step-number">3</div>
+            <div>
+              <span class="section-kicker">Step three</span>
+              <h2 class="text-3xl font-bold">Glue scripts</h2>
+            </div>
+          </div>
+
+          <h3 class="font-bold text-lg mb-3 mt-4"><code>deploy/aws-glue/glue_job/benchmark_taxi_rules.py</code></h3>
+          <p class="text-slate-600 mb-4">Main scoring script. Reads consolidated parquet, applies 30 rules via <code>apply_with_counts</code>, writes typed output and summary JSON back to S3.</p>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="bench-py">Copy</button>
+            <pre class="language-python"><code id="bench-py">"""sparkrules 1.2.0 benchmark on NYC TLC Yellow Taxi data."""
+from __future__ import annotations
+import json
+import sys
+import time
+from datetime import datetime, timezone
+
+from awsglue.context import GlueContext
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import functions as F
+
+
+def main() -> int:
+    args = getResolvedOptions(
+        sys.argv,
+        ["JOB_NAME", "drl_s3_path", "input_s3_path", "output_s3_path", "rows_limit"],
+    )
+    try:
+        num_partitions = int(getResolvedOptions(sys.argv, ["num_partitions"])["num_partitions"])
+    except Exception:
+        num_partitions = 80
+
+    sc = SparkContext()
+    glue = GlueContext(sc)
+    spark = glue.spark_session
+    spark.conf.set("spark.sql.adaptive.enabled", "true")
+    spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
+
+    drl_text = _read_s3_text(spark, args["drl_s3_path"])
+
+    from sparkrules.compiler.rulepack import RulePack
+    from sparkrules.spark.executor import SparkRuleExecutor
+
+    pack = RulePack.from_drl(drl_text)
+    summary = pack.summary()
+
+    # Probe the optional Rust backend on the driver
+    native_info = {"available": False, "version": None, "error": None}
+    try:
+        from sparkrules.native.bridge import load_native
+        mod = load_native()
+        if mod is not None:
+            native_info = {"available": True, "version": mod.native_version(), "error": None}
+    except Exception as e:
+        native_info["error"] = f"{type(e).__name__}: {e}"
+
+    # --- Read NYC TLC input ---
+    t_read_start = time.perf_counter()
+    df = spark.read.parquet(args["input_s3_path"])
+    rows_limit = int(args.get("rows_limit", "0") or "0")
+    if rows_limit > 0:
+        df = df.limit(rows_limit)
+
+    df = df.select(
+        F.struct(
+            F.col("VendorID").cast("bigint").alias("vendor_id"),
+            F.col("passenger_count").cast("bigint").alias("passenger_count"),
+            F.col("trip_distance").cast("double").alias("trip_distance"),
+            F.col("fare_amount").cast("double").alias("fare_amount"),
+            F.col("tip_amount").cast("double").alias("tip_amount"),
+            F.col("total_amount").cast("double").alias("total_amount"),
+            F.col("payment_type").cast("bigint").alias("payment_type"),
+            F.col("PULocationID").cast("bigint").alias("pu_location"),
+            F.col("DOLocationID").cast("bigint").alias("do_location"),
+            F.hour(F.col("tpep_pickup_datetime")).alias("pickup_hour"),
+            F.dayofweek(F.col("tpep_pickup_datetime")).alias("pickup_dow"),
+        ).alias("t")
+    ).repartition(num_partitions)
+    t_read_elapsed = time.perf_counter() - t_read_start
+
+    # --- Apply rules (Strategy A: Catalyst pushdown) ---
+    executor = SparkRuleExecutor.from_drl(drl_text)
+
+    t_scoring_start = time.perf_counter()
+    if hasattr(executor, "apply_with_counts"):
+        result, counts = executor.apply_with_counts(df)
+        t_scoring_elapsed = time.perf_counter() - t_scoring_start
+        total = int(counts.pop("_total_rows"))
+        fired_counts = {k: int(v) for k, v in counts.items()}
+        api_used = "apply_with_counts"
+    else:
+        result = executor.apply(df)
+        rule_cols = [c for c in result.columns if c.startswith("r_")]
+        agg_exprs = [F.sum(F.when(F.col(c), 1).otherwise(0)).alias(c) for c in rule_cols]
+        agg_exprs.append(F.count(F.lit(1)).alias("total_rows"))
+        fired_row = result.agg(*agg_exprs).collect()[0]
+        t_scoring_elapsed = time.perf_counter() - t_scoring_start
+        total = int(fired_row["total_rows"])
+        fired_counts = {c: int(fired_row[c]) for c in rule_cols}
+        api_used = "apply+manual_agg"
+
+    rows_per_sec = total / t_scoring_elapsed if t_scoring_elapsed > 0 else 0
+
+    try:
+        catalyst_plan = result.limit(1)._jdf.queryExecution().optimizedPlan().toString()[:4000]
+    except Exception as e:
+        catalyst_plan = f"(plan capture failed: {e})"
+
+    # --- Write typed results ---
+    t_write_start = time.perf_counter()
+    write_partitions = max(8, num_partitions // 2)
+    result.coalesce(write_partitions).write.mode("overwrite").parquet(
+        args["output_s3_path"].rstrip("/") + "/results/"
+    )
+    t_write_elapsed = time.perf_counter() - t_write_start
+
+    # --- Write benchmark summary JSON ---
+    bench = {
+        "job_name": args["JOB_NAME"],
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "input_s3_path": args["input_s3_path"],
+        "rows_scored": total,
+        "rows_limit_applied": rows_limit,
+        "num_partitions": num_partitions,
+        "rulepack_summary": summary,
+        "fired_counts": fired_counts,
+        "timing": {
+            "read_elapsed_s": round(t_read_elapsed, 3),
+            "scoring_elapsed_s": round(t_scoring_elapsed, 3),
+            "write_elapsed_s": round(t_write_elapsed, 3),
+            "rows_per_sec": int(rows_per_sec),
+            "api_used": api_used,
+        },
+        "native_backend": native_info,
+        "sparkrules_version": _sparkrules_version(),
+        "catalyst_plan_head": catalyst_plan,
+    }
+    bench_json = json.dumps(bench, indent=2, default=str)
+    print(bench_json)
+
+    # Write to S3
+    summary_dir = args["output_s3_path"].rstrip("/") + "/benchmark_summary_dir"
+    URI = spark._jvm.java.net.URI
+    Path = spark._jvm.org.apache.hadoop.fs.Path
+    FileSystem = spark._jvm.org.apache.hadoop.fs.FileSystem
+    fs = FileSystem.get(URI(summary_dir), spark._jsc.hadoopConfiguration())
+    if fs.exists(Path(summary_dir)):
+        fs.delete(Path(summary_dir), True)
+
+    rdd = spark.sparkContext.parallelize([bench_json], 1)
+    rdd.saveAsTextFile(summary_dir)
+    return 0
+
+
+def _read_s3_text(spark, s3_path: str) -> str:
+    return "\n".join(spark.read.text(s3_path).rdd.map(lambda r: r[0]).collect())
+
+
+def _sparkrules_version() -> str:
+    try:
+        import sparkrules
+        return sparkrules.__version__
+    except Exception:
+        return "unknown"
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+          </div>
+
+          <h3 class="font-bold text-lg mb-3 mt-8"><code>deploy/aws-glue/glue_job/consolidate_taxi_input.py</code></h3>
+          <p class="text-slate-600 mb-4">One-time prep job. Normalizes schema drift across 24 months (VendorID is INT32 in some months, INT64 in others).</p>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="consolidate-py">Copy</button>
+            <pre class="language-python"><code id="consolidate-py">"""Normalize 24 schema-drifted TLC yellow parquets into one consolidated folder."""
+from __future__ import annotations
+import sys
+import time
+
+from awsglue.context import GlueContext
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from pyspark.sql import functions as F
+
+
+def main():
+    args = getResolvedOptions(sys.argv, ["JOB_NAME", "input_s3_path", "output_s3_path"])
+
+    sc = SparkContext()
+    glue = GlueContext(sc)
+    spark = glue.spark_session
+    spark.conf.set("spark.sql.adaptive.enabled", "true")
+    spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
+
+    input_path = args["input_s3_path"]
+    output_path = args["output_s3_path"]
+
+    URI = spark._jvm.java.net.URI
+    Path = spark._jvm.org.apache.hadoop.fs.Path
+    FileSystem = spark._jvm.org.apache.hadoop.fs.FileSystem
+    fs = FileSystem.get(URI(input_path), spark._jsc.hadoopConfiguration())
+    statuses = fs.listStatus(Path(input_path))
+    files = sorted(
+        s.getPath().toString()
+        for s in statuses
+        if s.getPath().toString().endswith(".parquet")
+    )
+
+    normalize = [
+        F.col("VendorID").cast("bigint").alias("VendorID"),
+        F.col("tpep_pickup_datetime").cast("timestamp").alias("tpep_pickup_datetime"),
+        F.col("tpep_dropoff_datetime").cast("timestamp").alias("tpep_dropoff_datetime"),
+        F.col("passenger_count").cast("double").alias("passenger_count"),
+        F.col("trip_distance").cast("double").alias("trip_distance"),
+        F.col("fare_amount").cast("double").alias("fare_amount"),
+        F.col("tip_amount").cast("double").alias("tip_amount"),
+        F.col("total_amount").cast("double").alias("total_amount"),
+        F.col("payment_type").cast("bigint").alias("payment_type"),
+        F.col("PULocationID").cast("bigint").alias("PULocationID"),
+        F.col("DOLocationID").cast("bigint").alias("DOLocationID"),
+    ]
+
+    t0 = time.perf_counter()
+    parts = [spark.read.parquet(f).select(*normalize) for f in files]
+    df = parts[0]
+    for p in parts[1:]:
+        df = df.unionByName(p)
+
+    fs_out = FileSystem.get(URI(output_path), spark._jsc.hadoopConfiguration())
+    if fs_out.exists(Path(output_path)):
+        fs_out.delete(Path(output_path), True)
+
+    df.repartition(64).write.mode("overwrite").parquet(output_path)
+    print(f"[consolidate] wrote in {time.perf_counter() - t0:.2f}s to {output_path}")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+          </div>
+        </div>
+
+        <!-- STEP 4 - RULES -->
+        <div id="step-4" class="timeline-dot">
+          <div class="step-header">
+            <div class="step-number">4</div>
+            <div>
+              <span class="section-kicker">Step four</span>
+              <h2 class="text-3xl font-bold">The 30 rules</h2>
+            </div>
+          </div>
+          <p class="text-lg text-slate-600 mb-6">
+            All 30 rules classified <code>SQL_PUSHDOWN</code>. Save as <code>deploy/aws-glue/glue_job/taxi_rules_30.drl</code>.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-4 mb-6">
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">DATA QUALITY</div>
+              <div class="font-semibold text-sm mb-1">4 rules</div>
+              <div class="text-xs text-slate-600">r01, r06, r11, r22</div>
+            </div>
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">REVIEW FLAGS</div>
+              <div class="font-semibold text-sm mb-1">5 rules</div>
+              <div class="text-xs text-slate-600">r02, r04, r05, r10, r23</div>
+            </div>
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">ANOMALY</div>
+              <div class="font-semibold text-sm mb-1">5 rules</div>
+              <div class="text-xs text-slate-600">r03, r08, r09, r12, r25</div>
+            </div>
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">AIRPORT DETECTION</div>
+              <div class="font-semibold text-sm mb-1">3 rules</div>
+              <div class="text-xs text-slate-600">r13 (JFK), r14 (LGA), r15 (EWR)</div>
+            </div>
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">TIME PATTERNS</div>
+              <div class="font-semibold text-sm mb-1">4 rules</div>
+              <div class="text-xs text-slate-600">r16, r17, r18, r19</div>
+            </div>
+            <div class="prereq-card">
+              <div class="badge badge-primary mb-2">SEGMENTATION</div>
+              <div class="font-semibold text-sm mb-1">5 rules</div>
+              <div class="text-xs text-slate-600">r26, r27, r28, r29, r30</div>
+            </div>
+          </div>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="drl-rules">Copy</button>
+            <pre class="language-java"><code id="drl-rules">// NYC TLC Yellow Taxi: 30-rule decision pack for the sparkrules cluster benchmark.
+// Fact binding: $t : T holds struct fields vendor_id, passenger_count, trip_distance,
+// fare_amount, tip_amount, total_amount, payment_type, pu_location, do_location,
+// pickup_hour, pickup_dow.
+//
+// All rules are SQL_PUSHDOWN-classifiable (V2 Strategy A) so the benchmark
+// measures pure Catalyst predicate throughput.
+
+rule "r01_fare_zero_or_negative"
+  salience 100
+  when $t : T( $t.fare_amount <= 0 )
+  then result.flag = "DATA_QUALITY"; result.reason = "FARE_NONPOSITIVE"; end
+
+rule "r02_fare_extreme_high"
+  salience 90
+  when $t : T( $t.fare_amount > 500 )
+  then result.flag = "REVIEW"; result.reason = "FARE_EXTREME"; end
+
+rule "r03_distance_zero_nonzero_fare"
+  salience 95
+  when $t : T( $t.trip_distance == 0 and $t.fare_amount > 10 )
+  then result.flag = "ANOMALY"; result.reason = "ZERO_DIST_POSITIVE_FARE"; end
+
+rule "r04_distance_extreme"
+  salience 85
+  when $t : T( $t.trip_distance > 100 )
+  then result.flag = "REVIEW"; result.reason = "DISTANCE_OVER_100MI"; end
+
+rule "r05_tip_exceeds_fare"
+  salience 90
+  when $t : T( $t.tip_amount > $t.fare_amount and $t.fare_amount > 0 )
+  then result.flag = "REVIEW"; result.reason = "TIP_EXCEEDS_FARE"; end
+
+rule "r06_tip_negative"
+  salience 100
+  when $t : T( $t.tip_amount < 0 )
+  then result.flag = "DATA_QUALITY"; result.reason = "TIP_NEGATIVE"; end
+
+rule "r07_high_tip_percentage"
+  salience 50
+  when $t : T( $t.tip_amount > 20 and $t.fare_amount < 30 )
+  then result.flag = "GENEROUS_TIP"; result.reason = "TIP_RATIO_HIGH"; end
+
+rule "r08_cash_tip_unusual"
+  salience 80
+  when $t : T( $t.payment_type == 2 and $t.tip_amount > 0 )
+  then result.flag = "ANOMALY"; result.reason = "CASH_TIP_RECORDED"; end
+
+rule "r09_short_trip_high_fare"
+  salience 85
+  when $t : T( $t.trip_distance < 0.5 and $t.fare_amount > 40 )
+  then result.flag = "ANOMALY"; result.reason = "SHORT_TRIP_HIGH_FARE"; end
+
+rule "r10_long_trip_low_fare"
+  salience 80
+  when $t : T( $t.trip_distance > 20 and $t.fare_amount < 30 )
+  then result.flag = "REVIEW"; result.reason = "LONG_TRIP_LOW_FARE"; end
+
+rule "r11_passenger_zero"
+  salience 95
+  when $t : T( $t.passenger_count == 0 )
+  then result.flag = "DATA_QUALITY"; result.reason = "ZERO_PASSENGERS"; end
+
+rule "r12_passenger_over_six"
+  salience 80
+  when $t : T( $t.passenger_count > 6 )
+  then result.flag = "ANOMALY"; result.reason = "PASSENGER_COUNT_HIGH"; end
+
+rule "r13_airport_jfk_pickup"
+  salience 30
+  when $t : T( $t.pu_location == 132 )
+  then result.flag = "AIRPORT_TRIP"; result.reason = "PICKUP_JFK"; end
+
+rule "r14_airport_lga_pickup"
+  salience 30
+  when $t : T( $t.pu_location == 138 )
+  then result.flag = "AIRPORT_TRIP"; result.reason = "PICKUP_LGA"; end
+
+rule "r15_airport_ewr_pickup"
+  salience 30
+  when $t : T( $t.pu_location == 1 )
+  then result.flag = "AIRPORT_TRIP"; result.reason = "PICKUP_EWR"; end
+
+rule "r16_rush_hour_am"
+  salience 20
+  when $t : T( $t.pickup_hour >= 7 and $t.pickup_hour <= 9 )
+  then result.flag = "RUSH_HOUR"; result.reason = "AM_RUSH"; end
+
+rule "r17_rush_hour_pm"
+  salience 20
+  when $t : T( $t.pickup_hour >= 17 and $t.pickup_hour <= 19 )
+  then result.flag = "RUSH_HOUR"; result.reason = "PM_RUSH"; end
+
+rule "r18_late_night"
+  salience 15
+  when $t : T( $t.pickup_hour >= 0 and $t.pickup_hour <= 4 )
+  then result.flag = "LATE_NIGHT"; result.reason = "LATE_NIGHT_TRIP"; end
+
+rule "r19_weekend_trip"
+  salience 10
+  when $t : T( $t.pickup_dow == 1 or $t.pickup_dow == 7 )
+  then result.flag = "WEEKEND"; result.reason = "WEEKEND_TRIP"; end
+
+rule "r20_vendor_cmt"
+  salience 5
+  when $t : T( $t.vendor_id == 1 )
+  then result.flag = "VENDOR"; result.reason = "CMT"; end
+
+rule "r21_vendor_vts"
+  salience 5
+  when $t : T( $t.vendor_id == 2 )
+  then result.flag = "VENDOR"; result.reason = "VTS"; end
+
+rule "r22_total_under_fare"
+  salience 95
+  when $t : T( $t.total_amount < $t.fare_amount )
+  then result.flag = "DATA_QUALITY"; result.reason = "TOTAL_LT_FARE"; end
+
+rule "r23_total_extreme"
+  salience 85
+  when $t : T( $t.total_amount > 1000 )
+  then result.flag = "REVIEW"; result.reason = "TOTAL_EXTREME"; end
+
+rule "r24_no_tip_credit"
+  salience 40
+  when $t : T( $t.payment_type == 1 and $t.tip_amount == 0 and $t.fare_amount > 20 )
+  then result.flag = "NOTABLE"; result.reason = "CREDIT_NO_TIP"; end
+
+rule "r25_same_pu_do"
+  salience 60
+  when $t : T( $t.pu_location == $t.do_location and $t.trip_distance < 0.1 )
+  then result.flag = "ANOMALY"; result.reason = "SAME_LOCATION_ZERO_DIST"; end
+
+rule "r26_small_fare_trip"
+  salience 5
+  when $t : T( $t.fare_amount < 5 )
+  then result.flag = "SMALL_FARE"; result.reason = "MINIMUM_FARE_TRIP"; end
+
+rule "r27_medium_trip"
+  salience 5
+  when $t : T( $t.trip_distance >= 2 and $t.trip_distance <= 5 )
+  then result.flag = "MEDIUM_TRIP"; result.reason = "MEDIUM_DISTANCE"; end
+
+rule "r28_long_trip"
+  salience 5
+  when $t : T( $t.trip_distance > 10 and $t.trip_distance <= 30 )
+  then result.flag = "LONG_TRIP"; result.reason = "LONG_DISTANCE"; end
+
+rule "r29_solo_rider"
+  salience 5
+  when $t : T( $t.passenger_count == 1 )
+  then result.flag = "SOLO"; result.reason = "SINGLE_RIDER"; end
+
+rule "r30_group_ride"
+  salience 5
+  when $t : T( $t.passenger_count >= 4 and $t.passenger_count <= 6 )
+  then result.flag = "GROUP"; result.reason = "GROUP_RIDE"; end</code></pre>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div id="step-5" class="timeline-dot">
+          <div class="step-header">
+            <div class="step-number">5</div>
+            <div>
+              <span class="section-kicker">Step five</span>
+              <h2 class="text-3xl font-bold">Full run sequence</h2>
+            </div>
+          </div>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="run-sequence">Copy</button>
+            <pre class="language-bash"><code id="run-sequence"># ------ 1. Provision 15 AWS resources ------
+cd deploy/aws-glue/terraform/
+terraform init
+terraform apply -auto-approve
+
+# ------ 2. Capture output names ------
+ARTIFACTS_BUCKET=$(terraform output -raw artifacts_bucket)
+RESULTS_BUCKET=$(terraform output -raw results_bucket)
+BENCH_JOB=$(terraform output -raw glue_job_name)
+CONSOLIDATE_JOB=$(terraform output -raw consolidate_job_name)
+
+# ------ 3. Stage 24 months of taxi parquet to S3 (first run only, ~6 min) ------
+# Edit stage_taxi_to_s3.py, set BUCKET = $ARTIFACTS_BUCKET, then:
+python stage_taxi_to_s3.py
+
+# ------ 4. One-time consolidate (~120s, ~$0.12) ------
+aws glue start-job-run --job-name "$CONSOLIDATE_JOB" --region us-east-1
+
+# ------ 5. Run the benchmark (~140s, ~$0.17) ------
+aws glue start-job-run --job-name "$BENCH_JOB" --region us-east-1
+
+# Poll for status:
+aws glue get-job-run --job-name "$BENCH_JOB" --run-id &lt;id&gt; --region us-east-1 \
+  --query "JobRun.{State:JobRunState,ExecTime:ExecutionTime,DPU:DPUSeconds}" \
+  --output json
+
+# ------ 6. Pull the summary JSON ------
+aws s3 cp "s3://$RESULTS_BUCKET/taxi-bench/benchmark_summary_dir/part-00000" ./bench.json
+cat bench.json | jq '.timing, .native_backend'
+
+# ------ 7. Tear down (IMPORTANT - avoid ongoing cost) ------
+terraform destroy -auto-approve
+
+# Confirm nothing left:
+aws glue list-jobs --region us-east-1 --query "JobNames[?starts_with(@, 'sparkrules')]"
+# Expected: []</code></pre>
+          </div>
+
+          <div class="alert alert-warn mt-6">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+              <strong class="block mb-1">Always run <code>terraform destroy</code> when done.</strong>
+              Glue charges per DPU-second. Leaving resources provisioned won't charge you for idle time, but leftover S3 storage and job configurations still show up in your account. Clean teardown keeps your environment tidy and auditable.
+            </div>
+          </div>
+        </div>
+
+        <!-- EXPECTED OUTPUT -->
+        <div id="expected">
+          <span class="section-kicker">What to expect</span>
+          <h2 class="text-3xl font-bold mb-6">Expected output</h2>
+          <p class="text-lg text-slate-600 mb-6">
+            From a clean run on 10 × G.1X workers. This is the actual <code>bench.json</code> from run <code>jr_428c3052...</code>:
+          </p>
+
+          <div class="code-wrapper">
+            <button class="copy-btn" data-copy="expected-json">Copy</button>
+            <pre class="language-json"><code id="expected-json">{
+  "job_name": "sparkrules-bench-dev-benchmark",
+  "timestamp_utc": "2026-05-06T03:22:37.423119+00:00",
+  "rows_scored": 79479946,
+  "rows_limit_applied": 0,
+  "num_partitions": 80,
+  "rulepack_summary": {
+    "total_rules": 30,
+    "sql_pushdown": 30,
+    "alpha_shared": 0,
+    "python_fallback": 0
+  },
+  "timing": {
+    "read_elapsed_s": 1.648,
+    "scoring_elapsed_s": 24.252,
+    "write_elapsed_s": 36.906,
+    "rows_per_sec": 3277231,
+    "api_used": "apply_with_counts"
+  },
+  "native_backend": {
+    "available": true,
+    "version": "0.1.0",
+    "error": null
+  },
+  "sparkrules_version": "1.2.0"
+}</code></pre>
+          </div>
+
+          <h3 class="text-xl font-bold mt-8 mb-4">Top fire counts you should see</h3>
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <table class="benchmark-table">
+              <thead>
+                <tr><th>Rule</th><th class="num">Expected fires</th><th class="num">% of 79.5M</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>r_r21_vendor_vts</td><td class="num">59,715,347</td><td class="num">75.1%</td></tr>
+                <tr><td>r_r29_solo_rider</td><td class="num">56,456,162</td><td class="num">71.0%</td></tr>
+                <tr><td>r_r19_weekend_trip</td><td class="num">21,932,367</td><td class="num">27.6%</td></tr>
+                <tr><td>r_r27_medium_trip</td><td class="num">21,842,876</td><td class="num">27.5%</td></tr>
+                <tr><td>r_r20_vendor_cmt</td><td class="num">19,753,632</td><td class="num">24.9%</td></tr>
+                <tr><td>r_r17_rush_hour_pm</td><td class="num">16,070,153</td><td class="num">20.2%</td></tr>
+                <tr><td>r_r16_rush_hour_am</td><td class="num">8,528,630</td><td class="num">10.7%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- COST -->
+        <div id="cost-breakdown">
+          <span class="section-kicker">What it costs</span>
+          <h2 class="text-3xl font-bold mb-6">Cost breakdown</h2>
+          <p class="text-lg text-slate-600 mb-6">
+            On-demand US East (N. Virginia) pricing at G.1X = $0.44/DPU-hour.
+          </p>
+
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <table class="benchmark-table">
+              <thead>
+                <tr><th>Step</th><th class="num">DPU-sec</th><th class="num">Cost</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Staging script (local + S3 PUTs)</td><td class="num">n/a</td><td class="num">&lt; $0.001</td></tr>
+                <tr><td><code>terraform apply</code> (15 resources)</td><td class="num">n/a</td><td class="num">$0</td></tr>
+                <tr><td>Consolidate job (10 workers × 119s)</td><td class="num">~1,200</td><td class="num">~$0.15</td></tr>
+                <tr class="highlight-row"><td><strong>Benchmark run (10 workers × 139s)</strong></td><td class="num">1,394</td><td class="num">$0.17</td></tr>
+                <tr><td>S3 storage (2 GB × 1 day)</td><td class="num">n/a</td><td class="num">~$0.002</td></tr>
+                <tr><td>S3 requests (~200 PUTs)</td><td class="num">n/a</td><td class="num">~$0.001</td></tr>
+                <tr><td>Data transfer</td><td class="num">n/a</td><td class="num">$0 (same region)</td></tr>
+                <tr><td><code>terraform destroy</code></td><td class="num">n/a</td><td class="num">$0</td></tr>
+                <tr class="highlight-row"><td><strong>Total</strong></td><td class="num">-</td><td class="num"><strong>~$0.33</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-xl font-bold mt-8 mb-3">Scaling guidance</h3>
+          <ul class="space-y-2 text-slate-700">
+            <li>• 25 workers: $0.43 per full benchmark (~3× faster)</li>
+            <li>• 50 workers: $0.86 per full benchmark (~5× faster)</li>
+            <li>• G.2X workers double the cost and typically double the speed</li>
+          </ul>
+        </div>
+
+        <!-- TROUBLESHOOTING -->
+        <div id="troubleshooting">
+          <span class="section-kicker">Issues & fixes</span>
+          <h2 class="text-3xl font-bold mb-6">Troubleshooting</h2>
+
+          <div class="space-y-4">
+            <details class="bg-white border border-slate-200 rounded-xl p-5 group">
+              <summary class="font-semibold cursor-pointer flex items-center justify-between">
+                <span>"LAUNCH ERROR | No script provided"</span>
+                <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </summary>
+              <div class="mt-4 text-sm text-slate-600">
+                Empty-string <code>--additional-python-modules</code> breaks Glue's arg parser. Make sure <code>terraform.tfvars</code> uses a non-empty value. If you must suppress python modules, omit the flag entirely rather than setting <code>""</code>.
+              </div>
+            </details>
+
+            <details class="bg-white border border-slate-200 rounded-xl p-5 group">
+              <summary class="font-semibold cursor-pointer flex items-center justify-between">
+                <span>Adding the experimental <code>sparkrules-native</code> scorer on Glue</span>
+                <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </summary>
+              <div class="mt-4 text-sm text-slate-600">
+                <code>sparkrules-native</code> is not on PyPI, so <code>--additional-python-modules</code> cannot install it. Build the Linux wheel locally with <code>maturin build --release</code>, upload it to S3, and reference via:
+                <pre class="mt-2 text-xs">--extra-py-files s3://.../sparkrules_native-0.1.0-cp311-abi3-manylinux_2_34_x86_64.whl</pre>
+                Tier-1 JSON FFI measures ~1.1-1.3x over the Python local scorer today. Cluster rule evaluation still rides Catalyst - not a Spark executor path.
+              </div>
+            </details>
+
+            <details class="bg-white border border-slate-200 rounded-xl p-5 group">
+              <summary class="font-semibold cursor-pointer flex items-center justify-between">
+                <span>Schema mismatch between months</span>
+                <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </summary>
+              <div class="mt-4 text-sm text-slate-600">
+                Caught by the consolidate job. Symptoms: <code>CANNOT_MERGE_SCHEMAS</code> or <code>column [VendorID], physicalType: INT32, logicalType: bigint</code>. The consolidate job normalizes all 24 months to a single schema. Run it once and point the benchmark at <code>input/yellow_consolidated/</code>.
+              </div>
+            </details>
+
+            <details class="bg-white border border-slate-200 rounded-xl p-5 group">
+              <summary class="font-semibold cursor-pointer flex items-center justify-between">
+                <span>NYC TLC bucket 403 AccessDenied</span>
+                <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </summary>
+              <div class="mt-4 text-sm text-slate-600">
+                The legacy <code>s3://nyc-tlc/</code> bucket has been locked down. Use the CloudFront URL <code>https://d37ci6vzurychx.cloudfront.net/trip-data/</code> instead. Our staging script uses this.
+              </div>
+            </details>
+
+            <details class="bg-white border border-slate-200 rounded-xl p-5 group">
+              <summary class="font-semibold cursor-pointer flex items-center justify-between">
+                <span>Terraform destroy leaves orphaned resources</span>
+                <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </summary>
+              <div class="mt-4 text-sm text-slate-600">
+                <code>force_destroy = true</code> in the bucket block handles this. If you hit stragglers:
+                <pre class="mt-2 text-xs">aws s3 rm s3://sparkrules-bench-dev-artifacts-YOURACCOUNTID --recursive
+aws s3 rm s3://sparkrules-bench-dev-results-YOURACCOUNTID --recursive
+aws s3 rb s3://sparkrules-bench-dev-artifacts-YOURACCOUNTID
+aws s3 rb s3://sparkrules-bench-dev-results-YOURACCOUNTID</pre>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- CHECKLIST -->
+        <div id="checklist">
+          <span class="section-kicker">Verify</span>
+          <h2 class="text-3xl font-bold mb-6">Files checklist</h2>
+          <p class="text-lg text-slate-600 mb-6">
+            If you're reproducing from scratch, you need these seven files in this structure:
+          </p>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+<pre class="file-tree"><span class="dir">deploy/aws-glue/</span>
+├── <span class="dir">terraform/</span>
+│   ├── <span class="file">main.tf</span>                          <span class="comment"># Step 2</span>
+│   ├── <span class="file">variables.tf</span>                     <span class="comment"># Step 2</span>
+│   ├── <span class="file">outputs.tf</span>                       <span class="comment"># Step 2</span>
+│   └── <span class="file">terraform.tfvars</span>                 <span class="comment"># Step 2</span>
+└── <span class="dir">glue_job/</span>
+    ├── <span class="file">benchmark_taxi_rules.py</span>          <span class="comment"># Step 3</span>
+    ├── <span class="file">consolidate_taxi_input.py</span>        <span class="comment"># Step 3</span>
+    └── <span class="file">taxi_rules_30.drl</span>                <span class="comment"># Step 4</span>
+<span class="file">stage_taxi_to_s3.py</span>                      <span class="comment"># Step 1</span></pre>
+          </div>
+
+          <div class="alert alert-success">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <div>
+              <strong class="block mb-1">All seven files are copy-pasteable from this guide.</strong>
+              No hidden configuration, no private S3 buckets, no internal packages. If you can click the copy buttons, you have everything.
+            </div>
+          </div>
+        </div>
+
+        <!-- LICENSE -->
+        <div id="license">
+          <span class="section-kicker">Legal</span>
+          <h2 class="text-3xl font-bold mb-6">Licensing</h2>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="prereq-card">
+              <div class="font-bold mb-2">Code in this guide</div>
+              <div class="text-sm text-slate-600">Apache 2.0 (same as sparkrules)</div>
+            </div>
+            <div class="prereq-card">
+              <div class="font-bold mb-2">NYC TLC data</div>
+              <div class="text-sm text-slate-600">Public domain</div>
+            </div>
+            <div class="prereq-card">
+              <div class="font-bold mb-2">sparkrules</div>
+              <div class="text-sm text-slate-600">Apache 2.0</div>
+              <a href="https://github.com/vaquarkhan/sparkrules" class="text-indigo-600 text-xs font-semibold hover:underline">github.com/vaquarkhan/sparkrules</a>
+            </div>
+            <div class="prereq-card">
+              <div class="font-bold mb-2">sparkrules-native <span class="text-xs badge badge-warn ml-1">experimental</span></div>
+              <div class="text-sm text-slate-600">Apache 2.0 · not on PyPI</div>
+              <a href="https://github.com/vaquarkhan/sparkrules/tree/main/sparkrules_native" class="text-indigo-600 text-xs font-semibold hover:underline">Build locally · <code>sparkrules_native/</code></a>
+            </div>
+          </div>
+
+          <h3 class="text-xl font-bold mt-8 mb-3">PyPI packages</h3>
+          <div class="space-y-2">
+            <div class="bg-slate-900 text-white rounded-lg p-4 font-mono text-sm flex items-center justify-between">
+              <span>pip install sparkrules==1.2.0</span>
+              <a href="https://pypi.org/project/sparkrules/" class="text-indigo-300 text-xs hover:text-white">View on PyPI →</a>
+            </div>
+            <div class="bg-slate-900 text-white rounded-lg p-4 font-mono text-xs text-slate-400 border border-amber-500/30">
+              <div class="text-amber-400 text-xs uppercase tracking-wider mb-1"># Not published on PyPI yet - build locally or use CI artifacts</div>
+              <div>cd sparkrules_native &amp;&amp; maturin develop --release</div>
+            </div>
+          </div>
+          <p class="text-sm text-slate-500 mt-3">For Glue / Databricks clusters: upload a locally built Linux wheel to S3 and reference it via <code>--extra-py-files</code>. See <code>docs/NATIVE_TIER1.md</code>.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <h2 class="text-4xl font-bold mb-6">Ready to score your first billion rows?</h2>
+    <p class="text-xl text-indigo-100 mb-8">7 files, 25 minutes, $0.45 of AWS spend. Reproducible on any Spark 3.5+ cluster.</p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="https://github.com/vaquarkhan/sparkrules" class="btn-ghost">View on GitHub</a>
+      <a href="benchmark.html" class="btn-ghost">See full benchmark</a>
+      <a href="https://pypi.org/project/sparkrules/" class="bg-white text-indigo-700 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition">
+        pip install sparkrules →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- RUST KERNEL GUIDE CALLOUT -->
+<section class="py-20 bg-slate-900 text-white">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="grid md:grid-cols-3 gap-8 items-center">
+      <div class="md:col-span-2">
+        <span class="section-kicker text-amber-300">For AI Coding Agents · Cursor · Kiro · Claude Code</span>
+        <h2 class="text-3xl font-bold mb-4 mt-2">Help land the Rust native kernel</h2>
+        <p class="text-slate-300 mb-4">
+          Honest state: <code class="bg-slate-800 px-2 py-0.5 rounded">sparkrules_native</code> is a starter PyO3 crate with a JSON-FFI Tier-1 interpreter. Measured roughly 1.1-1.3x over the Python local scorer today - not the 10-50x story that would justify the marketing weight. The scaffolding exists; a real columnar batch scorer is the open contribution.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md"
+             class="inline-flex items-center gap-2 bg-amber-400 text-slate-900 px-5 py-3 rounded-lg font-semibold hover:bg-amber-300 transition">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Open examples/native
+          </a>
+          <a href="https://github.com/vaquarkhan/sparkrules/tree/main/sparkrules_native"
+             class="inline-flex items-center gap-2 border border-white/30 px-5 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
+            Browse the crate
+          </a>
+          <a href="https://github.com/vaquarkhan/sparkrules/blob/main/docs/PENDING_NON_BLOCKING.md"
+             class="inline-flex items-center gap-2 border border-white/30 px-5 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
+            Backlog status
+          </a>
+        </div>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div class="text-xs uppercase tracking-wider text-amber-300 mb-3">Where we are · where to go</div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/30 border border-emerald-400/40 flex items-center justify-center text-xs font-black">NOW</div>
+            <div>
+              <div class="font-semibold text-sm">Tier-1 scalar · JSON FFI</div>
+              <div class="text-xs text-slate-400">~1.1-1.3x measured · not on PyPI</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-xs font-black">NEXT</div>
+            <div>
+              <div class="font-semibold text-sm">Columnar batch scorer</div>
+              <div class="text-xs text-slate-400">target 5-15M rps · community contribution</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/30 border border-amber-400/40 flex items-center justify-center text-xs font-black">GOAL</div>
+            <div>
+              <div class="font-semibold text-sm">SIMD + autovec</div>
+              <div class="text-xs text-slate-400">aspirational · blocked on Tier-2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-slate-900 text-slate-400 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+          <span class="font-bold text-lg text-white">sparkrules</span>
+        </div>
+        <p class="text-sm">Apache 2.0 open source. Built for Spark.</p>
+      </div>
+      <div class="flex gap-8 text-sm">
+        <a href="https://github.com/vaquarkhan/sparkrules" class="hover:text-white">GitHub</a>
+        <a href="https://pypi.org/project/sparkrules/" class="hover:text-white">PyPI</a>
+        <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="hover:text-white">Rust Guide</a>
+        <a href="index.html" class="hover:text-white">Home</a>
+        <a href="benchmark.html" class="hover:text-white">Benchmark</a>
+        <a href="compare.html" class="hover:text-white">Compare</a>
+      </div>
+    </div>
+    <div class="mt-8 pt-8 border-t border-slate-800 text-xs text-center">
+      Reproducible in 25 min for $0.45 · AWS Glue 5.0 · us-east-1 · Apache 2.0
+    </div>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="assets/reproduce.js"></script>
+</body>
+</html>
