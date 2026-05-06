@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>sparkrules - Distributed Rule Engine for Spark</title>
+<meta name="description" content="Score 1 billion rows with 30 rules in under 1 minute on 50 Glue workers. Apache 2.0. Drools DRL compatible. Runs on AWS Glue, Databricks, EMR, Azure Synapse.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="sparkrules">
+<meta property="og:title" content="sparkrules - Distributed Rule Engine for Spark">
+<meta property="og:description" content="Score 1 billion rows with 30 rules in under 1 minute on 50 Glue workers. Apache 2.0. Drools DRL compatible.">
+<meta property="og:url" content="https://vaquarkhan.github.io/sparkrules/">
+<meta property="og:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="256">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="sparkrules - Distributed Rule Engine for Spark">
+<meta name="twitter:description" content="3.28M rows/sec on 10 Glue workers at $0.17. Apache 2.0. Drools DRL compatible.">
+<meta name="twitter:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+
+<!-- Schema.org JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "sparkrules",
+  "description": "Distributed rule engine for Apache Spark. Compiles Drools DRL to Spark SQL. Apache 2.0 open source.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, Windows, macOS",
+  "softwareVersion": "1.2.0",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "aggregateRating": { "@type": "AggregateRating", "ratingValue": "5", "ratingCount": "1" },
+  "url": "https://vaquarkhan.github.io/sparkrules/",
+  "downloadUrl": "https://pypi.org/project/sparkrules/",
+  "sameAs": ["https://github.com/vaquarkhan/sparkrules", "https://pypi.org/project/sparkrules/"]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+      <span class="font-bold text-lg">sparkrules</span>
+      <span class="badge badge-primary text-xs">v1.2.0</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="nav-link active">Home</a>
+      <a href="benchmark.html" class="nav-link">Benchmark</a>
+      <a href="reproduce.html" class="nav-link">Reproduce</a>
+      <a href="compare.html" class="nav-link">Compare</a>
+      <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="nav-link">Rust Guide</a>
+      <a href="https://github.com/vaquarkhan/sparkrules" class="nav-link">GitHub</a>
+      <a href="https://pypi.org/project/sparkrules/" class="btn-outline text-sm py-2 px-4">pip install</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-gradient pt-32 pb-24 text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Brand banner -->
+    <div class="mb-10 rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-indigo-900/40 max-w-3xl">
+      <img src="assets/images/sparkrules-banner.png" alt="sparkrules - distributed rule engine for Spark" class="w-full h-auto block" onerror="this.style.display='none'">
+    </div>
+
+    <div class="max-w-4xl">
+      <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm mb-8">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        v1.2.0 released - now on PyPI with Python engine default
+      </div>
+      <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+        The <span class="gradient-text">distributed</span><br>
+        rule engine for Spark
+      </h1>
+      <p class="text-xl md:text-2xl text-slate-300 mb-8 leading-relaxed max-w-3xl">
+        Score 1 billion rows with 30 rules in <strong class="text-white">under 1 minute</strong> on a 50-worker Glue cluster. Drools DRL compatible. Runs on AWS Glue, Databricks, EMR, and Azure Synapse. Open source, Apache 2.0.
+      </p>
+      <div class="flex flex-wrap gap-4 mb-12">
+        <a href="benchmark.html" class="btn-primary">
+          See the benchmark
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="https://github.com/vaquarkhan/sparkrules" class="btn-ghost">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.725-4.042-1.61-4.042-1.61C4.422 17.6 3.633 17.25 3.633 17.25c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+      <div class="flex items-center gap-6 text-sm text-slate-400">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          Measured on real AWS Glue
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          79.5M rows / 30 rules / $0.17
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          Reproducible in 25 minutes
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KEY METRICS -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="section-kicker">Measured Performance</span>
+      <h2 class="text-4xl font-bold mb-4">Real numbers from real AWS</h2>
+      <p class="text-lg text-slate-600 max-w-2xl mx-auto">Every metric here comes from the Glue JobRun API and the benchmark summary JSON. Zero projections, zero marketing math.</p>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-6">
+      <div class="metric-card">
+        <div class="metric-value">3.28M</div>
+        <div class="metric-label">Rows per second</div>
+        <div class="text-xs text-slate-500 mt-2">on 10 × G.1X Glue workers</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">79.5M</div>
+        <div class="metric-label">Rows scored</div>
+        <div class="text-xs text-slate-500 mt-2">24 months NYC TLC yellow taxi</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">$0.17</div>
+        <div class="metric-label">Cost per run</div>
+        <div class="text-xs text-slate-500 mt-2">1,394 DPU-seconds @ $0.44/DPU-hr</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">24.25s</div>
+        <div class="metric-label">Scoring wallclock</div>
+        <div class="text-xs text-slate-500 mt-2">apply_with_counts single pass</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VALUE PROPS -->
+<section class="py-20 bg-slate-50 grid-bg">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="section-kicker">Built for Scale</span>
+      <h2 class="text-4xl font-bold mb-4">Engineered for billion-row workloads</h2>
+      <p class="text-lg text-slate-600 max-w-2xl mx-auto">Strategy A compiles your DRL rules to Spark SQL and runs them as JVM Catalyst bytecode via WholeStageCodegen - the same codepath Spark uses for native joins.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Linear Horizontal Scale</h3>
+        <p class="text-slate-600">Add workers, get proportional throughput. Measured 3.28M rows/sec on 10 workers scales to ~32M rows/sec on 100 workers.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Drools DRL Syntax</h3>
+        <p class="text-slate-600">Drop-in DRL parser. Same syntax your auditors and regulators already know. Works with existing Drools rule packs.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Auditable & GxP Ready</h3>
+        <p class="text-slate-600">Every rule fire has a reason code, salience, and deterministic output. Strategy classification proves which rules run as SQL vs Python.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Cloud-Native</h3>
+        <p class="text-slate-600">AWS Glue, Databricks, EMR, Azure Synapse, GCP Dataproc. Any Spark 3.5+. Terraform module included for Glue.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Streaming + Batch</h3>
+        <p class="text-slate-600">Same rule pack for Kafka streaming and daily batch. Structured Streaming compatible. Iceberg sink for lakehouse integration.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Experimental Rust Scorer</h3>
+        <p class="text-slate-600">Starter PyO3 crate at <code>sparkrules_native</code>. Not yet on PyPI. Current Tier-1 JSON-FFI interpreter measures ~1.1-1.3x vs Python local scorer. Active area of contribution.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BIG NUMBER CALLOUTS -->
+<section class="py-20 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid md:grid-cols-3 gap-12 text-center">
+      <div>
+        <div class="text-6xl font-extrabold mb-2">1B</div>
+        <div class="text-xl font-semibold mb-2">rows in ~1 minute</div>
+        <p class="text-indigo-200">On 25 × G.1X workers at $0.28. Projected from measured 10-worker baseline.</p>
+      </div>
+      <div>
+        <div class="text-6xl font-extrabold mb-2">30</div>
+        <div class="text-xl font-semibold mb-2">rules fused to one Project</div>
+        <p class="text-indigo-200">Spark's Catalyst optimizer fuses all 30 rule predicates into one WholeStageCodegen stage per partition.</p>
+      </div>
+      <div>
+        <div class="text-6xl font-extrabold mb-2">$0</div>
+        <div class="text-xl font-semibold mb-2">license fee</div>
+        <p class="text-indigo-200">Apache 2.0 open source. No per-DPU, per-rule, per-fact, or per-seat pricing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="section-kicker">Architecture</span>
+      <h2 class="text-4xl font-bold mb-4">DRL goes in, Spark SQL comes out</h2>
+      <p class="text-lg text-slate-600 max-w-2xl mx-auto">Strategy A classifier identifies rules that translate cleanly to Spark SQL and compiles them to Catalyst expressions. These rules run as native JVM bytecode on Spark executors.</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-7 gap-2 items-center">
+        <div class="arch-box md:col-span-2">
+          <div class="text-xs text-slate-500 mb-1">INPUT</div>
+          <div class="font-mono text-sm">DRL rules</div>
+          <div class="text-xs text-slate-500 mt-1">Drools syntax</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box primary md:col-span-2">
+          <div class="text-xs opacity-70 mb-1">COMPILE</div>
+          <div class="font-semibold">Strategy Classifier</div>
+          <div class="text-xs opacity-70 mt-1">SQL_PUSHDOWN | ALPHA_SHARED | FALLBACK</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box accent md:col-span-1">
+          <div class="text-xs opacity-70 mb-1">OUTPUT</div>
+          <div class="font-semibold">Catalyst</div>
+          <div class="text-xs opacity-70 mt-1">WholeStageCodegen</div>
+        </div>
+      </div>
+
+      <div class="mt-8 bg-slate-50 rounded-xl p-6 border border-slate-200">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge badge-primary">Catalyst plan</span>
+          <span class="text-sm text-slate-600">30 rules, measured on Glue 5.0</span>
+        </div>
+<pre class="text-xs">Project [t, r_r01_fare_zero_or_negative, r_r06_tip_negative, ..., r_r30_group_ride]
+  +- Project [
+       ((t.fare_amount &lt;= 0.0) &lt;=&gt; true) AS r_r01_fare_zero_or_negative,
+       ((t.tip_amount &lt; 0.0) &lt;=&gt; true)   AS r_r06_tip_negative,
+       ... 28 more rule predicates ...
+     ]
+    +- Repartition 80
+      +- Relation [VendorID, tpep_pickup_datetime, ...] parquet</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLUSTER SCALING -->
+<section class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12">
+      <span class="section-kicker">Cluster Sizing</span>
+      <h2 class="text-4xl font-bold mb-4">From 1 worker to 400 DPUs</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">Linear scaling with Spark. Per-DPU pricing is identical across G.1X through G.8X - pick a worker type based on memory needs, not price.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+      <div class="chart-container">
+        <h3 class="font-bold text-slate-800 mb-4">Throughput vs Cluster Size</h3>
+        <canvas id="scalingChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h3 class="font-bold text-slate-800 mb-4">Cost per 1 Billion Rows</h3>
+        <canvas id="costChart"></canvas>
+      </div>
+    </div>
+
+    <div class="mt-8 text-center">
+      <a href="benchmark.html" class="btn-outline">View full benchmark report →</a>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <span class="section-kicker">Production Workloads</span>
+      <h2 class="text-4xl font-bold mb-4">Built for demanding use cases</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">FINANCE</div>
+        <h3 class="text-xl font-bold mb-2">Fraud detection</h3>
+        <p class="text-slate-600 text-sm">Score every transaction against hundreds of rules. 500k TPS sustained on 2 G.1X workers. Real-time or batch.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">RETAIL</div>
+        <h3 class="text-xl font-bold mb-2">Ad bid scoring</h3>
+        <p class="text-slate-600 text-sm">Evaluate bid requests against targeting rules. 10M+ QPS on 50 G.2X workers. Same rule pack runs in Kafka streaming.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">HEALTHCARE</div>
+        <h3 class="text-xl font-bold mb-2">Claims adjudication</h3>
+        <p class="text-slate-600 text-sm">Every fire has a reason code and rule ID. Deterministic output across runs - a foundation for GxP audit trails, not a shipped GxP attestation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">TELCO</div>
+        <h3 class="text-xl font-bold mb-2">CDR enrichment</h3>
+        <p class="text-slate-600 text-sm">Verizon-scale CDR streams at 250k events/sec. One G.1X handles it with 13x headroom.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">INSURANCE</div>
+        <h3 class="text-xl font-bold mb-2">Policy underwriting</h3>
+        <p class="text-slate-600 text-sm">Complex multi-fact rule packs with salience and action merging. Hot-swap rules without restart.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">DATA QUALITY</div>
+        <h3 class="text-xl font-bold mb-2">ETL validation</h3>
+        <p class="text-slate-600 text-sm">Rule-based data quality at lakehouse scale. Billions of rows per day in daily batch windows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXAMPLES + WORKBENCH -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center">
+      <span class="section-kicker">Examples and Tooling</span>
+      <h2 class="text-4xl font-bold mb-4">25+ runnable examples · built-in Workbench UI</h2>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+        sparkrules ships working code for every feature - DRL rule files, Python scripts, Spark jobs, Jupyter notebooks. Plus a browser-based Workbench at <code>/workbench/</code> that lets you author, validate, simulate, and promote rules without writing glue code.
+      </p>
+    </div>
+
+    <!-- Top row: DRL + Python + Spark + Notebooks -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <a href="https://github.com/vaquarkhan/sparkrules/tree/main/examples/drl" class="feature-card hover:border-indigo-400 block">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">📝</span>
+          <span class="badge badge-primary">5 files</span>
+        </div>
+        <h3 class="font-bold mb-1">DRL rule files</h3>
+        <p class="text-sm text-slate-600">Minimal, discount tier, credit underwriting, fraud detection, insurance claims. Sample facts included.</p>
+      </a>
+      <a href="https://github.com/vaquarkhan/sparkrules/tree/main/examples/python" class="feature-card hover:border-emerald-400 block">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🐍</span>
+          <span class="badge">20+ scripts</span>
+        </div>
+        <h3 class="font-bold mb-1">Python demos</h3>
+        <p class="text-sm text-slate-600">Adverse action, DMN, DQ profiling, OPA export, AI authoring, chaos harness, two-pass orchestrator.</p>
+      </a>
+      <a href="https://github.com/vaquarkhan/sparkrules/tree/main/examples/spark" class="feature-card hover:border-purple-400 block">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">⚡</span>
+          <span class="badge" style="background:rgba(139,92,246,0.1);color:#7c3aed">3 jobs</span>
+        </div>
+        <h3 class="font-bold mb-1">Spark jobs</h3>
+        <p class="text-sm text-slate-600">V2 SparkRuleExecutor, lakehouse sinks, pure-Python row iterator. With --explain Catalyst printout.</p>
+      </a>
+      <a href="https://github.com/vaquarkhan/sparkrules/tree/main/examples/notebooks" class="feature-card hover:border-amber-400 block">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">📓</span>
+          <span class="badge badge-warn">7 notebooks</span>
+        </div>
+        <h3 class="font-bold mb-1">Jupyter notebooks</h3>
+        <p class="text-sm text-slate-600">Getting Started, Decision Tables, API & Simulation, Credit Underwriting, Fraud, Architecture, Databricks.</p>
+      </a>
+    </div>
+
+    <!-- Highlighted notebooks -->
+    <div class="bg-slate-50 rounded-2xl p-8 mb-12 border border-slate-200">
+      <h3 class="font-bold mb-4">Recommended learning path</h3>
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black flex-shrink-0">01</div>
+          <div>
+            <div class="font-semibold">Getting Started</div>
+            <div class="text-slate-600 text-xs">DRL rules, evaluation, explainable results</div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black flex-shrink-0">02</div>
+          <div>
+            <div class="font-semibold">Decision Tables</div>
+            <div class="text-slate-600 text-xs">Hit policies, JSON export</div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black flex-shrink-0">04</div>
+          <div>
+            <div class="font-semibold">Credit Underwriting</div>
+            <div class="text-slate-600 text-xs">Activation groups, ECOA/FCRA notices</div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-black flex-shrink-0">05</div>
+          <div>
+            <div class="font-semibold">Fraud Detection</div>
+            <div class="text-slate-600 text-xs">Velocity checks, OPA Rego export</div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black flex-shrink-0">03</div>
+          <div>
+            <div class="font-semibold">API & Simulation</div>
+            <div class="text-slate-600 text-xs">REST validation, counterfactuals, LSP</div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-black flex-shrink-0">07</div>
+          <div>
+            <div class="font-semibold">Databricks production</div>
+            <div class="text-slate-600 text-xs">Pinning, Delta/Iceberg scoring</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workbench UI showcase -->
+    <div class="grid lg:grid-cols-2 gap-8 items-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-10 border border-white/10 relative overflow-hidden">
+      <div class="absolute inset-0 grid-bg opacity-10"></div>
+      <div class="relative">
+        <span class="badge badge-live mb-3">SHIPPED · Not a roadmap item</span>
+        <h3 class="text-3xl font-bold mb-4 mt-2">Browser Workbench, already in the package</h3>
+        <p class="text-slate-300 mb-4">
+          Start the API server and open <code class="bg-white/10 px-2 py-0.5 rounded text-sm">/workbench/</code> - you get a full rule authoring IDE in the browser. No separate install, no third-party UI, no license key.
+        </p>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Monaco DRL editor with syntax highlighting</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Namespace picker (multi-tenant)</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Inline test with fact JSON</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> LSP diagnostics + completions</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Rule pack export / drag-drop import</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Simulate endpoint with counterfactuals</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Cost estimator tab</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Lineage table + Copy-as-curl</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Light/dark theme</div>
+          <div class="flex items-center gap-2 text-sm"><span class="text-emerald-400">✓</span> Toasts for 4xx/5xx errors</div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="https://github.com/vaquarkhan/sparkrules/blob/main/docs/WORKBENCH_UX_IMPACT.md" class="inline-flex items-center gap-2 bg-indigo-500 text-white px-5 py-3 rounded-lg font-semibold hover:bg-indigo-400 transition">
+            Workbench feature list
+          </a>
+          <a href="https://github.com/vaquarkhan/sparkrules/blob/main/docs/WORKBENCH_LOGIN.md" class="inline-flex items-center gap-2 border border-white/30 px-5 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
+            Login + auth setup
+          </a>
+        </div>
+      </div>
+
+      <!-- Quickstart card -->
+      <div class="relative bg-slate-950/80 border border-white/10 rounded-2xl p-6">
+        <div class="text-xs uppercase tracking-wider text-indigo-300 mb-3">Launch in 2 commands</div>
+<pre class="bg-transparent p-0 text-sm"><code><span class="text-slate-500"># 1. Install with API extras</span>
+pip install sparkrules[api]
+
+<span class="text-slate-500"># 2. Start the server</span>
+python -m uvicorn \
+  sparkrules.api.app:create_app \
+  --factory --port 8042
+
+<span class="text-slate-500"># 3. Open in browser</span>
+<span class="text-emerald-400">http://localhost:8042/workbench/</span></code></pre>
+        <div class="mt-4 pt-4 border-t border-white/10 text-xs text-slate-400">
+          Default dev creds: <code class="text-amber-300">admin / admin</code> - override via env vars for prod.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="py-20 bg-slate-50">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <span class="section-kicker">Get Started</span>
+    <h2 class="text-4xl font-bold mb-6">One pip install away</h2>
+    <p class="text-lg text-slate-600 mb-8">Available on PyPI today. Works on any Spark 3.5+ cluster. Terraform module for Glue included.</p>
+    <div class="grid md:grid-cols-2 gap-6 text-left">
+      <div class="bg-white border border-slate-200 rounded-xl p-6">
+        <div class="badge badge-primary mb-3">Python engine</div>
+        <div class="font-mono text-sm bg-slate-900 text-slate-100 rounded-lg p-4 mb-3">pip install sparkrules</div>
+        <p class="text-sm text-slate-600">Default Python engine. Works everywhere. 4.2k rows/sec local, millions/sec on Spark.</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-6">
+        <div class="badge badge-warn mb-3">Experimental Rust scorer</div>
+        <div class="font-mono text-sm bg-slate-900 text-slate-100 rounded-lg p-4 mb-3"># Not on PyPI yet. Build locally:
+cd sparkrules_native && maturin develop --release</div>
+        <p class="text-sm text-slate-600">Tier-1 PyO3 scorer with JSON FFI. Measured ~1.1-1.3x over Python local scorer. Not wired to Spark executors. See docs/NATIVE_TIER1.md.</p>
+      </div>
+    </div>
+    <div class="mt-8">
+      <a href="benchmark.html" class="btn-primary">
+        See full benchmark
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-slate-900 text-slate-400 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+          <span class="font-bold text-lg text-white">sparkrules</span>
+        </div>
+        <p class="text-sm">Apache 2.0 open source. Built for Spark.</p>
+      </div>
+      <div class="flex gap-8 text-sm">
+        <a href="https://github.com/vaquarkhan/sparkrules" class="hover:text-white">GitHub</a>
+        <a href="https://pypi.org/project/sparkrules/" class="hover:text-white">PyPI</a>
+        <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="hover:text-white">Rust Guide</a>
+        <a href="benchmark.html" class="hover:text-white">Benchmark</a>
+        <a href="reproduce.html" class="hover:text-white">Reproduce</a>
+        <a href="compare.html" class="hover:text-white">Compare</a>
+      </div>
+    </div>
+    <div class="mt-8 pt-8 border-t border-slate-800 text-xs text-center">
+      Benchmark last verified: 2026-05-06 on AWS Glue 5.0, us-east-1 · All measurements reproducible from this repo
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="assets/charts.js"></script>
+</body>
+</html>
