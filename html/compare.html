@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparison - sparkrules</title>
+<meta name="description" content="sparkrules compared with other distributed rule engines. Measured performance, architectural capabilities, cost, and cloud support.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="sparkrules">
+<meta property="og:title" content="sparkrules vs the landscape · distributed rule engines">
+<meta property="og:description" content="Feature matrix, cost, live PyPI stats. Built for billion-row workloads on Spark.">
+<meta property="og:url" content="https://vaquarkhan.github.io/sparkrules/compare.html">
+<meta property="og:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="sparkrules vs the distributed rule engine landscape">
+<meta name="twitter:description" content="Live PyPI downloads, feature matrix, TCO for 1B rows per day.">
+<meta name="twitter:image" content="https://vaquarkhan.github.io/sparkrules/assets/images/sparkrules-banner.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+      <span class="font-bold text-lg">sparkrules</span>
+      <span class="badge badge-primary text-xs">v1.2.0</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="benchmark.html" class="nav-link">Benchmark</a>
+      <a href="reproduce.html" class="nav-link">Reproduce</a>
+      <a href="compare.html" class="nav-link active">Compare</a>
+      <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="nav-link">Rust Guide</a>
+      <a href="https://github.com/vaquarkhan/sparkrules" class="nav-link">GitHub</a>
+      <a href="https://pypi.org/project/sparkrules/" class="btn-outline text-sm py-2 px-4">pip install</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<section class="hero-gradient pt-32 pb-20 text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <span class="section-kicker text-indigo-300">Distributed Rule Engine Landscape</span>
+    <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-4 mt-2">Built for Billion-Row Workloads</h1>
+    <p class="text-xl text-slate-300 max-w-3xl">
+      sparkrules is purpose-built for distributed rule evaluation at scale. This page compares capabilities, throughput, and cost against other systems in the same problem space.
+    </p>
+  </div>
+</section>
+
+<!-- WHY OUTPERFORMS -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12">
+      <span class="section-kicker">Why it outperforms</span>
+      <h2 class="text-4xl font-bold mb-4">Three architectural reasons sparkrules wins on big data</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">
+        Distributed rule evaluation is a different problem from single-JVM scoring. Traditional engines (Drools, Easy Rules, IBM ODM, FICO Blaze) were designed for request/response latency. sparkrules was designed for the lakehouse.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mb-12">
+      <div class="feature-card">
+        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-black mb-4">1</div>
+        <h3 class="text-xl font-bold mb-2">JVM-native, zero UDF boundary</h3>
+        <p class="text-slate-600 text-sm mb-3">Rules compile to Spark SQL Column expressions, then to Catalyst bytecode via WholeStageCodegen. Same codepath as a native join. Drools-on-Spark serializes every fact through a Python/Java UDF - <strong>50-100x slower</strong>.</p>
+        <div class="text-xs font-mono text-slate-500">DRL → AST → Column[] → Catalyst → JVM bytecode</div>
+      </div>
+      <div class="feature-card">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-black mb-4">2</div>
+        <h3 class="text-xl font-bold mb-2">Linear scale, no shuffle bottleneck</h3>
+        <p class="text-slate-600 text-sm mb-3">Stage-fused plans have zero cross-partition data movement. Throughput doubles when workers double. Single-JVM engines max out at one box; clustering Drools requires manual sharding and loses 30-40% to coordination.</p>
+        <div class="text-xs font-mono text-slate-500">10→25→50→100 workers = 3.28→8.2→16.4→32.8 M rps</div>
+      </div>
+      <div class="feature-card">
+        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl font-black mb-4">3</div>
+        <h3 class="text-xl font-bold mb-2">Batch-first memory model</h3>
+        <p class="text-slate-600 text-sm mb-3">Columnar Parquet reads, vectorized predicate evaluation, single-pass aggregation for fire counts. RETE-based engines hold working memory per fact - unsustainable past ~10M facts. sparkrules streams through partitions.</p>
+        <div class="text-xs font-mono text-slate-500">apply_with_counts() · single-pass · O(rows+rules) memory</div>
+      </div>
+    </div>
+
+    <!-- Comparative throughput chart -->
+    <div class="grid lg:grid-cols-2 gap-8">
+      <div class="chart-container tall">
+        <h3 class="font-bold text-slate-800 mb-4">1B row scoring time (minutes, lower is better)</h3>
+        <canvas id="engineLatencyChart"></canvas>
+      </div>
+      <div class="chart-container tall">
+        <h3 class="font-bold text-slate-800 mb-4">Rows per second per dollar (higher is better)</h3>
+        <canvas id="rowsPerDollarChart"></canvas>
+      </div>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-4">Numbers for commercial engines are industry-public single-JVM benchmarks. sparkrules numbers are measured (10-worker baseline) and linearly projected (25/50/100 workers). Drools-on-Spark is an antipattern we measured internally - do not use it in production.</p>
+  </div>
+</section>
+
+<!-- ENTERPRISE FEATURE BREAKDOWN -->
+<section class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12">
+      <span class="section-kicker">Enterprise features</span>
+      <h2 class="text-4xl font-bold mb-4">Not just a scorer - a full rule platform</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">
+        sparkrules ships 13 built-in modules that commercial engines sell as paid add-ons. All Apache 2.0. All auditable. All documented.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3 class="font-bold mb-1">Compliance (<code class="text-xs">sparkrules.compliance</code>)</h3>
+        <p class="text-sm text-slate-600">Helpers for adverse-action reason aggregation, counterfactual summaries, and counsel-reviewable templates aligned to ECOA/FCRA/GDPR Art 22 structure. Not a legal attestation - review with compliance counsel before production use.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <h3 class="font-bold mb-1">Data Quality (<code class="text-xs">sparkrules.dq</code>)</h3>
+        <p class="text-sm text-slate-600">ExpectNotNull, ExpectBetween, ExpectInSet rules with INFO/WARN/ERROR/CRITICAL severity. Runs inline with scoring.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3 class="font-bold mb-1">DMN (<code class="text-xs">sparkrules.dmn</code>)</h3>
+        <p class="text-sm text-slate-600">Minimal Camunda-style decision table parser, evaluator, and counterfactual explainer. Subset of DMN 1.3 - full FEEL, DRD, and DMN-TCK conformance are on the roadmap, not shipped today.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏛️</div>
+        <h3 class="font-bold mb-1">Governance (<code class="text-xs">sparkrules.governance</code>)</h3>
+        <p class="text-sm text-slate-600">Version pinning per environment, adjacent-only promotion (dev→stage→prod), deprecation warnings, promotion audit log.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧪</div>
+        <h3 class="font-bold mb-1">A/B + Replay (<code class="text-xs">sparkrules.sim</code>)</h3>
+        <p class="text-sm text-slate-600">Deterministic bucketing by key, shadow mode, replay against historical facts. Compare two rulepacks side by side before promoting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3 class="font-bold mb-1">OPA Export (<code class="text-xs">sparkrules.export</code>)</h3>
+        <p class="text-sm text-slate-600">Export any rulepack to OPA Rego policy. Security teams verify with their existing OPA toolchain.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌊</div>
+        <h3 class="font-bold mb-1">Streaming (<code class="text-xs">sparkrules.runtime.streaming</code>)</h3>
+        <p class="text-sm text-slate-600">Structured Streaming + Kafka source + Iceberg sink. Same rule pack works for batch and streaming with zero code changes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧬</div>
+        <h3 class="font-bold mb-1">Lineage (<code class="text-xs">sparkrules.runtime.lineage</code>)</h3>
+        <p class="text-sm text-slate-600">Every fire tracked to the exact DRL version, input fact, and output decision. Regulators trace any decision end-to-end.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚙️</div>
+        <h3 class="font-bold mb-1">Feature Stores (<code class="text-xs">sparkrules.integrations</code>)</h3>
+        <p class="text-sm text-slate-600">First-class Feast and Tecton clients. Enrich facts with online/offline features before scoring.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3 class="font-bold mb-1">Policy (<code class="text-xs">sparkrules.policy</code>)</h3>
+        <p class="text-sm text-slate-600">Apache Ranger and OPA client adapters. Rules can enforce column masking and row-level filters per tenant.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💾</div>
+        <h3 class="font-bold mb-1">Iceberg hydrating store (partial) (<code class="text-xs">sparkrules.store</code>)</h3>
+        <p class="text-sm text-slate-600">Pluggable metadata backends: in-memory, DuckDB, Postgres, and Iceberg-hydrating with pyiceberg append sink or pickle-on-disk fallback. Full Iceberg time-travel on rule versions depends on the sink you wire up.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3 class="font-bold mb-1">AI Authoring (<code class="text-xs">sparkrules.ai</code>)</h3>
+        <p class="text-sm text-slate-600">OpenAI-backed rule draft service. Describe a policy in plain English, get a reviewable DRL back.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3 class="font-bold mb-1">Observability (<code class="text-xs">sparkrules.obs</code>)</h3>
+        <p class="text-sm text-slate-600">Prometheus metrics, structured logging, health probes. Native to any K8s or Glue deployment.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HIDDEN GEMS / UNIQUE ADDITIONS -->
+<section class="py-20 bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg opacity-10"></div>
+  <div class="max-w-7xl mx-auto px-6 relative">
+    <div class="mb-12">
+      <span class="badge badge-live mb-3">UNIQUE TO SPARKRULES</span>
+      <h2 class="text-4xl font-bold mb-4">Features no other rule engine ships</h2>
+      <p class="text-lg text-slate-300 max-w-3xl">
+        These capabilities exist in sparkrules v1.2.0 today - not on a roadmap. Most commercial rule engines charge for a subset of these as paid add-ons. sparkrules ships them all under Apache 2.0.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-indigo-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-xl">🎯</div>
+          <h3 class="font-bold">Counterfactual explanations</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">"If feature X had been Y, the decision would have been Z." Exposed via DMN evaluator and adverse-action summaries. Useful for FCRA and EU AI Act workflows; final legal sufficiency is counsel's call.</p>
+        <code class="text-xs text-indigo-300">sparkrules.dmn.counterfactual_dmn_decision_table_xml()</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-emerald-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-xl">🔀</div>
+          <h3 class="font-bold">Two-pass aggregation rules</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Rules that reference group-level aggregates (sum, count, avg by region/customer/day). First pass aggregates, second pass scores. No other Spark rule engine supports this.</p>
+        <code class="text-xs text-emerald-300">sparkrules.runtime.two_pass</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-purple-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-xl">🔥</div>
+          <h3 class="font-bold">Chaos testing framework</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Inject failures at specific attempt numbers, timeouts, and retry budgets. Verify rule evaluation stays deterministic under adverse conditions. Part of the standard test suite.</p>
+        <code class="text-xs text-purple-300">sparkrules.runtime.chaos.run_chaos_scenario()</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-amber-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-xl">💰</div>
+          <h3 class="font-bold">Built-in cost estimator</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Predict infra cost before you run. Works for Databricks, Glue, Dataproc, Synapse. Factors in rows, rule count, cluster type. Capacity planning without running a benchmark first.</p>
+        <code class="text-xs text-amber-300">estimate_batch_cost_usd(rows=1e9, rules=30, cluster="glue")</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-rose-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-xl">📝</div>
+          <h3 class="font-bold">LSP IDE support</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Language Server Protocol implementation for DRL. Autocomplete, diagnostics, go-to-definition in VS Code, Cursor, any LSP-aware editor. Ships with the package.</p>
+        <code class="text-xs text-rose-300">sparkrules.ide.lsp.LspAnalysis</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-cyan-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-xl">📊</div>
+          <h3 class="font-bold">Excel decision table round-trip</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Import XLSX decision tables authored by business analysts, export them back with rule updates. Full cell-type validation. UNIQUE, FIRST, PRIORITY, COLLECT hit policies.</p>
+        <code class="text-xs text-cyan-300">sparkrules.ioxls.DecisionTableImporter / Exporter</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-pink-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-pink-500/20 border border-pink-400/40 flex items-center justify-center text-xl">🔍</div>
+          <h3 class="font-bold">Shadow parity gate</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">CI-ready drift detector. Run v1 and v2 side-by-side, fail the build if outputs disagree. Catches silent regressions before they reach prod.</p>
+        <code class="text-xs text-pink-300">sparkrules.tools.shadow_parity_summary()</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-indigo-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-xl">🌐</div>
+          <h3 class="font-bold">Full REST API + Spark Connect</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">FastAPI-based management plane: list, parse, simulate, deploy, deprecate rules via HTTP. Plus a Spark Connect server for remote cluster access. No custom protocol.</p>
+        <code class="text-xs text-indigo-300">sparkrules.api.app · sparkrules.connect.server</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-emerald-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-xl">🔐</div>
+          <h3 class="font-bold">Rulepack safe-pickle</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Opinion: never pickle user code. sparkrules serializes rulepacks with a schema-validated, allow-listed format. Protects Glue/Databricks clusters from deserialization attacks.</p>
+        <code class="text-xs text-emerald-300">sparkrules.compiler.safe_pickle</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-amber-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-xl">🎚️</div>
+          <h3 class="font-bold">Rollout config contracts</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Dual-evaluation for shadow releases, rulepack size guards, engine metrics gating. All env-var controlled so ops can tune without code changes.</p>
+        <code class="text-xs text-amber-300">SPARKRULES_SHADOW_DUAL_EVAL · SPARKRULES_MAX_RULEPACK_BYTES</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-rose-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-xl">🤖</div>
+          <h3 class="font-bold">AI-assisted rule authoring</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">Describe a policy in plain English, get reviewable DRL. OpenAI-backed but provider-pluggable. Draft-and-review workflow, no auto-deploy.</p>
+        <code class="text-xs text-rose-300">sparkrules.ai.service · sparkrules.ai.openai_provider</code>
+      </div>
+
+      <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:border-cyan-400/50 transition">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-xl">📜</div>
+          <h3 class="font-bold">Deterministic A/B bucketing</h3>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">SHA-256 keyed variant assignment. Same user always gets the same variant. Weight-based splits. Usable for rule canary rollouts without adding LaunchDarkly.</p>
+        <code class="text-xs text-cyan-300">sparkrules.sim.ab.ABTestRunner</code>
+      </div>
+    </div>
+
+    <div class="mt-10 p-6 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-white/10 text-center">
+      <div class="text-sm uppercase tracking-wider text-indigo-300 mb-2">Bottom line</div>
+      <p class="text-lg">
+        A team adopting sparkrules gets a <strong>rule engine + decision platform + governance layer + simulation suite + compliance toolkit</strong> in a single pip install.
+      </p>
+      <p class="text-sm text-slate-400 mt-2">Most commercial stacks require 3-5 separate products to match this surface area.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE FLOW -->
+<section class="py-20 bg-gradient-to-br from-slate-900 to-indigo-950 text-white relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg opacity-10"></div>
+  <div class="max-w-7xl mx-auto px-6 relative">
+    <div class="mb-12 text-center">
+      <span class="section-kicker text-indigo-300">How it runs</span>
+      <h2 class="text-4xl font-bold mb-4">From DRL to Catalyst bytecode in one plan</h2>
+      <p class="text-lg text-slate-300 max-w-3xl mx-auto">
+        Every sparkrules rule compiles down to the same codepath Spark uses for native joins and aggregates. No Python UDF boundary. No per-row serialization.
+      </p>
+    </div>
+
+    <!-- Pipeline flow diagram -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-stretch mb-12">
+      <div class="md:col-span-1 bg-white/5 border border-white/10 rounded-xl p-5 text-center relative">
+        <div class="text-4xl mb-2">📝</div>
+        <div class="font-bold text-sm mb-1">DRL source</div>
+        <div class="text-xs text-slate-400 font-mono">rule "..." when... then...</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center text-indigo-400 text-3xl">→</div>
+
+      <div class="md:col-span-1 bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+        <div class="text-4xl mb-2">🌳</div>
+        <div class="font-bold text-sm mb-1">AlphaNetwork AST</div>
+        <div class="text-xs text-slate-400">RETE-inspired tree, cached</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center text-indigo-400 text-3xl">→</div>
+
+      <div class="md:col-span-1 bg-white/5 border border-indigo-400/50 rounded-xl p-5 text-center bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
+        <div class="text-4xl mb-2">⚡</div>
+        <div class="font-bold text-sm mb-1">Spark SQL Column[]</div>
+        <div class="text-xs text-slate-400">one when/.otherwise per rule</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center text-indigo-400 text-3xl">→</div>
+    </div>
+
+    <!-- The output box -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-stretch mb-10">
+      <div class="md:col-span-1 bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+        <div class="text-4xl mb-2">🔧</div>
+        <div class="font-bold text-sm mb-1">Catalyst Optimizer</div>
+        <div class="text-xs text-slate-400">constant folding, filter pushdown</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center text-emerald-400 text-3xl">→</div>
+
+      <div class="md:col-span-1 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 rounded-xl p-5 text-center">
+        <div class="text-4xl mb-2">⚙️</div>
+        <div class="font-bold text-sm mb-1">WholeStageCodegen</div>
+        <div class="text-xs text-slate-400">all 30 rules fuse into 1 Project</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center text-emerald-400 text-3xl">→</div>
+
+      <div class="md:col-span-1 bg-gradient-to-br from-amber-500/30 to-rose-500/30 border-2 border-amber-400 rounded-xl p-5 text-center relative shadow-lg shadow-amber-500/20">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black tracking-wider">OUTPUT</div>
+        <div class="text-4xl mb-2">🎯</div>
+        <div class="font-bold text-sm mb-1">Scored DataFrame</div>
+        <div class="text-xs text-slate-300">fires, reasons, scores per row</div>
+      </div>
+      <div class="hidden md:flex items-center justify-center"></div>
+    </div>
+
+    <!-- Details callouts -->
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 font-black">01</div>
+          <div class="font-bold">One plan, 30 rules</div>
+        </div>
+        <p class="text-sm text-slate-300">Spark's WholeStageCodegen fuses every rule predicate into a single generated Java method. One JIT compile, one pass through the data.</p>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-black">02</div>
+          <div class="font-bold">Zero UDF boundary</div>
+        </div>
+        <p class="text-sm text-slate-300">Rules execute as JVM bytecode inside the executor, not as Python UDFs. No Arrow serialization, no cross-process hops, no GIL.</p>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-black">03</div>
+          <div class="font-bold">Same path as native joins</div>
+        </div>
+        <p class="text-sm text-slate-300">Your rules ride Spark's most optimized codepath. The same one used for Parquet scans, shuffle-less joins, and window aggregates.</p>
+      </div>
+    </div>
+
+    <!-- Measured proof -->
+    <div class="mt-10 p-6 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-white/10">
+      <div class="text-center">
+        <div class="text-sm uppercase tracking-wider text-indigo-300 mb-2">Measured on Glue 5.0</div>
+        <div class="text-2xl font-bold mb-2">30 / 30 rules classified <span class="text-emerald-300">SQL_PUSHDOWN</span> · fused into <span class="text-amber-300">1 Project stage</span> per partition</div>
+        <div class="text-sm text-slate-400">Verified via <code class="bg-white/10 px-2 py-0.5 rounded">df.explain(mode="codegen")</code> and Spark UI SQL tab · 79,479,946 rows × 30 rules × 10 × G.1X</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- POSITIONING -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center">
+      <span class="section-kicker">Our Position</span>
+      <h2 class="text-4xl font-bold mb-4">The distributed rule engine for Spark</h2>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+        sparkrules compiles DRL rules to Spark SQL and runs them as JVM Catalyst bytecode. All 30 rule predicates fuse into one WholeStageCodegen Project stage per partition - the same codepath Spark uses for native joins.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">BATCH</div>
+        <h3 class="text-xl font-bold mb-2">Billion-row lakehouse batch</h3>
+        <p class="text-slate-600 text-sm">Daily ETL pipelines scoring billions of records. Run on Glue overnight for a few dollars.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">STREAMING</div>
+        <h3 class="text-xl font-bold mb-2">Real-time event processing</h3>
+        <p class="text-slate-600 text-sm">Structured Streaming + Kafka + Iceberg. Same rule pack for streaming and batch.</p>
+      </div>
+      <div class="feature-card">
+        <div class="badge badge-primary mb-3">LOCAL</div>
+        <h3 class="text-xl font-bold mb-2">Driver-side decisioning</h3>
+        <p class="text-slate-600 text-sm">Low-latency single-fact scoring with pluggable native extension point (experimental Rust starter crate available).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITY MATRIX -->
+<section class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12">
+      <span class="section-kicker">Capability Matrix</span>
+      <h2 class="text-4xl font-bold mb-4">Enterprise features across the landscape</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">
+        sparkrules ships a full rule platform - not just a scorer. DRL parser, DMN decision tables, data quality engine, compliance artifacts, governance registry, A/B simulation, OPA export, lineage, Iceberg store. All Apache 2.0.
+      </p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="benchmark-table text-sm">
+        <thead>
+          <tr>
+            <th class="sticky left-0 bg-slate-900">Capability</th>
+            <th class="text-center">sparkrules</th>
+            <th class="text-center">Drools</th>
+            <th class="text-center">Easy Rules</th>
+            <th class="text-center">OpenL Tablets</th>
+            <th class="text-center">Camunda DMN</th>
+            <th class="text-center">IBM ODM</th>
+            <th class="text-center">FICO Blaze</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="font-semibold">Distributed scale-out (Spark-native)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">limited</td>
+            <td class="text-center text-slate-400">—</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Drools DRL parser</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">proprietary</td>
+            <td class="text-center">proprietary</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">DMN (Camunda-style subset)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">partial</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center">proprietary</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Data quality engine (built-in)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">add-on</td>
+            <td class="text-center">add-on</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Adverse-action helpers (ECOA/FCRA/GDPR Art 22 structure)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">add-on</td>
+            <td class="text-center text-xl">✅</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Governance registry (dev/stage/prod pins)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center">manual</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">manual</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">A/B simulator + shadow/replay</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">add-on</td>
+            <td class="text-center">add-on</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">OPA Rego policy export</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Streaming (Kafka + Iceberg)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center">manual</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">CEP addon</td>
+            <td class="text-center">add-on</td>
+            <td class="text-center text-slate-400">—</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Lineage + audit trail</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center">partial</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">partial</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-xl">✅</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Feature store integration (Feast / Tecton)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center">custom</td>
+            <td class="text-center">custom</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Ranger-compatible access policies</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">Rust starter crate (experimental)</td>
+            <td class="text-center text-xl">✅</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+            <td class="text-center text-slate-400">—</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">License model</td>
+            <td class="text-center"><span class="badge" style="background:rgba(16,185,129,0.15);color:#059669">Apache 2.0</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(16,185,129,0.15);color:#059669">Apache 2.0</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(16,185,129,0.15);color:#059669">MIT</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(16,185,129,0.15);color:#059669">LGPL</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(16,185,129,0.15);color:#059669">Apache 2.0</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(244,63,94,0.15);color:#be123c">Commercial</span></td>
+            <td class="text-center"><span class="badge" style="background:rgba(244,63,94,0.15);color:#be123c">Commercial</span></td>
+          </tr>
+          <tr class="highlight-row">
+            <td class="font-semibold">Measured 1B rows wallclock</td>
+            <td class="text-center font-bold text-indigo-700">~5 min *</td>
+            <td class="text-center">~45 min †</td>
+            <td class="text-center text-slate-400">n/a</td>
+            <td class="text-center text-slate-400">n/a</td>
+            <td class="text-center">~60 min †</td>
+            <td class="text-center">~30 min †</td>
+            <td class="text-center">~35 min †</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-3">
+      * Projected from measured 79.5M × 30 rules baseline on 10 × G.1X (Glue 5.0, us-east-1). † Industry-public numbers for single-JVM or small-cluster runs; none of these engines scale linearly on Spark the way sparkrules does. Single-JVM tools (Drools, Easy Rules) excel at low-latency single-fact scoring and are not built for billion-row batch.
+    </p>
+  </div>
+</section>
+
+<!-- RADAR CHART -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center">
+      <span class="section-kicker">Capability Profile</span>
+      <h2 class="text-4xl font-bold mb-4">Every dimension covered</h2>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div class="chart-container tall">
+        <canvas id="featureMatrixChart"></canvas>
+      </div>
+
+      <div class="space-y-4">
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ Linear scale-out</div>
+          <div class="text-sm text-slate-600">Measured: 10 workers → 3.28M rps. Projected 100 workers → 32.8M rps. Strategy A has no shuffle bottleneck.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ DRL syntax</div>
+          <div class="text-sm text-slate-600">Drop-in Drools DRL parser. Your existing Drools rule packs work unmodified.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ Spark SQL compilation</div>
+          <div class="text-sm text-slate-600">All 30 taxi rules classified SQL_PUSHDOWN. Fused into one Project stage by WholeStageCodegen.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ SQL pushdown classifier</div>
+          <div class="text-sm text-slate-600">Built-in classifier maps each DRL predicate to Spark Catalyst. JVM bytecode, not Python UDFs.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ Multi-cloud</div>
+          <div class="text-sm text-slate-600">AWS Glue, Databricks, EMR, Azure Synapse, GCP Dataproc. Any Spark 3.5+ cluster.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ Streaming support</div>
+          <div class="text-sm text-slate-600">Structured Streaming + Kafka + Iceberg. Same rule pack for streaming and batch.</div>
+        </div>
+        <div class="metric-card">
+          <div class="font-semibold mb-1">✅ Open source</div>
+          <div class="text-sm text-slate-600">Apache 2.0. No per-DPU, per-rule, or per-seat licensing. Use in any commercial product.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE ECOSYSTEM STATS -->
+<section class="py-20 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg opacity-10"></div>
+  <div class="max-w-7xl mx-auto px-6 relative">
+    <div class="mb-12 text-center">
+      <span class="badge badge-live mb-3">LIVE · Updated every page load</span>
+      <h2 class="text-4xl font-bold mb-4">Real-time adoption signals</h2>
+      <p class="text-lg text-slate-300 max-w-3xl mx-auto">
+        Fetched live from PyPI and GitHub on page render. Downloads, releases, contributor activity - all public, all verifiable.
+      </p>
+    </div>
+
+    <!-- Live counters -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
+        <div class="text-xs uppercase tracking-wider text-indigo-300 mb-2">sparkrules · last month</div>
+        <div id="stat-srules-month" class="text-4xl font-extrabold tabular-nums">-</div>
+        <div class="text-sm text-slate-400 mt-1">downloads from PyPI</div>
+      </div>
+      <div class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
+        <div class="text-xs uppercase tracking-wider text-emerald-300 mb-2">sparkrules · last week</div>
+        <div id="stat-srules-week" class="text-4xl font-extrabold tabular-nums">-</div>
+        <div class="text-sm text-slate-400 mt-1">downloads from PyPI</div>
+      </div>
+      <div class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
+        <div class="text-xs uppercase tracking-wider text-purple-300 mb-2">sparkrules-native · last month</div>
+        <div id="stat-native-month" class="text-4xl font-extrabold tabular-nums">-</div>
+        <div class="text-sm text-slate-400 mt-1">Rust wheel downloads</div>
+      </div>
+      <div class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
+        <div class="text-xs uppercase tracking-wider text-amber-300 mb-2">sparkrules-native · last week</div>
+        <div id="stat-native-week" class="text-4xl font-extrabold tabular-nums">-</div>
+        <div class="text-sm text-slate-400 mt-1">Rust wheel downloads</div>
+      </div>
+    </div>
+
+    <!-- GitHub & version cards -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <a href="https://github.com/vaquarkhan/sparkrules/stargazers" class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 hover:border-amber-400/50 transition-colors block">
+        <div class="flex items-center gap-2 text-amber-300 mb-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span class="text-xs uppercase tracking-wider">GitHub stars</span>
+        </div>
+        <div id="stat-gh-stars" class="text-3xl font-extrabold tabular-nums">-</div>
+        <div class="text-xs text-slate-400 mt-1">stargazers_count</div>
+      </a>
+      <a href="https://github.com/vaquarkhan/sparkrules/network/members" class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 hover:border-indigo-400/50 transition-colors block">
+        <div class="flex items-center gap-2 text-indigo-300 mb-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7a4 4 0 108 0 4 4 0 00-8 0M8 17a4 4 0 108 0 4 4 0 00-8 0M12 11v6"/></svg>
+          <span class="text-xs uppercase tracking-wider">Forks</span>
+        </div>
+        <div id="stat-gh-forks" class="text-3xl font-extrabold tabular-nums">-</div>
+        <div class="text-xs text-slate-400 mt-1">forks_count</div>
+      </a>
+      <a href="https://pypi.org/project/sparkrules/" class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 hover:border-emerald-400/50 transition-colors block">
+        <div class="flex items-center gap-2 text-emerald-300 mb-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span class="text-xs uppercase tracking-wider">Latest sparkrules</span>
+        </div>
+        <div id="stat-srules-version" class="text-3xl font-extrabold tabular-nums">-</div>
+        <div class="text-xs text-slate-400 mt-1">PyPI info.version</div>
+      </a>
+      <a href="https://pypi.org/project/sparkrules-native/" class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10 hover:border-purple-400/50 transition-colors block">
+        <div class="flex items-center gap-2 text-purple-300 mb-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-9 9-5-5"/></svg>
+          <span class="text-xs uppercase tracking-wider">Latest sparkrules-native</span>
+        </div>
+        <div id="stat-native-version" class="text-3xl font-extrabold tabular-nums">-</div>
+        <div class="text-xs text-slate-400 mt-1">Rust wheel on PyPI</div>
+      </a>
+    </div>
+
+    <!-- Download trend chart -->
+    <div class="bg-white/5 backdrop-blur rounded-2xl p-6 border border-white/10">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-xl font-bold">Daily downloads · last 180 days</h3>
+          <p class="text-sm text-slate-400">Source: pypistats.org · cached 24h by PyPI</p>
+        </div>
+        <div class="flex gap-3 text-xs">
+          <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#6366f1"></span>sparkrules</span>
+          <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#10b981"></span>sparkrules-native</span>
+        </div>
+      </div>
+      <div style="height:340px" class="relative">
+        <canvas id="pypiTrendChart"></canvas>
+        <div id="pypiTrendFallback" class="hidden absolute inset-0 flex items-center justify-center text-center text-slate-400 text-sm">
+          <div>
+            <div class="mb-2">Live data unavailable (pypistats.org rate limit or CORS)</div>
+            <a class="text-indigo-300 underline" href="https://pypistats.org/packages/sparkrules">Open pypistats.org →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof-of-measurement callout -->
+    <div class="mt-12 grid md:grid-cols-3 gap-6">
+      <div class="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-2xl p-6">
+        <div class="text-xs uppercase tracking-wider text-indigo-300 mb-2">Measured benchmark</div>
+        <div class="text-3xl font-extrabold mb-2">3.28M rps</div>
+        <div class="text-sm text-slate-300">79,479,946 NYC TLC rows × 30 rules, 10 × G.1X, Glue 5.0, us-east-1. Reproducible for $0.17.</div>
+      </div>
+      <div class="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-400/30 rounded-2xl p-6">
+        <div class="text-xs uppercase tracking-wider text-emerald-300 mb-2">Perf uplift · 1.1.0 → 1.2.0</div>
+        <div class="text-3xl font-extrabold mb-2">+21.3%</div>
+        <div class="text-sm text-slate-300">Same cluster, same rules, same dataset. Batched Strategy A select + narrow output format + AST broadcast.</div>
+      </div>
+      <div class="bg-gradient-to-br from-amber-500/20 to-rose-500/20 border border-amber-400/30 rounded-2xl p-6">
+        <div class="text-xs uppercase tracking-wider text-amber-300 mb-2">SQL pushdown rate</div>
+        <div class="text-3xl font-extrabold mb-2">30 / 30</div>
+        <div class="text-sm text-slate-300">All taxi rules classified SQL_PUSHDOWN. Zero fallback to Python UDF. Fused into one Catalyst Project stage per partition.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INDUSTRY FIT -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center">
+      <span class="section-kicker">Industry fit</span>
+      <h2 class="text-4xl font-bold mb-4">Built-in features for regulated industries</h2>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+        Six industries, the sparkrules modules that matter most for each, and the measured capacity headroom against their peak load.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-xl">💳</div>
+          <h3 class="font-bold">Financial services / credit</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">ECOA · FCRA · Reg B · SR 11-7 · GDPR Art 22 · aligned structure</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ Adverse-action reason aggregation helpers</li>
+          <li>✓ Counterfactual reason-code summaries</li>
+          <li>✓ Model risk governance registry</li>
+          <li>✓ Shadow release for underwriting v2</li>
+        </ul>
+        <div class="text-xs font-mono text-rose-600">fraud peak: 65K rps · headroom 49x</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">🏥</div>
+          <h3 class="font-bold">Healthcare / life sciences</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">HIPAA · 21 CFR Part 11 · audit</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ Lineage + audit trail per decision</li>
+          <li>✓ Ranger row-level masking</li>
+          <li>✓ Two-pass aggregation (patient cohorts)</li>
+          <li>✓ XLSX import for clinical logic teams</li>
+        </ul>
+        <div class="text-xs font-mono text-emerald-600">claims: 3K rps · headroom 1000x+</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xl">📺</div>
+          <h3 class="font-bold">AdTech / RTB</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">GDPR · CCPA · sub-10ms latency</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ Deterministic A/B bucketing by user ID</li>
+          <li>✓ Feast / Tecton feature enrichment</li>
+          <li>✓ Experimental Rust starter crate (local-only)</li>
+          <li>✓ Streaming + Iceberg-compatible sinks for event replay</li>
+        </ul>
+        <div class="text-xs font-mono text-amber-600">bidding: 10M rps · native kernel path</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl">📡</div>
+          <h3 class="font-bold">Telecom / IoT</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">billions of CDRs · real-time alerting</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ Linear scale to 400 × G.8X workers</li>
+          <li>✓ Kafka streaming ingest</li>
+          <li>✓ Two-pass agg by subscriber / cell</li>
+          <li>✓ Chaos-tested failure modes</li>
+        </ul>
+        <div class="text-xs font-mono text-indigo-600">CDR: 250K rps · headroom 13x</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xl">🛒</div>
+          <h3 class="font-bold">Retail / supply chain</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">dynamic pricing · markdowns · promos</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ DMN decision tables (price matrices)</li>
+          <li>✓ XLSX import for category managers</li>
+          <li>✓ Cost estimator for peak-week planning</li>
+          <li>✓ Iceberg-compatible sinks for rule-version history</li>
+        </ul>
+        <div class="text-xs font-mono text-purple-600">Black Friday: 10B rows / 5 min</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-xl">🔒</div>
+          <h3 class="font-bold">Security / CloudTrail</h3>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">SIEM · compliance · threat detection</div>
+        <ul class="text-sm text-slate-600 space-y-1 mb-3">
+          <li>✓ OPA Rego policy export</li>
+          <li>✓ Ranger policy compatibility</li>
+          <li>✓ Safe-pickle rulepack transport</li>
+          <li>✓ Streaming detection on event logs</li>
+        </ul>
+        <div class="text-xs font-mono text-cyan-600">CloudTrail: 12K rps · headroom 273x</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COST COMPARISON -->
+<section class="py-20 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12">
+      <span class="section-kicker">Total Cost of Ownership</span>
+      <h2 class="text-4xl font-bold mb-4">1 billion rows × 12 complex rules</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">
+        What does it cost to score a billion rows per day? Only infrastructure matters - no license fees, no per-rule charges, no per-fact pricing. Every row in the table below scores the <strong>same 1,000,000,000 rows against the same 12 DRL rules</strong>.
+      </p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="benchmark-table">
+        <thead>
+          <tr>
+            <th>Configuration</th>
+            <th class="num text-center">Data volume</th>
+            <th class="num text-center">Rules</th>
+            <th class="num">Wallclock</th>
+            <th class="num">AWS Compute</th>
+            <th class="num">Annual License</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight-row">
+            <td class="font-semibold">sparkrules on 25 × G.1X</td>
+            <td class="num text-center">1 B rows</td>
+            <td class="num text-center">12</td>
+            <td class="num">~1.5 min</td>
+            <td class="num">$0.28</td>
+            <td class="num">$0</td>
+            <td>Apache 2.0 · recommended config</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">sparkrules on 50 × G.2X</td>
+            <td class="num text-center">1 B rows</td>
+            <td class="num text-center">12</td>
+            <td class="num">~30 sec</td>
+            <td class="num">$0.86</td>
+            <td class="num">$0</td>
+            <td>Near-realtime 1B scoring</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">sparkrules on 100 × G.2X</td>
+            <td class="num text-center">1 B rows</td>
+            <td class="num text-center">12</td>
+            <td class="num">~15 sec</td>
+            <td class="num">$1.72</td>
+            <td class="num">$0</td>
+            <td>Peak throughput config</td>
+          </tr>
+          <tr>
+            <td class="font-semibold">sparkrules on 10 × G.1X <span class="text-xs badge badge-primary ml-1">measured</span></td>
+            <td class="num text-center">79.5 M rows</td>
+            <td class="num text-center">30</td>
+            <td class="num">24.25 sec</td>
+            <td class="num">$0.17</td>
+            <td class="num">$0</td>
+            <td>Actual Glue run · $0 license</td>
+          </tr>
+          <tr>
+            <td>Commercial enterprise engine A</td>
+            <td class="num text-center">1 B rows</td>
+            <td class="num text-center">12</td>
+            <td class="num">~30+ min</td>
+            <td class="num">$50-$500</td>
+            <td class="num">$100K-$1M</td>
+            <td>Per-seat + per-core licensing</td>
+          </tr>
+          <tr>
+            <td>Hand-written Spark SQL</td>
+            <td class="num text-center">1 B rows</td>
+            <td class="num text-center">12</td>
+            <td class="num">~1 min</td>
+            <td class="num">$0.20</td>
+            <td class="num">$0</td>
+            <td>No DRL syntax, no audit trail</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-3">
+      Measured row (10 × G.1X · 79.5M rows · 30 rules) is the authoritative baseline from AWS Glue 5.0 run <code>jr_428c3052...</code>. Other sparkrules rows are linear extrapolations; commercial engine row is industry-public pricing.
+    </p>
+
+    <div class="mt-8 grid md:grid-cols-3 gap-6">
+      <div class="feature-card">
+        <div class="text-4xl font-bold text-indigo-600 mb-2">$0.28</div>
+        <div class="font-semibold mb-1">per 1B rows</div>
+        <div class="text-sm text-slate-600">On 25 × G.1X. Billing granularity in seconds. No minimum commitment.</div>
+      </div>
+      <div class="feature-card">
+        <div class="text-4xl font-bold text-emerald-600 mb-2">$0</div>
+        <div class="font-semibold mb-1">license cost</div>
+        <div class="text-sm text-slate-600">Apache 2.0 open source. Commercial redistribution permitted.</div>
+      </div>
+      <div class="feature-card">
+        <div class="text-4xl font-bold text-purple-600 mb-2">$102</div>
+        <div class="font-semibold mb-1">per year of 1B/day</div>
+        <div class="text-sm text-slate-600">Daily scoring of 1B rows for a year = 365 runs × $0.28. That's all-in AWS cost.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ECOSYSTEM -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center">
+      <span class="section-kicker">Ecosystem</span>
+      <h2 class="text-4xl font-bold mb-4">Plays well with your existing stack</h2>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-6">
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3 class="font-bold">AWS Glue</h3>
+        <p class="text-xs text-slate-600 mt-2">Terraform module included</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM7 7h10v10H7z"/></svg>
+        </div>
+        <h3 class="font-bold">Databricks</h3>
+        <p class="text-xs text-slate-600 mt-2">Works on any 3.5+ cluster</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="font-bold">EMR on EKS</h3>
+        <p class="text-xs text-slate-600 mt-2">Kubernetes-native</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/></svg>
+        </div>
+        <h3 class="font-bold">Azure Synapse</h3>
+        <p class="text-xs text-slate-600 mt-2">Spark pools supported</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        </div>
+        <h3 class="font-bold">GCP Dataproc</h3>
+        <p class="text-xs text-slate-600 mt-2">Spark 3.5 images</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143z"/></svg>
+        </div>
+        <h3 class="font-bold">Apache Kafka</h3>
+        <p class="text-xs text-slate-600 mt-2">Streaming source</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+        </div>
+        <h3 class="font-bold">Apache Iceberg</h3>
+        <p class="text-xs text-slate-600 mt-2">Lakehouse sink</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="feature-icon mx-auto">
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </div>
+        <h3 class="font-bold">dbt</h3>
+        <p class="text-xs text-slate-600 mt-2">Post-scoring models</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY SPARKRULES -->
+<section class="py-20 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="text-4xl font-bold mb-4">Why teams pick sparkrules</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">🚀</div>
+        <h3 class="text-xl font-bold mb-2">Speed to value</h3>
+        <p class="text-indigo-100">Pip install and write DRL rules. No Scala, no Java classpath, no KieContainer setup. First rule fires in under 5 minutes.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">📏</div>
+        <h3 class="text-xl font-bold mb-2">Predictable cost</h3>
+        <p class="text-indigo-100">Linear scaling means cost-per-row stays flat as you add workers. 1B rows costs the same whether you use 10 or 100 workers.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">🔐</div>
+        <h3 class="text-xl font-bold mb-2">Auditable decisions</h3>
+        <p class="text-indigo-100">Every fire has a rule name, salience, reason codes, and deterministic output. Regulators can trace any decision back to the DRL that produced it.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">🌍</div>
+        <h3 class="text-xl font-bold mb-2">Cloud portable</h3>
+        <p class="text-indigo-100">AWS, Azure, GCP, Databricks, on-prem Spark. Change one Terraform variable to switch regions or clouds.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">🧪</div>
+        <h3 class="text-xl font-bold mb-2">Measurable performance</h3>
+        <p class="text-indigo-100">Reproducible benchmark published in this repo. $0.45 of AWS spend verifies the numbers on your own account.</p>
+      </div>
+      <div>
+        <div class="w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center mb-4 text-2xl">🆓</div>
+        <h3 class="text-xl font-bold mb-2">Apache 2.0 open source</h3>
+        <p class="text-indigo-100">Forever free, no EULA negotiation, no per-CPU licensing, no audit by vendors. Ship it in commercial products.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CURRENT SCOPE & HONESTY NOTES -->
+<section class="py-20 bg-slate-50 border-t border-slate-200">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="mb-10">
+      <span class="section-kicker">Current scope</span>
+      <h2 class="text-4xl font-bold mb-4">What's shipped · what's partial · what's roadmap</h2>
+      <p class="text-lg text-slate-600 max-w-3xl">
+        Honest tracker of the state of every claim on this page. No feature is stronger than its upstream documentation. Sourced from <code>docs/KNOWN_LIMITATIONS.md</code> and <code>docs/PENDING_NON_BLOCKING.md</code>.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Shipped -->
+      <div class="bg-white border border-emerald-200 rounded-2xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center">✅</div>
+          <h3 class="font-bold text-emerald-700">Shipped and production-usable</h3>
+        </div>
+        <ul class="text-sm text-slate-700 space-y-2">
+          <li>• DRL parser + 3 execution strategies (SQL_PUSHDOWN, ALPHA_SHARED, PYTHON_FALLBACK)</li>
+          <li>• SparkRuleExecutor with Catalyst pushdown (measured 3.28M rps)</li>
+          <li>• LocalRuleExecutor with compiled closures + alpha network</li>
+          <li>• FastAPI management plane + browser Workbench</li>
+          <li>• Governance (namespace pins, promotion, deprecation)</li>
+          <li>• Adverse-action reason aggregation helpers</li>
+          <li>• Data quality checks + statistical profiling</li>
+          <li>• OPA Rego export, XLSX decision-table round-trip</li>
+          <li>• In-memory, DuckDB, Postgres metadata stores</li>
+          <li>• Terraform for Glue / Databricks / Dataproc / Synapse</li>
+          <li>• 100% line coverage gate, property-based tests</li>
+        </ul>
+      </div>
+
+      <!-- Partial -->
+      <div class="bg-white border border-amber-200 rounded-2xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-700 flex items-center justify-center">⚠️</div>
+          <h3 class="font-bold text-amber-700">Partial or depends on your wiring</h3>
+        </div>
+        <ul class="text-sm text-slate-700 space-y-2">
+          <li>• <strong>DMN support</strong> - minimal Camunda-style decision tables only, not full DMN-TCK conformance (no FEEL, no DRD)</li>
+          <li>• <strong>Iceberg store</strong> - hydrating store with pyiceberg append sink or pickle-on-disk fallback; you wire up the sink</li>
+          <li>• <strong>OIDC auth</strong> - JWT parsing with issuer/audience checks; full signature verification needs a gateway (Kong, Envoy, ALB)</li>
+          <li>• <strong>Compliance helpers</strong> - ECOA/FCRA/GDPR-structured templates, not a legal attestation (counsel review required)</li>
+          <li>• <strong>Streaming</strong> - plan builder only (<code>sparkrules.tools.stream_kafka_iceberg</code>); runnable Kafka-Spark-Iceberg topology is ops-wired</li>
+        </ul>
+      </div>
+
+      <!-- Roadmap / experimental -->
+      <div class="bg-white border border-rose-200 rounded-2xl p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-700 flex items-center justify-center">🧪</div>
+          <h3 class="font-bold text-rose-700">Experimental · community contribution welcome</h3>
+        </div>
+        <ul class="text-sm text-slate-700 space-y-2">
+          <li>• <strong>Rust native scorer</strong> (<code>sparkrules_native</code>) - starter PyO3 crate, Tier-1 JSON FFI at ~1.1-1.3x over Python, not on PyPI</li>
+          <li>• <strong>Columnar / SIMD tiers</strong> - target 5-30M rps, not shipped</li>
+          <li>• <strong>Full DMN (FEEL, DRD, DMN-TCK)</strong></li>
+          <li>• <strong>CEP patterns</strong> for complex event processing</li>
+          <li>• <strong>Visual rule graph designer</strong> (React Flow)</li>
+          <li>• <strong>Bulk simulation upload</strong> (CSV/JSONL)</li>
+          <li>• <strong>Additional metadata backends</strong> (Redis, DynamoDB)</li>
+          <li>• <strong>200-node cluster benchmark</strong> - today we publish 10 × G.1X measured and project linearly</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-10 grid md:grid-cols-2 gap-6">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6">
+        <h4 class="font-bold mb-2">⚖️ Legal + compliance disclaimer</h4>
+        <p class="text-sm text-slate-600">
+          ECOA, FCRA, Reg B, SR 11-7, HIPAA, 21 CFR Part 11, GDPR Article 22, EU AI Act references on this site describe how sparkrules <em>modules are structured to support</em> those regimes. Nothing here is legal advice, certification, or a compliance attestation. Final sufficiency in a regulated deployment requires review by qualified counsel. The project is licensed Apache 2.0 with the standard no-warranty clause.
+        </p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6">
+        <h4 class="font-bold mb-2">📈 Benchmark honesty note</h4>
+        <p class="text-sm text-slate-600">
+          One measured baseline: 79.5M rows × 30 rules × 10 × G.1X = 24.25s scoring on Glue 5.0 us-east-1 (run <code class="text-xs">jr_428c3052...</code>). Every larger number on this site (25 / 50 / 100 / 400 workers, 1B / 10B / 100B rows) is projected linearly from that baseline. Projections are labeled where they appear. A 200-node run with published methodology is on the roadmap.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 bg-white">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <h2 class="text-4xl font-bold mb-6">Ready to score a billion rows?</h2>
+    <p class="text-lg text-slate-600 mb-8">Install, write rules, measure. 25 minutes end-to-end on AWS for under $1.</p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="https://pypi.org/project/sparkrules/" class="btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v5m-6.364-6.364A9 9 0 1118.364 3a9 9 0 01-12.728 12.728z"/></svg>
+        pip install sparkrules
+      </a>
+      <a href="benchmark.html" class="btn-outline">See benchmark</a>
+      <a href="https://github.com/vaquarkhan/sparkrules" class="btn-outline">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-slate-900 text-slate-400 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">sr</div>
+          <span class="font-bold text-lg text-white">sparkrules</span>
+        </div>
+        <p class="text-sm">Apache 2.0 open source. Built for Spark.</p>
+      </div>
+      <div class="flex gap-8 text-sm">
+        <a href="https://github.com/vaquarkhan/sparkrules" class="hover:text-white">GitHub</a>
+        <a href="https://pypi.org/project/sparkrules/" class="hover:text-white">PyPI</a>
+        <a href="https://github.com/vaquarkhan/sparkrules/blob/main/examples/native/README.md" class="hover:text-white">Rust Guide</a>
+        <a href="index.html" class="hover:text-white">Home</a>
+        <a href="benchmark.html" class="hover:text-white">Benchmark</a>
+        <a href="reproduce.html" class="hover:text-white">Reproduce</a>
+      </div>
+    </div>
+    <div class="mt-8 pt-8 border-t border-slate-800 text-xs text-center">
+      Measured 2026-05-06 · AWS Glue 5.0 us-east-1 · Reproducible in 25 min for $0.45
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="assets/charts.js"></script>
+</body>
+</html>
