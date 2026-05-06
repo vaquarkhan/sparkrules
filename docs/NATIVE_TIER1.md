@@ -1,4 +1,4 @@
-# Native Tier-1 (Rust) — end-to-end guide
+# Native Tier-1 (Rust) - end-to-end guide
 
 Optional **`sparkrules-native`** wheel accelerates **local/driver** scoring. The DRL lexer/parser stays in Python; rules cross the FFI boundary as **`RulePack.to_native_json()`** JSON once at compile time, then **JSON strings per row** for facts/results on the Tier-1 hot path.
 

@@ -222,7 +222,7 @@ Start with **notebook 06** for the architecture overview, then **01** for hands-
 
 ## Documentation
 
-**Full docs: [sparkrules.readthedocs.io](https://sparkrules.readthedocs.io)**
+**Full docs: [sparkrules.readthedocs.io](https://sparkrules.readthedocs.io)** | **Website: [vaquarkhan.github.io/sparkrules](https://vaquarkhan.github.io/sparkrules)**
 
 | Topic | Link |
 |-------|------|
