@@ -6,11 +6,14 @@
 
 <p align="center">
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/sparkrules"></a>
+  <a href="https://pypi.org/project/sparkrules-native/"><img alt="Native PyPI" src="https://img.shields.io/pypi/v/sparkrules-native?label=native"></a>
   <a href="https://pypi.org/project/sparkrules/"><img alt="PyPI downloads" src="https://img.shields.io/pypi/dm/sparkrules"></a>
   <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml"><img alt="Docker" src="https://github.com/vaquarkhan/sparkrules/actions/workflows/docker-publish.yml/badge.svg"></a>
+  <a href="https://github.com/vaquarkhan/sparkrules/pkgs/container/sparkrules"><img alt="GHCR" src="https://img.shields.io/badge/ghcr.io-sparkrules-blue?logo=docker"></a>
   <a href="https://github.com/vaquarkhan/sparkrules/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg"></a>
   <a href="https://sparkrules.readthedocs.io"><img alt="Docs" src="https://readthedocs.org/projects/sparkrules/badge/?version=latest"></a>
+  <a href="https://vaquarkhan.github.io/sparkrules"><img alt="Website" src="https://img.shields.io/badge/website-live-brightgreen"></a>
   <a href="https://github.com/vaquarkhan/sparkrules"><img alt="GitHub stars" src="https://img.shields.io/github/stars/vaquarkhan/sparkrules?style=social"></a>
 </p>
 
