@@ -1,0 +1,73 @@
+// Loan underwriting rules for SparkRules Kafka → Iceberg streaming pipeline
+// Author: Ram Ghadiyaram
+// Pattern matches official SparkRules examples: $t : T( $t.field ... )
+
+rule "HighAmountHold"
+  salience 100
+  when
+    $t : T( $t.amount > 50000 )
+  then
+    result.decision = "HOLD";
+    result.reason_code = "AMT_HIGH";
+    result.risk_tier = "HIGH";
+end
+
+rule "LowCreditScoreDecline"
+  salience 90
+  when
+    $t : T( $t.credit_score < 620 )
+  then
+    result.decision = "DECLINE";
+    result.reason_code = "CR_LOW";
+    result.risk_tier = "HIGH";
+end
+
+rule "MediumRiskReview"
+  salience 80
+  when
+    $t : T( $t.credit_score >= 620, $t.credit_score < 700, $t.amount > 25000 )
+  then
+    result.decision = "REVIEW";
+    result.reason_code = "CR_MED_AMT";
+    result.risk_tier = "MEDIUM";
+end
+
+rule "HighRiskRegionXX"
+  salience 70
+  when
+    $t : T( $t.region == "XX" )
+  then
+    result.decision = "REVIEW";
+    result.reason_code = "GEO_RISK";
+    result.risk_tier = "MEDIUM";
+end
+
+rule "HighRiskRegionYY"
+  salience 70
+  when
+    $t : T( $t.region == "YY" )
+  then
+    result.decision = "REVIEW";
+    result.reason_code = "GEO_RISK";
+    result.risk_tier = "MEDIUM";
+end
+
+rule "HighRiskRegionZZ"
+  salience 70
+  when
+    $t : T( $t.region == "ZZ" )
+  then
+    result.decision = "REVIEW";
+    result.reason_code = "GEO_RISK";
+    result.risk_tier = "MEDIUM";
+end
+
+rule "DefaultApprove"
+  salience 10
+  when
+    $t : T( $t.amount > 0 )
+  then
+    result.decision = "APPROVE";
+    result.reason_code = "OK";
+    result.risk_tier = "LOW";
+end

@@ -1,0 +1,12 @@
+{
+  "type": "struct",
+  "fields": [
+    {"name": "application_id", "type": "string", "nullable": false, "metadata": {}},
+    {"name": "amount", "type": "long", "nullable": false, "metadata": {}},
+    {"name": "credit_score", "type": "integer", "nullable": false, "metadata": {}},
+    {"name": "region", "type": "string", "nullable": true, "metadata": {}},
+    {"name": "product", "type": "string", "nullable": true, "metadata": {}},
+    {"name": "applicant_age", "type": "integer", "nullable": true, "metadata": {}},
+    {"name": "event_ts", "type": "timestamp", "nullable": true, "metadata": {}}
+  ]
+}
